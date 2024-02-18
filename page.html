@@ -1,0 +1,292 @@
+<!-- <script src="http://unpkg.com/force-graph"></script>
+<script src="https://cdn.jsdelivr.net/npm/d3@7"></script> -->
+
+<style>
+    * {
+        word-break: break-all;
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+    }
+
+    #linkDiv {
+        width: 100%;
+        height: 50%;
+        max-height: 50%;
+    }
+
+    .links {
+        overflow-y: auto;
+    }
+
+    .clickable-div {
+        background-color: transparent;
+        border-radius: 8px;
+        border: 1px solid #ccc;
+        cursor: pointer;
+        padding: 5px 3px;
+        font-family: Arial, sans-serif;
+        font-size: 14px;
+        text-align: center;
+        margin: 2px;
+    }
+
+    .clickable-invalid-div {
+        background-color: rgba(243, 90, 90, 0.4);
+        border-radius: 8px;
+        border: 1px solid #ccc;
+        cursor: pointer;
+        padding: 5px 3px;
+        font-family: Arial, sans-serif;
+        font-size: 14px;
+        text-align: center;
+        margin: 2px;
+    }
+
+    .clickable-div:hover {
+        background-color: rgba(0, 0, 0, 0.1);
+    }
+
+    .clickable-invalid-div:hover {
+        background-color: rgba(243, 90, 90, 0.65);
+    }
+
+    .clickable-div:active {
+        background-color: rgba(0, 0, 0, 0.2);
+    }
+
+    .clickable-invalid-div:active {
+        background-color: rgba(243, 90, 90, 0.9);
+    }
+</style>
+
+
+<div id="linkDiv" style="width: 100%;">
+    <div id="linkTitle"><strong id="backTitle">Back Link</strong></div>
+    <div class="links" id="backLinks"></div>
+    <div><strong id="forwardTitle">Forward Link</strong></div>
+    <div class="links" id="forwardLinks"></div>
+</div>
+<div id="graph"></div>
+
+<script>
+    let init = false
+    const largeSize = false//gData.links.length + gData.nodes.length > 10000
+    const elem = document.getElementById('graph');
+    const graph = ForceGraph()(elem)
+        .nodeCanvasObject((node, ctx, globalScale) => {
+            node.size = node.type === 'me' ? 10 : 8
+            graph.nodeRelSize(node.size)
+            let label = node.mainField !== null ? node.mainField : getTr('Invalid node');
+            label = convertHtmlToPlainText(label).replace(/\n+/g, ' ')
+            const fontSize = 5;
+            ctx.font = `${fontSize}px Sans-Serif`;
+
+            ctx.beginPath()
+            ctx.arc(node.x, node.y, node.size, 0, 2 * 3.1415926, !1)
+            switch (node.type) {
+                case 'me':
+                    ctx.fillStyle = "rgb(31, 115, 205)"
+                    break;
+                case 'parent':
+                    ctx.fillStyle = "rgba(255, 65, 60, 0.92)"
+                    break;
+                case 'child':
+                    ctx.fillStyle = "rgba(244, 165, 0, 0.92)"
+                    break;
+                default:
+                    node.color
+                    break;
+            }
+            if (node.mainField === null) ctx.fillStyle = "rgba(255,255,255,0.75)"
+            ctx.fill()
+            if (node.type === 'me') {
+                ctx.beginPath()
+                ctx.arc(node.x, node.y, node.size * 0.6, 0, 2 * 3.1415926, !1)
+                ctx.fillStyle = "rgba(28, 145, 255, 0.92)"
+                ctx.fill()
+            }
+
+            if (globalScale > 1) {
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillStyle = node.color;
+                drawTextWithLineBreaks(ctx, label, node.x, node.y + node.size * 1.5, node.size * 4, 4, 5)
+            }
+        })
+        .backgroundColor('#101020')
+        .width(window.innerWidth)
+        .height(window.innerHeight * 0.5)
+        .nodeAutoColorBy('group')
+        .nodeLabel(node => node.mainField !== null ? node.mainField : getTr('Invalid note') + node.id)
+        .linkColor(() => 'rgba(255,255,255,0.2)')
+        .d3Force("x", d3.forceX())
+        .d3Force("y", d3.forceY())
+        .d3Force('center', null)
+        .d3Force("collide", d3.forceCollide().radius(n => n.size + 1).iterations(3))
+        .d3Force("charge", d3.forceManyBody().strength(-300))
+        .onNodeClick(node => {
+            if (node.type !== 'me') pycmd('lnid' + node.id)
+        })
+        .onNodeRightClick(node => pycmd('rnid' + node.id))
+        .linkWidth(2)
+        .enablePointerInteraction(!largeSize)
+
+    if (!largeSize) graph
+        .linkDirectionalParticles(4)
+        .linkDirectionalParticleWidth(4)
+    else graph.linkDirectionalArrowLength(6).zoom(0.05)
+
+    function drawTextWithLineBreaks(ctx, text, x, y, maxWidth, maxLineCount, lineHeight) {
+        let words = text.split("");
+        let line = "";
+        let lines = [];
+
+        for (let i = 0; i < words.length; i++) {
+            let testLine = line + words[i];
+            let testWidth = ctx.measureText(testLine).width;
+            if (lines.length === maxLineCount) break
+            if (testWidth > maxWidth && i > 0) {
+                if (lines.length === maxLineCount - 1 && i < words.length) line = line.slice(0, -2) + "..."
+                lines.push(line);
+                line = words[i];
+            } else {
+                line = testLine;
+            }
+        }
+        if (lines.length < maxLineCount) lines.push(line);
+
+        for (let j = 0; j < lines.length; j++) {
+            ctx.fillText(lines[j], x, y + j * lineHeight);
+        }
+    }
+
+    const backLinksDiv = document.getElementById("backLinks");
+    const forwardLinksDiv = document.getElementById("forwardLinks");
+    const linkDiv = document.getElementById("linkDiv");
+    const linkTitle = document.getElementById("linkTitle");
+
+    window.addEventListener('resize', function () {
+        graph.width(window.innerWidth * 0.995)
+        graph.height(window.innerHeight * 0.495)
+    });
+    window.addEventListener('resize', adjustHeights);
+    window.addEventListener('load', adjustHeights);
+    init = true
+
+    function convertHtmlToPlainText(html) {
+        const tempDiv = document.createElement("div");
+        tempDiv.innerHTML = html;
+        return tempDiv.innerText;
+    }
+
+    function adjustHeights() {
+        const linkDivHeight = linkDiv.clientHeight
+        const backLinksDivHeight = backLinksDiv.scrollHeight;
+        const forwardLinksDivHeight = forwardLinksDiv.scrollHeight;
+        const linkTitleHeight = linkTitle.scrollHeight;
+        const totalHeight = backLinksDivHeight + forwardLinksDivHeight + linkTitleHeight + linkDivHeight;
+
+        if (totalHeight < linkDivHeight) {
+            // 如果总高度小于等于容器高度，则按实际高度显示
+            backLinksDiv.style.maxHeight = ''
+            forwardLinksDiv.style.maxHeight = ''
+        } else {
+            // 如果总高度大于容器高度，则强制按比例分配
+            const backLinksDivRatio = (backLinksDivHeight + linkTitleHeight) / linkDivHeight;
+            const forwardLinksRatio = (forwardLinksDivHeight + linkTitleHeight) / linkDivHeight;
+
+            if (backLinksDivRatio > 0.5 && forwardLinksRatio > 0.5) {
+                backLinksDiv.style.maxHeight = forwardLinksDiv.style.maxHeight = `calc(50% - ${linkTitleHeight}px)`;
+            } else if (backLinksDivRatio > 0.5) {
+                backLinksDiv.style.maxHeight = `calc(${Math.floor((linkDivHeight - forwardLinksDivHeight) * 100 / linkDivHeight)}% - ${2 * linkTitleHeight}px)`
+                forwardLinksDiv.style.maxHeight = '';
+            } else if (forwardLinksRatio > 0.5) {
+                backLinksDiv.style.maxHeight = '';
+                forwardLinksDiv.style.maxHeight = `calc(${Math.floor((linkDivHeight - backLinksDivHeight) * 100 / linkDivHeight)}% - ${2 * linkTitleHeight}px)`
+            }
+        }
+    }
+
+    function reloadPage(parentNodes, childNodes, nodes, connections, resetCenter) {
+        while (!init) setTimeout(null, 200);
+        document.getElementById("backTitle").innerText = getTr('Back Link')
+        document.getElementById("forwardTitle").innerText = getTr('Forward Link')
+
+        const backLinksDiv = document.getElementById("backLinks");
+        const forwardLinksDiv = document.getElementById("forwardLinks");
+        backLinksDiv.innerHTML = parentNodes.length === 0 ? getTr('None') : ''
+        forwardLinksDiv.innerHTML = childNodes.length === 0 ? getTr('None') : ''
+        parentNodes.forEach(it => {
+            createButton(it, backLinksDiv);
+        });
+        childNodes.forEach(it => {
+            createButton(it, forwardLinksDiv);
+        });
+        adjustHeights()
+
+        let oldNodes = graph.graphData().nodes
+        let oldNodeMap = new Map(oldNodes.map(it => [it.id, it]))
+
+        for (const node of nodes) {
+            const oldNode = oldNodeMap.get(node.id);
+            if (oldNode) {
+                const tempMainField = node.mainField
+                const tempType = node.type
+                Object.assign(node, oldNode);
+                node.mainField = tempMainField
+                node.type = tempType
+            }
+        }
+        graph.graphData({nodes: nodes, links: connections})
+        if (resetCenter) graph.centerAt(0, 0, 0)
+    }
+
+    function createButton(node, container) {
+        const button = document.createElement("div");
+        button.className = node.mainField !== null ? "clickable-div" : 'clickable-invalid-div';
+        button.innerHTML = node.mainField !== null ? node.mainField : getTr('Invalid link') + node.id
+        button.onclick = function () {
+            const selection = window.getSelection();
+            if (selection.toString().length > 0) {
+                event.preventDefault();
+                return false;
+            }
+            pycmd('lnid' + node.id)
+        };
+        button.oncontextmenu = function (event) {
+            const selection = window.getSelection();
+            if (selection.toString().length > 0) return true;
+            event.preventDefault();
+            pycmd('rnid' + node.id)
+        };
+        button.addEventListener("mousedown", function (event) {
+            // 检查鼠标按下的按钮是否是中键
+            if (event.button === 1) {
+                event.preventDefault();
+                pycmd('mnid' + node.id)
+            }
+        });
+        container.appendChild(button);
+    }
+
+    function getTr(s) {
+        if (ankiLanguage !== 'zh-CN') return s;
+        else switch (s) {
+            case 'Back Link':
+                return '反向链接'
+            case 'Forward Link':
+                return '正向链接'
+            case 'None':
+                return '无'
+            case 'Invalid note':
+                return '无效笔记'
+            case 'Invalid node':
+                return '无效节点'
+            case 'Invalid link':
+                return '无效链接'
+            default:
+                return s
+        }
+    }
+</script>

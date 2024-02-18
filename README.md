@@ -1,4 +1,4 @@
-## Link Anki notes to build a knowledge network
+## Link Anki notes to build knowledge network
 
 [View on AnkiWeb](https://ankiweb.net/shared/info/1077002392)
 

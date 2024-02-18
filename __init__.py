@@ -177,7 +177,6 @@ class AnkiPlugin(object):
         if not self.updateNodeCache(note):
             log('-----jumped reFlashing page: links or titel not changed')
             return
-        self.editors = set(filter(lambda it: it.note is not None, self.editors))
         for editor in self.editors:
             log('-----reFlash page: note edited', editor)
             self.reFlashPage(editor)
@@ -187,7 +186,6 @@ class AnkiPlugin(object):
         if changes.study_queues or changes.notetype:
             log('-----rebuild cache: note(s) added/removed or notetype changed')
             self.rebuildCache()
-            self.editors = set(filter(lambda it: it.note is not None, self.editors))
             for editor in self.editors:
                 log('-----reFlash page: note(s) added/removed or notetype changed', editor)
                 self.reFlashPage(editor)

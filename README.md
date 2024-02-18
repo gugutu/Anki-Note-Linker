@@ -27,11 +27,11 @@ By establishing links between relevant notes, you can create a comprehensive and
 
 #### Right-click menu:
 
-Copy Note ID
+Copy note ID
 
 Copy note link
 
-Open note in a new window
+Open note in new window
 
 ---
 The following projects were used in this project:

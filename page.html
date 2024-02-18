@@ -185,7 +185,7 @@
         const backLinksDivHeight = backLinksDiv.scrollHeight;
         const forwardLinksDivHeight = forwardLinksDiv.scrollHeight;
         const linkTitleHeight = linkTitle.scrollHeight;
-        const totalHeight = backLinksDivHeight + forwardLinksDivHeight + linkTitleHeight + linkDivHeight;
+        const totalHeight = backLinksDivHeight + forwardLinksDivHeight + linkTitleHeight * 2;
 
         if (totalHeight < linkDivHeight) {
             // 如果总高度小于等于容器高度，则按实际高度显示

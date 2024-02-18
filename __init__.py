@@ -1,3 +1,7 @@
+"""
+MIT License
+Copyright (c) 2024 Wang Rui (https://github.com/gugutu)
+"""
 import json
 import operator
 from typing import Set, Optional

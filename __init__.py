@@ -84,23 +84,34 @@ class AnkiPlugin(object):
         copyNidAction.setText(getTr("Copy note ID"))
         qconnect(
             copyNidAction.triggered,
-            lambda _, b=browser: QApplication.clipboard().setText(str(b.card.nid))
+            lambda _, b=browser: self.tableMenuAction(b, 'copyNidAction')
         )
         menu.addAction(copyNidAction)
         copyLinkAction = QAction(browser)
         copyLinkAction.setText(getTr("Copy note link"))
         qconnect(
             copyLinkAction.triggered,
-            lambda _, b=browser: QApplication.clipboard().setText('[]{nid' + str(b.card.nid) + '}')
+            lambda _, b=browser: self.tableMenuAction(b, 'copyLinkAction')
         )
         menu.addAction(copyLinkAction)
-        openNoteAtNewWindowAction = QAction(browser)
-        openNoteAtNewWindowAction.setText(getTr("Open note in new window"))
+        openNoteInNewWindowAction = QAction(browser)
+        openNoteInNewWindowAction.setText(getTr("Open note in new window"))
         qconnect(
-            openNoteAtNewWindowAction.triggered,
-            lambda _, b=browser: self.handlePycmd((True, None), 'rnid' + str(b.card.nid), b)
+            openNoteInNewWindowAction.triggered,
+            lambda _, b=browser: self.tableMenuAction(b, 'openNoteInNewWindowAction')
         )
-        menu.addAction(openNoteAtNewWindowAction)
+        menu.addAction(openNoteInNewWindowAction)
+
+    def tableMenuAction(self, browser: Browser, actionName: str):
+        if browser.card is None:
+            tooltip(getTr("Please select a single note/card"))
+            return
+        if actionName == 'copyNidAction':
+            QApplication.clipboard().setText(str(browser.card.nid))
+        elif actionName == 'copyLinkAction':
+            QApplication.clipboard().setText('[|nid' + str(browser.card.nid) + ']')
+        elif actionName == 'openNoteInNewWindowAction':
+            self.handlePycmd((True, None), 'rnid' + str(browser.card.nid), browser)
 
     def convertLink(self, text: str, card: Card, kind: str):
         """Convert note links to HTML hyperlinks"""

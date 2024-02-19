@@ -19,5 +19,7 @@ def getTr(s: str) -> str:
             return '对应笔记不存在'
         elif s == 'Please add the current note first':
             return '请先添加当前笔记'
+        elif s == "Please select a single note/card":
+            return '请选中单条笔记/卡片'
         else:
             return s

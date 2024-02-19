@@ -33,6 +33,14 @@ By establishing links between relevant notes, you can create a comprehensive and
 
 - Open note in new window
 
+### Link Format
+
+`[Link Title|nidxxxxxxxxxxxxx]`
+
+The link title is the content displayed in the card. If the title contains`[`, it needs to be escaped with`\[`
+
+`x` is the ID of the note, consisting of 13 digits
+
 ---
 ### Roadmap
 

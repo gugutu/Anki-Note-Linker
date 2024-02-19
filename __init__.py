@@ -104,8 +104,9 @@ class AnkiPlugin(object):
 
     def convertLink(self, text: str, card: Card, kind: str):
         """Convert note links to HTML hyperlinks"""
-        return re.sub(r'\[([^\[]*?)]\{(nid\d{13})}',
-                      r'<a onclick="javascript:pycmd(`r`+`\2`);" style="cursor: pointer">\1</a>', text)
+        return (re.sub(r'\[((?:[^\[]|\\\[)*?)\|(nid\d{13})\]',
+                       r'<a onclick="javascript:pycmd(`r`+`\2`);" style="cursor: pointer">\1</a>', text)
+                .replace('\\[', '['))
 
     def injectPage(self, editor: Editor):
         if editor.addMode:
@@ -151,7 +152,6 @@ class AnkiPlugin(object):
         layout.insertWidget(web_index, split)
         if not config['showLinksPageAutomatically']:
             editor.linksPage.hide()
-
 
     def injectButton(self, buttons: list[str], editor: Editor):
         if editor.addMode:
@@ -374,10 +374,10 @@ class AnkiPlugin(object):
             if editor.addMode:
                 tooltip(getTr('Please add the current note first'))
                 return True, None
-            match = re.search(r'\[([^\[]*?)]\{' + message + '}', editor.note.joined_fields())
+            match = re.search(r'\[((?:[^\[]|\\\[)*?)\|' + message + ']', editor.note.joined_fields())
             text = ''
             if match:
-                text = match.group(1)
+                text = match.group(1).replace('\\[', '[')
             note = aqt.mw.col.new_note(editor.note.note_type())
             if note.note_type().get("originalStockKind",
                                     None) == StockNotetype.OriginalStockKind.ORIGINAL_STOCK_KIND_IMAGE_OCCLUSION:
@@ -392,14 +392,14 @@ class AnkiPlugin(object):
             return True, None
         elif message == 'insertLinkWithPlaceholder':
             editor: Editor = context
-            text = editor.web.selectedText()
+            text = editor.web.selectedText().replace('[', '\\[')
             placeholder = str(uuid.uuid4().int)[0:8]
-            editor.doPaste('[' + text + ']{new' + placeholder + '}', True)
+            editor.doPaste(f'[{text}|new{placeholder}]', True)
             return True, None
         elif message == 'insertLink':
             editor: Editor = context
-            text = editor.web.selectedText()
-            editor.doPaste('[' + text + ']{nid}', True)
+            text = editor.web.selectedText().replace('[', '\\[')
+            editor.doPaste(f'[{text}|nid]', True)
             return True, None
         else:
             return handled

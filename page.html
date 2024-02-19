@@ -62,9 +62,9 @@
 
 
 <div id="linkDiv" style="width: 100%;">
-    <div id="linkTitle"><strong id="backTitle">Back Link</strong></div>
+    <div id="linkTitle"><strong id="backTitle">Back Links</strong></div>
     <div class="links" id="backLinks"></div>
-    <div><strong id="forwardTitle">Forward Link</strong></div>
+    <div><strong id="forwardTitle">Forward Links</strong></div>
     <div class="links" id="forwardLinks"></div>
 </div>
 <div id="graph"></div>
@@ -210,8 +210,8 @@
 
     function reloadPage(parentNodes, childNodes, nodes, connections, resetCenter) {
         while (!init) setTimeout(null, 200);
-        document.getElementById("backTitle").innerText = getTr('Back Link')
-        document.getElementById("forwardTitle").innerText = getTr('Forward Link')
+        document.getElementById("backTitle").innerText = getTr('Back Links')
+        document.getElementById("forwardTitle").innerText = getTr('Forward Links')
 
         const backLinksDiv = document.getElementById("backLinks");
         const forwardLinksDiv = document.getElementById("forwardLinks");
@@ -273,9 +273,9 @@
     function getTr(s) {
         if (ankiLanguage !== 'zh-CN') return s;
         else switch (s) {
-            case 'Back Link':
+            case 'Back Links':
                 return '反向链接'
-            case 'Forward Link':
+            case 'Forward Links':
                 return '正向链接'
             case 'None':
                 return '无'

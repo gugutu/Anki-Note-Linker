@@ -27,21 +27,28 @@ By establishing links between relevant notes, you can create a comprehensive and
 
 #### Right-click menu:
 
-Copy note ID
+- Copy note ID
 
-Copy note link
+- Copy note link
 
-Open note in new window
+- Open note in new window
+
+---
+### Roadmap
+
+- Performance optimization
+
+- Global relationship diagram
 
 ---
 The following projects were used in this project:
 
-[Force graph](https://github.com/vasturiano/force-graph)
+- [Force graph](https://github.com/vasturiano/force-graph)
 
-[d3](https://github.com/d3/d3)
+- [d3](https://github.com/d3/d3)
 
 The implementation of this add-on is inspired by the following add-ons:
 
-[link Cards Notes and Preview them in extra window](https://ankiweb.net/shared/info/1423933177)
+- [link Cards Notes and Preview them in extra window](https://ankiweb.net/shared/info/1423933177)
 
-[Editor Live Preview](https://ankiweb.net/shared/info/1960039667)
+- [Editor Live Preview](https://ankiweb.net/shared/info/1960039667)

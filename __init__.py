@@ -69,7 +69,7 @@ class AnkiPlugin(object):
         copyLinkAction.setText(getTr("Copy note link"))
         qconnect(
             copyLinkAction.triggered,
-            lambda _, e=editorWebView: QApplication.clipboard().setText('[]{nid' + str(e.editor.note.id) + '}')
+            lambda _, e=editorWebView: QApplication.clipboard().setText('[|nid' + str(e.editor.note.id) + ']')
         )
         menu.addAction(copyLinkAction)
         openNoteAtNewWindowAction = QAction(editorWebView)

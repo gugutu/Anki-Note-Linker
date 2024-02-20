@@ -42,6 +42,24 @@ The link title is the content displayed in the card. If the title contains`[`, i
 `x` is the ID of the note, consisting of 13 digits
 
 ---
+### How to Display Notes Properly Without This Add-on:
+
+This add-on automatically renders note links as corresponding content. However, without the add-on, the links will not be rendered, such as in AnkiDroid.
+
+If you have generated note links and need to use them without the add-on, you can add the following code to your card template. It will automatically render the correct note content even without this add-on.
+
+```html
+<script>
+    requestIdleCallback(() => {
+        try { AnkiNoteLinkerIsActive } catch (e) {
+            document.documentElement.innerHTML = document.documentElement.innerHTML
+                .replace(/\[((?:[^\[]|\\\[)*?)\|nid\d{13}\]/g, (match, title) => title.replace(/\\\[/g, '['))
+        }
+    })
+</script>
+```
+
+---
 ### Roadmap
 
 - Performance optimization

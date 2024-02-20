@@ -366,7 +366,13 @@ class AnkiPlugin(object):
             if editor.editorMode == EditorMode.BROWSER:
                 browser: Browser = aqt.dialogs.open('Browser', aqt.mw)
                 browser.activateWindow()
-                browser.editor.set_note(aqt.mw.col.get_note(NoteId(nid)), focusTo=0)
+
+                card = aqt.mw.col.get_note(NoteId(nid)).cards()[0]
+                browser.table.select_single_card(card.id)
+                if not browser.table.has_current():
+                    browser.search_for('deck:' + aqt.mw.col.decks.get(card.did)['name'])
+                    browser.table.select_single_card(card.id)
+
             elif editor.editorMode == EditorMode.EDIT_CURRENT:
                 editor.set_note(aqt.mw.col.get_note(NoteId(nid)), focusTo=0)
             elif editor.editorMode == EditorMode.ADD_CARDS:

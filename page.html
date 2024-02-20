@@ -2,6 +2,18 @@
 <script src="https://cdn.jsdelivr.net/npm/d3@7"></script> -->
 
 <style>
+    #MODE {
+        --font-color: #020202;
+        --hover-color: rgba(0, 0, 0, 0.1);
+        --active-color: rgba(0, 0, 0, 0.2);
+    }
+
+    #MODE.night-mode {
+        --font-color: #fcfcfc;
+        --hover-color: rgba(255, 255, 255, 0.07);
+        --active-color: rgba(0, 0, 0, 0.2);
+    }
+
     * {
         word-break: break-all;
         margin: 0;
@@ -13,6 +25,8 @@
         width: 100%;
         height: 50%;
         max-height: 50%;
+        color: var(--font-color);
+        font-family: sans-serif;
     }
 
     .links {
@@ -44,7 +58,7 @@
     }
 
     .clickable-div:hover {
-        background-color: rgba(0, 0, 0, 0.1);
+        background-color: var(--hover-color)
     }
 
     .clickable-invalid-div:hover {
@@ -52,15 +66,13 @@
     }
 
     .clickable-div:active {
-        background-color: rgba(0, 0, 0, 0.2);
+        background-color: var(--active-color)
     }
 
     .clickable-invalid-div:active {
         background-color: rgba(243, 90, 90, 0.9);
     }
 </style>
-
-
 <div id="linkDiv" style="width: 100%;">
     <div id="linkTitle"><strong id="backTitle">Back Links</strong></div>
     <div class="links" id="backLinks"></div>
@@ -68,7 +80,6 @@
     <div class="links" id="forwardLinks"></div>
 </div>
 <div id="graph"></div>
-
 <script>
     const tempDiv = document.createElement("div");
 

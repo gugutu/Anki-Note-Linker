@@ -130,8 +130,10 @@ class AnkiPlugin(object):
             return
         self.editors.add(editor)
         editor.linksPage = AnkiWebView(title="links_page")
+        mode = 'night-mode' if theme_manager.night_mode else 'light-mode'
         editor.linksPage.setHtml(
-            f'<script>\n{d3_js}{force_graph_js}\n const ankiLanguage = "{anki.lang.current_lang}";</script>{page_html}')
+            f'<script>\n{d3_js}{force_graph_js}\n const ankiLanguage = "{anki.lang.current_lang}";' +
+            f'</script><div id="MODE" class="{mode}">{page_html}</div>')
         editor.linksPage.set_bridge_command(lambda s: s, editor)
 
         layout = editor.web.parentWidget().layout()

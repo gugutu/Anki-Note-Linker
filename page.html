@@ -70,15 +70,26 @@
 <div id="graph"></div>
 
 <script>
+    const tempDiv = document.createElement("div");
+
+    function convertHtmlToPlainText(html) {
+        tempDiv.innerHTML = html.replace(/(<br\/?>)+/g, '\n');
+        return tempDiv.innerText.replace(/\n+/g, ' ');
+    }
+
     let init = false
     const largeSize = false//gData.links.length + gData.nodes.length > 10000
     const elem = document.getElementById('graph');
     const graph = ForceGraph()(elem)
         .nodeCanvasObject((node, ctx, globalScale) => {
+            if (!node.isPlainText && node.mainField !== null) {
+                node.mainField = convertHtmlToPlainText(node.mainField)
+                node.isPlainText = true
+            }
             node.size = node.type === 'me' ? 10 : 8
             graph.nodeRelSize(node.size)
-            let label = node.mainField !== null ? node.mainField : getTr('Invalid node');
-            label = convertHtmlToPlainText(label).replace(/\n+/g, ' ')
+            let label = node.mainField !== null ? node.mainField : getTr('Invalid note');
+            label = node.mainField
             const fontSize = 5;
             ctx.font = `${fontSize}px Sans-Serif`;
 
@@ -174,12 +185,6 @@
     window.addEventListener('load', adjustHeights);
     init = true
 
-    function convertHtmlToPlainText(html) {
-        const tempDiv = document.createElement("div");
-        tempDiv.innerHTML = html;
-        return tempDiv.innerText;
-    }
-
     function adjustHeights() {
         const linkDivHeight = linkDiv.clientHeight
         const backLinksDivHeight = backLinksDiv.scrollHeight;
@@ -236,6 +241,7 @@
                 Object.assign(node, oldNode);
                 node.mainField = tempMainField
                 node.type = tempType
+                node.isPlainText = false
             }
         }
         graph.graphData({nodes: nodes, links: connections})
@@ -245,7 +251,7 @@
     function createButton(node, container) {
         const button = document.createElement("div");
         button.className = node.mainField !== null ? "clickable-div" : 'clickable-invalid-div';
-        button.innerHTML = node.mainField !== null ? node.mainField : getTr('Invalid link') + node.id
+        button.innerText = node.mainField !== null ? convertHtmlToPlainText(node.mainField) : getTr('Invalid link') + node.id
         button.onclick = function () {
             const selection = window.getSelection();
             if (selection.toString().length > 0) {
@@ -281,8 +287,6 @@
                 return '无'
             case 'Invalid note':
                 return '无效笔记'
-            case 'Invalid node':
-                return '无效节点'
             case 'Invalid link':
                 return '无效链接'
             default:

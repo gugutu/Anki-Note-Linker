@@ -337,13 +337,23 @@ class AnkiPlugin(object):
 
     def getMainField(self, note: Note) -> str:
         """If it is an image occlusion type, return its "Title" field; otherwise, return the first field"""
+        mainField: str = ''
         if note.note_type().get("originalStockKind",
                                 None) == StockNotetype.OriginalStockKind.ORIGINAL_STOCK_KIND_IMAGE_OCCLUSION:
             for flds in note.note_type()['flds']:
                 if flds['tag'] == notetypes_pb2.IMAGE_OCCLUSION_FIELD_HEADER:
-                    return note.fields[flds['ord']]
+                    mainField = note.fields[flds['ord']]
+                    break
         else:
-            return note.fields[0]
+            mainField = note.fields[0]
+        # Clear Link Format
+        mainField = re.sub(r'\[((?:[^\[]|\\\[)*?)\|(nid\d{13})\]',
+                           r'\1', mainField).replace('\\[', '[')
+        # Clear Cloze Format
+        pattern = r'(\{\{c\d+?::)(:?(?!\{\{c\d+?::).|\n)*?(\}\})'
+        while re.search(pattern, mainField):
+            mainField = re.sub(pattern, '[...]', mainField)
+        return mainField
 
     def handlePycmd(self, handled: tuple[bool, Any], message: str, context: Any):
         """Handling web js events"""

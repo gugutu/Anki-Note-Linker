@@ -115,10 +115,15 @@ class AnkiPlugin(object):
             self.handlePycmd((True, None), 'rnid' + str(browser.card.nid), browser)
 
     def convertLink(self, text: str, card: Card, kind: str):
-        """Convert note links to HTML hyperlinks"""
-        return (re.sub(r'\[((?:[^\[]|\\\[)*?)\|(nid\d{13})\]',
-                       r'<a onclick="javascript:pycmd(`r`+`\2`);" style="cursor: pointer">\1</a>', text)
-                .replace('\\[', '['))
+        """Convert note links to HTML hyperlinks, set add-on active flag"""
+        return (
+                '<script>AnkiNoteLinkerIsActive = true;</script>' +
+                re.sub(
+                    r'\[((?:[^\[]|\\\[)*?)\|(nid\d{13})\]',
+                    lambda match: f'<a onclick="javascript:pycmd(`r`+`{match.group(2)}`);" style="cursor: pointer">' +
+                                  match.group(1).replace('\\[', '[') + '</a>', text
+                )
+        )
 
     def injectPage(self, editor: Editor):
         if editor.addMode:

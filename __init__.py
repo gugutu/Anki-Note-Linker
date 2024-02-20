@@ -1,6 +1,7 @@
 """
-MIT License
-Copyright (c) 2024 Wang Rui (https://github.com/gugutu)
+AGPL3 LICENSE
+Copyright (C) 2007 Free Software Foundation, Inc. <https://fsf.org/>
+Creator Wang Rui <https://github.com/gugutu>
 """
 import json
 import operator

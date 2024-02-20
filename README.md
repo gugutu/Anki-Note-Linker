@@ -42,7 +42,7 @@ The link title is the content displayed in the card. If the title contains`[`, i
 `x` is the ID of the note, consisting of 13 digits
 
 ---
-### How to Display Notes Properly Without This Add-on:
+### How to display notes properly without this add-on (like AnkiDroid)
 
 This add-on automatically renders note links as corresponding content. However, without the add-on, the links will not be rendered, such as in AnkiDroid.
 

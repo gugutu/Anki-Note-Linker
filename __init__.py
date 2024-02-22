@@ -131,7 +131,6 @@ class AnkiPlugin(object):
     def injectPage(self, editor: Editor):
         if editor.addMode:
             return
-        self.editors.add(editor)
         editor.linksPage = AnkiWebView(title="links_page")
         editor.linksPage.stdHtml(
             f'<script>{translation_js}\n const ankiLanguage = "{anki.lang.current_lang}";</script>' +
@@ -214,6 +213,7 @@ class AnkiPlugin(object):
 
     def onLoadNote(self, editor: Editor):
         self.editors = set(filter(lambda it: it.note is not None, self.editors))
+        self.editors.add(editor)
         log('-----reFlash page: loaded note')
         # log(json.dumps(editor.note.note_type(), default=lambda o: o.__dict__, indent = 4))
         self.reFlashPage(editor, resetCenter=True)

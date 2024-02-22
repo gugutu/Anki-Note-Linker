@@ -191,14 +191,22 @@ class AnkiPlugin(object):
             return
 
         icons_dir = os.path.join(addon_path, "icons")
-        b = editor.addButton(
-            icon=os.path.join(icons_dir, "show.svg"),
+        toggleLinksPageButton = editor.addButton(
+            icon=os.path.join(icons_dir, "showLinksPage.svg"),
             cmd="_editor_toggle_links",
-            tip=getTr("Show/Hide Link Page"),
+            tip=getTr("Toggle Links Page"),
             func=lambda e: e.linksPage.show() if e.linksPage.isHidden() else e.linksPage.hide(),
             disables=False,
         )
-        buttons.append(b)
+        toggleGraphPageButton = editor.addButton(
+            icon=os.path.join(icons_dir, "showGraphPage.svg"),
+            cmd="_editor_toggle_graph",
+            tip=getTr("Toggle Graph Page"),
+            func=lambda e: e.graphPage.show() if e.graphPage.isHidden() else e.graphPage.hide(),
+            disables=False,
+        )
+        buttons.append(toggleLinksPageButton)
+        buttons.append(toggleGraphPageButton)
 
     def onLoadNote(self, editor: Editor):
         self.editors = set(filter(lambda it: it.note is not None, self.editors))

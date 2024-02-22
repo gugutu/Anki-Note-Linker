@@ -39,6 +39,7 @@ graph_html = open(os.path.join(addon_path, 'graph.html'), 'r').read()
 translation_js = open(os.path.join(addon_path, 'translation.js'), 'r').read()
 force_graph_js = open(os.path.join(addon_path, 'force-graph.js'), 'r').read()
 d3_js = open(os.path.join(addon_path, 'd3.js'), 'r').read()
+linkMaxLines = str(config['linkMaxLines'])
 
 
 class AnkiPlugin(object):
@@ -134,6 +135,7 @@ class AnkiPlugin(object):
         editor.linksPage = AnkiWebView(title="links_page")
         editor.linksPage.stdHtml(
             f'<script>{translation_js}\n const ankiLanguage = "{anki.lang.current_lang}";</script>' +
+            r'<style>.link-button-text{-webkit-line-clamp: ' + linkMaxLines + '; line-clamp: ' + linkMaxLines + ';}</style>' +
             links_html
         )
         editor.linksPage.set_bridge_command(lambda s: s, editor)

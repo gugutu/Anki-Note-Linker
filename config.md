@@ -19,3 +19,7 @@
 `location` `[string (left | right)]`:
 
 - Defines which side of the editor to display (default: `"right"`)
+
+`linkMaxLines` `[int]`:
+
+- Defines the maximum number of lines of a single link in a linked page (default: `5`)

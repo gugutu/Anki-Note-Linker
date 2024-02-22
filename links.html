@@ -25,43 +25,47 @@
         word-break: break-all;
     }
 
-    .clickable-div {
+    .link-button-text {
+        text-align: center;
+        font-family: Arial, sans-serif;
+        font-size: 14px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        display: -webkit-box;
+        -webkit-box-orient: vertical;
+    }
+
+    .link-button {
         background-color: transparent;
         border-radius: 8px;
         border: 1px solid #ccc;
         cursor: pointer;
         padding: 5px 3px;
-        font-family: Arial, sans-serif;
-        font-size: 14px;
-        text-align: center;
         margin: 2px;
     }
 
-    .clickable-invalid-div {
+    .link-button-invalid {
         background-color: rgba(243, 90, 90, 0.4);
         border-radius: 8px;
         border: 1px solid #ccc;
         cursor: pointer;
         padding: 5px 3px;
-        font-family: Arial, sans-serif;
-        font-size: 14px;
-        text-align: center;
         margin: 2px;
     }
 
-    .clickable-div:hover {
+    .link-button:hover {
         background-color: var(--hover-color)
     }
 
-    .clickable-invalid-div:hover {
+    .link-button-invalid:hover {
         background-color: rgba(243, 90, 90, 0.65);
     }
 
-    .clickable-div:active {
+    .link-button:active {
         background-color: var(--active-color)
     }
 
-    .clickable-invalid-div:active {
+    .link-button-invalid:active {
         background-color: rgba(243, 90, 90, 0.9);
     }
 </style>
@@ -138,7 +142,9 @@
 
     function createButton(node, container) {
         const button = document.createElement("div");
-        button.className = node.mainField !== null ? "clickable-div" : 'clickable-invalid-div';
+        const outer = document.createElement("div");
+        outer.className = node.mainField !== null ? "link-button" : 'link-button-invalid';
+        button.className = 'link-button-text'
         button.innerText = node.mainField !== null ? convertHtmlToPlainText(node.mainField) : getTr('Invalid link') + node.id
         button.onclick = function () {
             const selection = window.getSelection();
@@ -161,6 +167,7 @@
                 pycmd('mnid' + node.id)
             }
         });
-        container.appendChild(button);
+        outer.appendChild(button)
+        container.appendChild(outer);
     }
 </script>

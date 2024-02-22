@@ -7,13 +7,25 @@
 You can easily connect your Anki notes together by this add-on, forming a web of interconnected information. 
 By establishing links between relevant notes, you can create a comprehensive and organized knowledge base that reflects the relationships between various concepts, ideas, and topics.
 
+### Link Format
+
+`[Link Title|nidxxxxxxxxxxxxx]`
+
+The link title is the content displayed in the card. If the title contains`[`, it needs to be escaped with`\[`
+
+`x` is the ID of the note, consisting of 13 digits
+
 ### Usage
 
 #### In the editor:
 
-`Alt+k` generates a new link
+`Alt+k` generate a new link from the currently selected text (double-clicking the link allows adding a corresponding new note)
 
-`Alt+j` create link template
+`Alt+l` generate a link from the note ID in the clipboard and the currently selected text
+
+`Alt+j` generate a link template from the currently selected text: `[selected text|nid]`
+
+    Note: If no text is selected, using the above shortcut will generate a link without a title
 
 `Double click` link to open the corresponding note in a new window
 
@@ -32,14 +44,6 @@ By establishing links between relevant notes, you can create a comprehensive and
 - Copy note link
 
 - Open note in new window
-
-### Link Format
-
-`[Link Title|nidxxxxxxxxxxxxx]`
-
-The link title is the content displayed in the card. If the title contains`[`, it needs to be escaped with`\[`
-
-`x` is the ID of the note, consisting of 13 digits
 
 ---
 ### How to display notes properly without this add-on (like AnkiDroid)

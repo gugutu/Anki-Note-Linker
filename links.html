@@ -79,7 +79,11 @@
 
     function convertHtmlToPlainText(html) {
         tempDiv.innerHTML = html.replace(/(<br\/?>)+/g, '\n');
-        return tempDiv.innerText.replace(/\n+/g, ' ');
+        text = tempDiv.innerText.replace(/\n+/g, ' ')
+        if (text.trim() === '')
+            return html;
+        else
+            return text
     }
 
     const backLinksDiv = document.getElementById("backLinks");

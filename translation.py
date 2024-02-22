@@ -21,5 +21,7 @@ def getTr(s: str) -> str:
             return '请先添加当前笔记'
         elif s == "Please select a single note/card":
             return '请选中单条笔记/卡片'
+        elif s == 'The content in the clipboard is not a note ID':
+            return '剪贴板中的内容不是笔记ID'
         else:
             return s

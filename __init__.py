@@ -308,6 +308,9 @@ class AnkiPlugin(object):
               }else if (event.altKey && event.key === "j"){
                   event.preventDefault();
                   pycmd(`insertLink`);
+              }else if (event.altKey && event.key === "l"){
+                  event.preventDefault();
+                  pycmd(`insertLinkWithClipboardID`);
               }
             });
             </script>
@@ -456,6 +459,15 @@ class AnkiPlugin(object):
             text = editor.web.selectedText().replace('[', '\\[')
             placeholder = str(uuid.uuid4().int)[0:8]
             editor.doPaste(f'[{text}|new{placeholder}]', True)
+            return True, None
+        elif message == 'insertLinkWithClipboardID':
+            editor: Editor = context
+            text = editor.web.selectedText().replace('[', '\\[')
+            idText = QApplication.clipboard().text()
+            if re.match(r'^\d{13}$', idText):
+                editor.doPaste(f'[{text}|nid{idText}]', True)
+            else:
+                tooltip(getTr('The content in the clipboard is not a note ID'))
             return True, None
         elif message == 'insertLink':
             editor: Editor = context

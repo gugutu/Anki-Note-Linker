@@ -21,12 +21,13 @@
     const tempDiv = document.createElement("div");
 
     function convertHtmlToPlainText(html) {
-        tempDiv.innerHTML = html.replace(/(<br\/?>)+/g, '\n');
-        text = tempDiv.innerText.replace(/\n+/g, ' ')
-        if (text.trim() === '')
-            return html;
-        else
-            return text
+        tempDiv.innerHTML = html
+        text = tempDiv.innerText.replace(/\n+/g, ' ').trim()
+        if (text === '') {
+            const t = html.replace(/(<br\/?>|\n)+/g, ' ').trim();
+            if (t === '') return ' '
+            else return t
+        } else return text
     }
 
     let init = false

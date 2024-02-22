@@ -146,7 +146,7 @@
         outer.className = node.mainField !== null ? "link-button" : 'link-button-invalid';
         button.className = 'link-button-text'
         button.innerText = node.mainField !== null ? convertHtmlToPlainText(node.mainField) : getTr('Invalid link') + node.id
-        button.onclick = function () {
+        outer.onclick = function () {
             const selection = window.getSelection();
             if (selection.toString().length > 0) {
                 event.preventDefault();
@@ -154,13 +154,13 @@
             }
             pycmd('lnid' + node.id)
         };
-        button.oncontextmenu = function (event) {
+        outer.oncontextmenu = function (event) {
             const selection = window.getSelection();
             if (selection.toString().length > 0) return true;
             event.preventDefault();
             pycmd('rnid' + node.id)
         };
-        button.addEventListener("mousedown", function (event) {
+        outer.addEventListener("mousedown", function (event) {
             // 检查鼠标按下的按钮是否是中键
             if (event.button === 1) {
                 event.preventDefault();

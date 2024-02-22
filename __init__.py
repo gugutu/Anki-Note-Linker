@@ -149,7 +149,7 @@ class AnkiPlugin(object):
         innerSplitter.setOrientation(Qt.Orientation.Vertical)
         innerSplitter.addWidget(editor.linksPage)
         innerSplitter.addWidget(editor.graphPage)
-        innerSplitter.setSizes([10000, 10000])
+        innerSplitter.setSizes([int(r) * 10000 for r in config["splitRatioBetweenLinksPageAndGraphPage"].split(":")])
 
         layout = editor.web.parentWidget().layout()
         if layout is None:
@@ -185,6 +185,8 @@ class AnkiPlugin(object):
         layout.insertWidget(web_index, outerSplitter)
         if not config['showLinksPageAutomatically']:
             editor.linksPage.hide()
+        if not config['showGraphPageAutomatically']:
+            editor.graphPage.hide()
 
     def injectButton(self, buttons: list[str], editor: Editor):
         if editor.addMode:

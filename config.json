@@ -1,5 +1,7 @@
 {
   "showLinksPageAutomatically": true,
+  "showGraphPageAutomatically": true,
   "splitRatio": "2:1",
+  "splitRatioBetweenLinksPageAndGraphPage": "1:1",
   "location": "right"
 }

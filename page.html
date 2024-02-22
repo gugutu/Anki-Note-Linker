@@ -1,36 +1,28 @@
-<!-- <script src="http://unpkg.com/force-graph"></script>
-<script src="https://cdn.jsdelivr.net/npm/d3@7"></script> -->
-
 <style>
-    #MODE {
-        --font-color: #020202;
+    :root {
         --hover-color: rgba(0, 0, 0, 0.1);
         --active-color: rgba(0, 0, 0, 0.2);
     }
 
-    #MODE.night-mode {
-        --font-color: #fcfcfc;
+    :root.night-mode {
         --hover-color: rgba(255, 255, 255, 0.07);
         --active-color: rgba(0, 0, 0, 0.2);
     }
 
     * {
-        word-break: break-all;
+        font-family: Arial, sans-serif;
         margin: 0;
         padding: 0;
         overflow: hidden;
     }
 
-    #linkDiv {
-        width: 100%;
-        height: 50%;
-        max-height: 50%;
-        color: var(--font-color);
-        font-family: Arial, sans-serif;
+    body {
+        margin: 0;
     }
 
     .links {
-        overflow-y: auto;
+        overflow-y: auto !important;
+        word-break: break-all;
     }
 
     .clickable-div {
@@ -73,14 +65,16 @@
         background-color: rgba(243, 90, 90, 0.9);
     }
 </style>
-<div id="linkDiv" style="width: 100%;">
-    <div id="linkTitle"><h4 id="backTitle">Back Links</h4></div>
-    <div class="links" id="backLinks"></div>
-    <div><h4 id="forwardTitle">Forward Links</h4></div>
-    <div class="links" id="forwardLinks"></div>
-</div>
-<div id="graph"></div>
+
+<div id="linkTitle"><h4 id="backTitle">Back Links</h4></div>
+<div class="links" id="backLinks"></div>
+<div><h4 id="forwardTitle">Forward Links</h4></div>
+<div class="links" id="forwardLinks"></div>
+
 <script>
+    document.getElementById("backTitle").innerText = getTr('Back Links')
+    document.getElementById("forwardTitle").innerText = getTr('Forward Links')
+
     const tempDiv = document.createElement("div");
 
     function convertHtmlToPlainText(html) {
@@ -88,146 +82,42 @@
         return tempDiv.innerText.replace(/\n+/g, ' ');
     }
 
-    let init = false
-    const largeSize = false//gData.links.length + gData.nodes.length > 10000
-    const elem = document.getElementById('graph');
-    const graph = ForceGraph()(elem)
-        .nodeCanvasObject((node, ctx, globalScale) => {
-            if (!node.isPlainText && node.mainField !== null) {
-                node.mainField = convertHtmlToPlainText(node.mainField)
-                node.isPlainText = true
-            }
-            node.size = node.type === 'me' ? 10 : 8
-            graph.nodeRelSize(node.size)
-            let label = node.mainField !== null ? node.mainField : getTr('Invalid note');
-            const fontSize = 5;
-            ctx.font = `${fontSize}px Sans-Serif`;
-
-            ctx.beginPath()
-            ctx.arc(node.x, node.y, node.size, 0, 2 * 3.1415926, !1)
-            switch (node.type) {
-                case 'me':
-                    ctx.fillStyle = "rgb(31, 115, 205)"
-                    break;
-                case 'parent':
-                    ctx.fillStyle = "rgba(255, 65, 60, 0.92)"
-                    break;
-                case 'child':
-                    ctx.fillStyle = "rgba(244, 165, 0, 0.92)"
-                    break;
-                default:
-                    node.color
-                    break;
-            }
-            if (node.mainField === null) ctx.fillStyle = "rgba(255,255,255,0.75)"
-            ctx.fill()
-            if (node.type === 'me') {
-                ctx.beginPath()
-                ctx.arc(node.x, node.y, node.size * 0.6, 0, 2 * 3.1415926, !1)
-                ctx.fillStyle = "rgba(28, 145, 255, 0.92)"
-                ctx.fill()
-            }
-
-            if (globalScale > 1) {
-                ctx.textAlign = 'center';
-                ctx.textBaseline = 'middle';
-                ctx.fillStyle = node.color;
-                drawTextWithLineBreaks(ctx, label, node.x, node.y + node.size * 1.5, node.size * 4, 4, 5)
-            }
-        })
-        .backgroundColor('#101020')
-        .width(window.innerWidth)
-        .height(window.innerHeight * 0.5)
-        .nodeAutoColorBy('group')
-        .nodeLabel(node => node.mainField !== null ? node.mainField : getTr('Invalid note') + node.id)
-        .linkColor(() => 'rgba(255,255,255,0.2)')
-        .d3Force("x", d3.forceX())
-        .d3Force("y", d3.forceY())
-        .d3Force('center', null)
-        .d3Force("collide", d3.forceCollide().radius(n => n.size + 1).iterations(3))
-        .d3Force("charge", d3.forceManyBody().strength(-300))
-        .onNodeClick(node => {
-            if (node.type !== 'me') pycmd('lnid' + node.id)
-        })
-        .onNodeRightClick(node => pycmd('rnid' + node.id))
-        .linkWidth(2)
-        .enablePointerInteraction(!largeSize)
-
-    if (!largeSize) graph
-        .linkDirectionalParticles(4)
-        .linkDirectionalParticleWidth(4)
-    else graph.linkDirectionalArrowLength(6).zoom(0.05)
-
-    function drawTextWithLineBreaks(ctx, text, x, y, maxWidth, maxLineCount, lineHeight) {
-        let words = text.split("");
-        let line = "";
-        let lines = [];
-
-        for (let i = 0; i < words.length; i++) {
-            let testLine = line + words[i];
-            let testWidth = ctx.measureText(testLine).width;
-            if (lines.length === maxLineCount) break
-            if (testWidth > maxWidth && i > 0) {
-                if (lines.length === maxLineCount - 1 && i < words.length) line = line.slice(0, -2) + "..."
-                lines.push(line);
-                line = words[i];
-            } else {
-                line = testLine;
-            }
-        }
-        if (lines.length < maxLineCount) lines.push(line);
-
-        for (let j = 0; j < lines.length; j++) {
-            ctx.fillText(lines[j], x, y + j * lineHeight);
-        }
-    }
-
     const backLinksDiv = document.getElementById("backLinks");
     const forwardLinksDiv = document.getElementById("forwardLinks");
-    const linkDiv = document.getElementById("linkDiv");
     const linkTitle = document.getElementById("linkTitle");
 
-    window.addEventListener('resize', function () {
-        graph.width(window.innerWidth * 0.995)
-        graph.height(window.innerHeight * 0.495)
-    });
     window.addEventListener('resize', adjustHeights);
     window.addEventListener('load', adjustHeights);
-    init = true
 
     function adjustHeights() {
-        const linkDivHeight = linkDiv.clientHeight
+        const windowHeight = window.innerHeight
         const backLinksDivHeight = backLinksDiv.scrollHeight;
         const forwardLinksDivHeight = forwardLinksDiv.scrollHeight;
         const linkTitleHeight = linkTitle.scrollHeight;
         const totalHeight = backLinksDivHeight + forwardLinksDivHeight + linkTitleHeight * 2;
 
-        if (totalHeight < linkDivHeight) {
+        if (totalHeight < windowHeight) {
             // 如果总高度小于等于容器高度，则按实际高度显示
             backLinksDiv.style.maxHeight = ''
             forwardLinksDiv.style.maxHeight = ''
         } else {
             // 如果总高度大于容器高度，则强制按比例分配
-            const backLinksDivRatio = (backLinksDivHeight + linkTitleHeight) / linkDivHeight;
-            const forwardLinksRatio = (forwardLinksDivHeight + linkTitleHeight) / linkDivHeight;
+            const backLinksDivRatio = (backLinksDivHeight + linkTitleHeight) / windowHeight;
+            const forwardLinksRatio = (forwardLinksDivHeight + linkTitleHeight) / windowHeight;
 
             if (backLinksDivRatio > 0.5 && forwardLinksRatio > 0.5) {
-                backLinksDiv.style.maxHeight = forwardLinksDiv.style.maxHeight = `calc(50% - ${linkTitleHeight}px)`;
+                backLinksDiv.style.maxHeight = forwardLinksDiv.style.maxHeight = `${windowHeight / 2 - linkTitleHeight}px`;
             } else if (backLinksDivRatio > 0.5) {
-                backLinksDiv.style.maxHeight = `calc(${Math.floor((linkDivHeight - forwardLinksDivHeight) * 100 / linkDivHeight)}% - ${2 * linkTitleHeight}px)`
+                backLinksDiv.style.maxHeight = `${windowHeight - forwardLinksDivHeight - 2 * linkTitleHeight}px`
                 forwardLinksDiv.style.maxHeight = '';
             } else if (forwardLinksRatio > 0.5) {
                 backLinksDiv.style.maxHeight = '';
-                forwardLinksDiv.style.maxHeight = `calc(${Math.floor((linkDivHeight - backLinksDivHeight) * 100 / linkDivHeight)}% - ${2 * linkTitleHeight}px)`
+                forwardLinksDiv.style.maxHeight = `${windowHeight - backLinksDivHeight - 2 * linkTitleHeight}px`
             }
         }
     }
 
-    function reloadPage(parentNodes, childNodes, nodes, connections, resetCenter) {
-        while (!init) setTimeout(null, 200);
-        document.getElementById("backTitle").innerText = getTr('Back Links')
-        document.getElementById("forwardTitle").innerText = getTr('Forward Links')
-
+    function reloadPage(parentNodes, childNodes) {
         const backLinksDiv = document.getElementById("backLinks");
         const forwardLinksDiv = document.getElementById("forwardLinks");
         backLinksDiv.innerHTML = parentNodes.length === 0 ? getTr('None') : ''
@@ -239,23 +129,6 @@
             createButton(it, forwardLinksDiv);
         });
         adjustHeights()
-
-        let oldNodes = graph.graphData().nodes
-        let oldNodeMap = new Map(oldNodes.map(it => [it.id, it]))
-
-        for (const node of nodes) {
-            const oldNode = oldNodeMap.get(node.id);
-            if (oldNode) {
-                const tempMainField = node.mainField
-                const tempType = node.type
-                Object.assign(node, oldNode);
-                node.mainField = tempMainField
-                node.type = tempType
-                node.isPlainText = false
-            }
-        }
-        graph.graphData({nodes: nodes, links: connections})
-        if (resetCenter) graph.centerAt(0, 0, 0)
     }
 
     function createButton(node, container) {
@@ -284,23 +157,5 @@
             }
         });
         container.appendChild(button);
-    }
-
-    function getTr(s) {
-        if (ankiLanguage !== 'zh-CN') return s;
-        else switch (s) {
-            case 'Back Links':
-                return '反向链接'
-            case 'Forward Links':
-                return '正向链接'
-            case 'None':
-                return '无'
-            case 'Invalid note':
-                return '无效笔记'
-            case 'Invalid link':
-                return '无效链接'
-            default:
-                return s
-        }
     }
 </script>

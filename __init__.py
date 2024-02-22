@@ -35,6 +35,8 @@ def log(*args):
 config = mw.addonManager.getConfig(__name__)
 addon_path = os.path.dirname(__file__)
 page_html = open(os.path.join(addon_path, 'page.html'), 'r').read()
+graph_html = open(os.path.join(addon_path, 'graph.html'), 'r').read()
+translation_js = open(os.path.join(addon_path, 'translation.js'), 'r').read()
 force_graph_js = open(os.path.join(addon_path, 'force-graph.js'), 'r').read()
 d3_js = open(os.path.join(addon_path, 'd3.js'), 'r').read()
 
@@ -130,14 +132,26 @@ class AnkiPlugin(object):
             return
         self.editors.add(editor)
         editor.linksPage = AnkiWebView(title="links_page")
-        mode = 'night-mode' if theme_manager.night_mode else 'light-mode'
-        editor.linksPage.setHtml(
-            f'<script>\n{d3_js}{force_graph_js}\n const ankiLanguage = "{anki.lang.current_lang}";' +
-            f'</script><div id="MODE" class="{mode}">{page_html}</div>')
+        editor.linksPage.stdHtml(
+            f'<script>{translation_js}\n const ankiLanguage = "{anki.lang.current_lang}";</script>' +
+            page_html
+        )
         editor.linksPage.set_bridge_command(lambda s: s, editor)
 
-        layout = editor.web.parentWidget().layout()
+        editor.graphPage = AnkiWebView(title="graph_page")
+        editor.graphPage.stdHtml(
+            f'<script>\n{d3_js}{force_graph_js}{translation_js}\n const ankiLanguage = "{anki.lang.current_lang}";</script>' +
+            graph_html
+        )
+        editor.graphPage.set_bridge_command(lambda s: s, editor)
 
+        innerSplitter = QSplitter()
+        innerSplitter.setOrientation(Qt.Orientation.Vertical)
+        innerSplitter.addWidget(editor.linksPage)
+        innerSplitter.addWidget(editor.graphPage)
+        innerSplitter.setSizes([10000, 10000])
+
+        layout = editor.web.parentWidget().layout()
         if layout is None:
             layout = QVBoxLayout()
             editor.web.parentWidget().setLayout(layout)
@@ -152,23 +166,23 @@ class AnkiPlugin(object):
 
         mainR, editorR = [int(r) * 10000 for r in config["splitRatio"].split(":")]
         location = config["location"]
-        split = QSplitter()
+        outerSplitter = QSplitter()
 
         if location == "left":
-            split.setOrientation(Qt.Orientation.Horizontal)
-            split.addWidget(editor.linksPage)
-            split.addWidget(wrappedWeb)
+            outerSplitter.setOrientation(Qt.Orientation.Horizontal)
+            outerSplitter.addWidget(innerSplitter)
+            outerSplitter.addWidget(wrappedWeb)
             sizes = [editorR, mainR]
         elif location == "right":
-            split.setOrientation(Qt.Orientation.Horizontal)
-            split.addWidget(wrappedWeb)
-            split.addWidget(editor.linksPage)
+            outerSplitter.setOrientation(Qt.Orientation.Horizontal)
+            outerSplitter.addWidget(wrappedWeb)
+            outerSplitter.addWidget(innerSplitter)
             sizes = [mainR, editorR]
         else:
             raise ValueError("Invalid value for config key location")
 
-        split.setSizes(sizes)
-        layout.insertWidget(web_index, split)
+        outerSplitter.setSizes(sizes)
+        layout.insertWidget(web_index, outerSplitter)
         if not config['showLinksPageAutomatically']:
             editor.linksPage.hide()
 
@@ -210,9 +224,7 @@ class AnkiPlugin(object):
                 self.reFlashPage(editor)
 
     def reFlashPage(self, editor: Editor, resetCenter: bool = False):
-        if editor.note is None:
-            return
-        if editor.addMode:
+        if editor.note is None or editor.addMode:
             return
         currentId = int(editor.note.id)
         currentNode = self.noteCache[currentId]
@@ -250,7 +262,11 @@ class AnkiPlugin(object):
         editor.linksPage.eval(
             f'''reloadPage(
                 {json.dumps(parentJsNodes, default=lambda o: o.__dict__)},
-                {json.dumps(childJsNodes, default=lambda o: o.__dict__)},
+                {json.dumps(childJsNodes, default=lambda o: o.__dict__)}
+            )'''
+        )
+        editor.graphPage.eval(
+            f'''reloadPage(
                 {json.dumps(allJsNodes, default=lambda o: o.__dict__)},
                 {json.dumps(allConnections, default=lambda o: o.__dict__)},
                 {json.dumps(resetCenter)}

@@ -154,6 +154,10 @@
             }
             pycmd('lnid' + node.id)
         };
+        outer.ondblclick = function () {
+            event.preventDefault();
+            pycmd('lnid' + node.id)
+        };
         outer.oncontextmenu = function (event) {
             const selection = window.getSelection();
             if (selection.toString().length > 0) return true;

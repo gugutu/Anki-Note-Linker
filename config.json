@@ -4,5 +4,6 @@
   "splitRatio": "2:1",
   "splitRatioBetweenLinksPageAndGraphPage": "1:1",
   "location": "right",
-  "linkMaxLines": 5
+  "linkMaxLines": 5,
+  "collapseClozeInLinksPage": true
 }

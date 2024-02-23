@@ -388,9 +388,9 @@ class AnkiPlugin(object):
         mainField = re.sub(r'\[((?:[^\[]|\\\[)*?)\|(nid\d{13})\]',
                            r'\1', mainField).replace('\\[', '[')
         # Clear Cloze Format
-        pattern = r'(\{\{c\d+?::)(:?(?!\{\{c\d+?::).|\n)*?(\}\})'
+        pattern = r'\{\{c\d+?::((:?(?!\{\{c\d+?::).|\n)*?)\}\}'
         while re.search(pattern, mainField):
-            mainField = re.sub(pattern, '[...]', mainField)
+            mainField = re.sub(pattern, '[...]' if config['collapseClozeInLinksPage'] else r'\1', mainField)
         return mainField
 
     def handlePycmd(self, handled: tuple[bool, Any], message: str, context: Any):

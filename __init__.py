@@ -322,10 +322,10 @@ class AnkiPlugin(object):
     def _findChildIds(self, myId, joinedFields: str):
         idSet = set()  # Used to remove duplicates
         idList: list[int] = []
-        matches = re.findall(r'nid\d{13}', joinedFields)
+        matches = re.finditer(r'\[(?:[^\[]|\\\[)*?\|nid(\d{13})\]', joinedFields)
         if matches:
             for match in matches:
-                childId = int(match[3:])
+                childId = int(match.group(1))
                 if myId != childId and childId not in idSet:  # Shield self ring connection and remove duplicates
                     idSet.add(childId)
                     idList.append(childId)

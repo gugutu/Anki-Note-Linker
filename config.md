@@ -22,7 +22,7 @@
 
 `linkMaxLines` `[int]`:
 
-- Defines the maximum number of lines of a single link in a linked page (default: `5`)
+- Defines the maximum number of lines of a single link in links page (default: `5`)
 
 `collapseClozeInLinksPage` `[boolean (true | false)]`:
 

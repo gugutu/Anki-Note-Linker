@@ -239,7 +239,10 @@ class AnkiPlugin(object):
         if editor.note is None or editor.addMode:
             return
         currentId = int(editor.note.id)
-        currentNode = self.noteCache[currentId]
+        if currentId in self.noteCache:
+            currentNode = self.noteCache[currentId]
+        else:
+            return
         allIds = currentNode.parentIds + currentNode.childIds + [currentId]
 
         parentNodes: set[NoteNode] = set()

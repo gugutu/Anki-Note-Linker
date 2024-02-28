@@ -433,7 +433,12 @@ class AnkiPlugin(object):
                 return True, None
             browser: Browser = aqt.dialogs.open('Browser', aqt.mw)
             browser.activateWindow()
-            browser.editor.set_note(aqt.mw.col.get_note(NoteId(nid)), focusTo=0)
+
+            card = aqt.mw.col.get_note(NoteId(nid)).cards()[0]
+            browser.table.select_single_card(card.id)
+            if not browser.table.has_current():
+                browser.search_for('deck:' + aqt.mw.col.decks.get(card.did)['name'])
+                browser.table.select_single_card(card.id)
             return True, None
         elif re.match(r'new\d{8}', message):
             placeholder = message[3:]

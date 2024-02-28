@@ -63,6 +63,7 @@ class AnkiPlugin(object):
     def injectRightClickMenu(self, context, menu: QMenu):
         if isinstance(context, EditorWebView):
             if context.editor.currentField is not None:
+                menu.addSeparator()
                 insertLinkWithClipboardIDAction = QAction(context)
                 insertLinkWithClipboardIDAction.setText(getTr("Insert link with clipboard ID"))
                 insertLinkWithClipboardIDAction.setShortcut('Alt+Shift+V')
@@ -83,6 +84,7 @@ class AnkiPlugin(object):
                 menu.addAction(insertLinkTemplateAction)
             if context.editor.addMode:
                 return
+        menu.addSeparator()
         copyNidAction = QAction(context)
         copyNidAction.setText(getTr("Copy note ID"))
         copyNidAction.setShortcut('Alt+Shift+C')

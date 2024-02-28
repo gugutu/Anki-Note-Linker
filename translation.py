@@ -13,6 +13,16 @@ def getTr(s: str) -> str:
             return '复制笔记链接'
         elif s == 'Open note in new window':
             return '在新窗口中打开笔记'
+        elif s == 'Insert link with clipboard ID':
+            return '插入剪贴板中ID对应的笔记链接'
+        elif s == 'Insert new link':
+            return '插入新链接'
+        elif s == 'Insert link template':
+            return '插入链接模版'
+        elif s == 'Copied note ID':
+            return '已复制笔记ID'
+        elif s == 'Copied note link':
+            return '已复制笔记链接'
         elif s == 'Show/Hide Link Page':
             return '显示/隐藏链接页面'
         elif s == 'The corresponding note does not exist':

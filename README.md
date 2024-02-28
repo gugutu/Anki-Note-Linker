@@ -1,4 +1,4 @@
-## Link Anki notes to build knowledge network
+# Link Anki notes to build knowledge network
 
 [View on AnkiWeb](https://ankiweb.net/shared/info/1077002392)
 
@@ -7,7 +7,7 @@
 You can easily connect your Anki notes together by this add-on, forming a web of interconnected information. 
 By establishing links between relevant notes, you can create a comprehensive and organized knowledge base that reflects the relationships between various concepts, ideas, and topics.
 
-### Link Format
+## Link Format
 
 `[Link Title|nidxxxxxxxxxxxxx]`
 
@@ -15,38 +15,64 @@ The link title is the content displayed in the card. If the title contains`[`, i
 
 `x` is the ID of the note, consisting of 13 digits
 
-### Usage
+## Usage
 
-#### In the editor:
+### In the editor:
 
-`Alt+k` generate a new link from the currently selected text (double-clicking the link allows adding a corresponding new note)
+#### Copy note ID
 
-`Alt+l` generate a link from the note ID in the clipboard and the currently selected text
+Copy the ID of the current note in the editor by using the right-click menu or pressing `Alt+Shift+C`
 
-`Alt+j` generate a link template from the currently selected text: `[selected text|nid]`
+#### Copy note link
 
-    Note: If no text is selected, using the above shortcut will generate a link without a title
+Copy the link of the current note in the editor by using the right-click menu or pressing `Alt+Shift+L`
+
+#### Insert link with clipboard ID
+
+Generate a link from the note ID in the clipboard and the currently selected text by either using the right-click menu or pressing `Alt+Shift+V`
+
+>The `Alt+l` shortcut key in the old version is still available for use, but it will be removed in future versions. You can customize the shortcut keys in the add-on configuration.
+#### Insert new link
+
+Generate a new link from the currently selected text by either using the right-click menu or pressing `Alt+Shift+N`
+
+Double-clicking the generated link allows adding a corresponding new note
+
+>The `Alt+k` shortcut key in the old version is still available for use, but it will be removed in future versions. You can customize the shortcut keys in the add-on configuration.
+#### Insert link template
+
+Generate a link template from the currently selected text by either using the right-click menu or pressing `Alt+Shift+T`
+
+The generated link template looks like this: `[selected text|nid]`, you need to manually complete it
+
+>The `Alt+j` shortcut key in the old version is still available for use, but it will be removed in future versions. You can customize the shortcut keys in the add-on configuration.
+
+_Note: If no text is selected, using the above actions will generate a link without a title_
+
+#### Open current note in new window
+
+Open current note in new window by using the right-click menu or pressing `Alt+Shift+W`
+
+#### Open the note corresponding to the link
 
 `Double click` link to open the corresponding note in a new window
 
-#### In the link page:
+### In the link page / graph page:
 
 `Left click` to open the corresponding note in the current window
 
 `Right click` to open the corresponding note in a new window
 
-`Middle click` to open the corresponding note in the browser
+`Middle click` to open the corresponding note in the browser (unsupported in graph page)
 
-#### Right-click menu:
+### Customize shortcuts
 
-- Copy note ID
+You can customize the shortcut keys according to your preferences in add-on configuration
 
-- Copy note link
-
-- Open note in new window
+If there is no response when using the shortcut key, it may be due to a shortcut key conflict. Please try changing the shortcut key
 
 ---
-### How to display notes properly without this add-on (like AnkiDroid)
+## How to display notes properly without this add-on (like AnkiDroid)
 
 This add-on automatically renders note links as corresponding content. However, without the add-on, the links will not be rendered, such as in AnkiDroid.
 
@@ -64,11 +90,9 @@ If you have generated note links and need to use them without the add-on, you ca
 ```
 
 ---
-### Roadmap
+## Roadmap
 
-- Performance optimization
-
-- Global relationship diagram
+- Global relationship graph
 
 ---
 The following projects were used in this project:

@@ -82,6 +82,7 @@ class AnkiPlugin(object):
                 insertLinkTemplateAction.setShortcut('Alt+Shift+T')
                 qconnect(insertLinkTemplateAction.triggered, lambda _, c=context: self.insertLink(c.editor))
                 menu.addAction(insertLinkTemplateAction)
+                menu.addSeparator()
             if context.editor.addMode:
                 return
         menu.addSeparator()
@@ -102,6 +103,7 @@ class AnkiPlugin(object):
         openNoteInNewWindowAction.setShortcut(QKeySequence('Alt+Shift+W'))
         qconnect(openNoteInNewWindowAction.triggered, lambda _, c=context: self.openNoteInNewWindow(c))
         menu.addAction(openNoteInNewWindowAction)
+        menu.addSeparator()
 
     def injectShortcuts(self, web: EditorWebView):
         QShortcut(QKeySequence('Alt+Shift+V'), web, lambda: self.insertLinkWithClipboardID(web.editor))

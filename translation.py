@@ -23,8 +23,10 @@ def getTr(s: str) -> str:
             return '已复制笔记ID'
         elif s == 'Copied note link':
             return '已复制笔记链接'
-        elif s == 'Show/Hide Link Page':
+        elif s == 'Toggle Links Page':
             return '显示/隐藏链接页面'
+        elif s == 'Toggle Graph Page':
+            return '显示/隐藏关系图'
         elif s == 'The corresponding note does not exist':
             return '对应笔记不存在'
         elif s == 'Please add the current note first':

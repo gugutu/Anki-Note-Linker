@@ -32,6 +32,7 @@ Copy the link of the current note in the editor by using the right-click menu or
 Generate a link from the note ID in the clipboard and the currently selected text by either using the right-click menu or pressing `Alt+Shift+V`
 
 >The `Alt+l` shortcut key in the old version is still available for use, but it will be removed in future versions. You can customize the shortcut keys in the add-on configuration.
+
 #### Insert new link
 
 Generate a new link from the currently selected text by either using the right-click menu or pressing `Alt+Shift+N`
@@ -39,6 +40,7 @@ Generate a new link from the currently selected text by either using the right-c
 Double-clicking the generated link allows adding a corresponding new note
 
 >The `Alt+k` shortcut key in the old version is still available for use, but it will be removed in future versions. You can customize the shortcut keys in the add-on configuration.
+
 #### Insert link template
 
 Generate a link template from the currently selected text by either using the right-click menu or pressing `Alt+Shift+T`

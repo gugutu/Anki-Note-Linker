@@ -66,53 +66,53 @@ class AnkiPlugin(object):
                 menu.addSeparator()
                 insertLinkWithClipboardIDAction = QAction(context)
                 insertLinkWithClipboardIDAction.setText(getTr("Insert link with clipboard ID"))
-                insertLinkWithClipboardIDAction.setShortcut('Alt+Shift+V')
+                insertLinkWithClipboardIDAction.setShortcut(config['shortcuts']['insertLinkWithClipboardID'])
                 qconnect(insertLinkWithClipboardIDAction.triggered,
                          lambda _, c=context: self.insertLinkWithClipboardID(c.editor))
                 menu.addAction(insertLinkWithClipboardIDAction)
 
                 insertNewLinkAction = QAction(context)
                 insertNewLinkAction.setText(getTr("Insert new link"))
-                insertNewLinkAction.setShortcut('Alt+Shift+N')
-                qconnect(insertNewLinkAction.triggered, lambda _, c=context: self.insertLinkWithPlaceholder(c.editor))
+                insertNewLinkAction.setShortcut(config['shortcuts']['insertNewLink'])
+                qconnect(insertNewLinkAction.triggered, lambda _, c=context: self.insertNewLink(c.editor))
                 menu.addAction(insertNewLinkAction)
 
                 insertLinkTemplateAction = QAction(context)
                 insertLinkTemplateAction.setText(getTr("Insert link template"))
-                insertLinkTemplateAction.setShortcut('Alt+Shift+T')
-                qconnect(insertLinkTemplateAction.triggered, lambda _, c=context: self.insertLink(c.editor))
+                insertLinkTemplateAction.setShortcut(config['shortcuts']['insertLinkTemplate'])
+                qconnect(insertLinkTemplateAction.triggered, lambda _, c=context: self.insertLinkTemplate(c.editor))
                 menu.addAction(insertLinkTemplateAction)
                 menu.addSeparator()
             if context.editor.addMode:
                 return
         menu.addSeparator()
-        copyNidAction = QAction(context)
-        copyNidAction.setText(getTr("Copy note ID"))
-        copyNidAction.setShortcut('Alt+Shift+C')
-        qconnect(copyNidAction.triggered, lambda _, c=context: self.copyNoteID(c))
-        menu.addAction(copyNidAction)
+        copyNoteIdAction = QAction(context)
+        copyNoteIdAction.setText(getTr("Copy note ID"))
+        copyNoteIdAction.setShortcut(config['shortcuts']['copyNoteID'])
+        qconnect(copyNoteIdAction.triggered, lambda _, c=context: self.copyNoteID(c))
+        menu.addAction(copyNoteIdAction)
 
-        copyLinkAction = QAction(context)
-        copyLinkAction.setText(getTr("Copy note link"))
-        copyLinkAction.setShortcut('Alt+Shift+L')
-        qconnect(copyLinkAction.triggered, lambda _, c=context: self.copyNoteLink(c))
-        menu.addAction(copyLinkAction)
+        copyNoteLinkAction = QAction(context)
+        copyNoteLinkAction.setText(getTr("Copy note link"))
+        copyNoteLinkAction.setShortcut(config['shortcuts']['copyNoteLink'])
+        qconnect(copyNoteLinkAction.triggered, lambda _, c=context: self.copyNoteLink(c))
+        menu.addAction(copyNoteLinkAction)
 
         openNoteInNewWindowAction = QAction(context)
         openNoteInNewWindowAction.setText(getTr("Open note in new window"))
-        openNoteInNewWindowAction.setShortcut(QKeySequence('Alt+Shift+W'))
+        openNoteInNewWindowAction.setShortcut(config['shortcuts']['openNoteInNewWindow'])
         qconnect(openNoteInNewWindowAction.triggered, lambda _, c=context: self.openNoteInNewWindow(c))
         menu.addAction(openNoteInNewWindowAction)
         menu.addSeparator()
 
     def injectShortcuts(self, web: EditorWebView):
-        QShortcut(QKeySequence('Alt+Shift+V'), web, lambda: self.insertLinkWithClipboardID(web.editor))
-        QShortcut(QKeySequence('Alt+Shift+N'), web, lambda: self.insertLinkWithPlaceholder(web.editor))
-        QShortcut(QKeySequence('Alt+Shift+T'), web, lambda: self.insertLink(web.editor))
+        QShortcut(QKeySequence(config['shortcuts']['insertLinkWithClipboardID']), web, lambda: self.insertLinkWithClipboardID(web.editor))
+        QShortcut(QKeySequence(config['shortcuts']['insertNewLink']), web, lambda: self.insertNewLink(web.editor))
+        QShortcut(QKeySequence(config['shortcuts']['insertLinkTemplate']), web, lambda: self.insertLinkTemplate(web.editor))
         if not web.editor.addMode:
-            QShortcut(QKeySequence('Alt+Shift+C'), web, lambda: self.copyNoteID(web))
-            QShortcut(QKeySequence('Alt+Shift+L'), web, lambda: self.copyNoteLink(web))
-            QShortcut(QKeySequence('Alt+Shift+W'), web, lambda: self.openNoteInNewWindow(web))
+            QShortcut(QKeySequence(config['shortcuts']['copyNoteID']), web, lambda: self.copyNoteID(web))
+            QShortcut(QKeySequence(config['shortcuts']['copyNoteLink']), web, lambda: self.copyNoteLink(web))
+            QShortcut(QKeySequence(config['shortcuts']['openNoteInNewWindow']), web, lambda: self.openNoteInNewWindow(web))
 
     def convertLink(self, text: str, card: Card, kind: str):
         """Convert note links to HTML hyperlinks, set add-on active flag"""
@@ -459,7 +459,7 @@ class AnkiPlugin(object):
             return True, None
         elif message == 'insertLinkWithPlaceholder':
             editor: Editor = context
-            self.insertLinkWithPlaceholder(editor)
+            self.insertNewLink(editor)
             return True, None
         elif message == 'insertLinkWithClipboardID':
             editor: Editor = context
@@ -467,7 +467,7 @@ class AnkiPlugin(object):
             return True, None
         elif message == 'insertLink':
             editor: Editor = context
-            self.insertLink(editor)
+            self.insertLinkTemplate(editor)
             return True, None
         else:
             return handled
@@ -503,7 +503,7 @@ class AnkiPlugin(object):
         if nid is not None:
             self.handlePycmd((True, None), 'rnid' + str(nid), context)
 
-    def insertLink(self, editor: Editor):
+    def insertLinkTemplate(self, editor: Editor):
         text = editor.web.selectedText().replace('[', '\\[')
         editor.doPaste(f'[{text}|nid]', True)
 
@@ -515,7 +515,7 @@ class AnkiPlugin(object):
         else:
             tooltip(getTr('The content in the clipboard is not a note ID'))
 
-    def insertLinkWithPlaceholder(self, editor: Editor):
+    def insertNewLink(self, editor: Editor):
         text = editor.web.selectedText().replace('[', '\\[')
         placeholder = str(uuid.uuid4().int)[0:8]
         editor.doPaste(f'[{text}|new{placeholder}]', True)

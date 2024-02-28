@@ -27,3 +27,8 @@
 `collapseClozeInLinksPage` `[boolean (true | false)]`:
 
 - Defines whether to collapse cloze in links page (cloze will be displayed as `[...]`)(default: `true`)
+
+`shortcuts` `{"action": "shortcut", ...}`
+
+- Defines shortcut keys for actions
+- If there is no response when using the shortcut key, it may be due to a shortcut key conflict. Please try changing the shortcut key.

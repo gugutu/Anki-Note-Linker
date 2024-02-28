@@ -5,5 +5,13 @@
   "splitRatioBetweenLinksPageAndGraphPage": "1:1",
   "location": "right",
   "linkMaxLines": 5,
-  "collapseClozeInLinksPage": true
+  "collapseClozeInLinksPage": true,
+  "shortcuts": {
+    "copyNoteID": "Alt+Shift+C",
+    "copyNoteLink": "Alt+Shift+L",
+    "openNoteInNewWindow": "Alt+Shift+W",
+    "insertLinkWithClipboardID": "Alt+Shift+V",
+    "insertNewLink": "Alt+Shift+N",
+    "insertLinkTemplate": "Alt+Shift+T"
+  }
 }

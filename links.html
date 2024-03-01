@@ -86,7 +86,7 @@
         text = tempDiv.innerText.replace(/\n+/g, ' ').trim()
         if (text === '') {
             const t = html.replace(/(<br\/?>|\n)+/g, ' ').trim();
-            if (t === '') return ' '
+            if (t === '') return '\n'
             else return t
         } else return text
     }

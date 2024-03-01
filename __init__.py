@@ -106,13 +106,16 @@ class AnkiPlugin(object):
         menu.addSeparator()
 
     def injectShortcuts(self, web: EditorWebView):
-        QShortcut(QKeySequence(config['shortcuts']['insertLinkWithClipboardID']), web, lambda: self.insertLinkWithClipboardID(web.editor))
+        QShortcut(QKeySequence(config['shortcuts']['insertLinkWithClipboardID']), web,
+                  lambda: self.insertLinkWithClipboardID(web.editor))
         QShortcut(QKeySequence(config['shortcuts']['insertNewLink']), web, lambda: self.insertNewLink(web.editor))
-        QShortcut(QKeySequence(config['shortcuts']['insertLinkTemplate']), web, lambda: self.insertLinkTemplate(web.editor))
+        QShortcut(QKeySequence(config['shortcuts']['insertLinkTemplate']), web,
+                  lambda: self.insertLinkTemplate(web.editor))
         if not web.editor.addMode:
             QShortcut(QKeySequence(config['shortcuts']['copyNoteID']), web, lambda: self.copyNoteID(web))
             QShortcut(QKeySequence(config['shortcuts']['copyNoteLink']), web, lambda: self.copyNoteLink(web))
-            QShortcut(QKeySequence(config['shortcuts']['openNoteInNewWindow']), web, lambda: self.openNoteInNewWindow(web))
+            QShortcut(QKeySequence(config['shortcuts']['openNoteInNewWindow']), web,
+                      lambda: self.openNoteInNewWindow(web))
 
     def convertLink(self, text: str, card: Card, kind: str):
         """Convert note links to HTML hyperlinks, set add-on active flag"""
@@ -384,7 +387,11 @@ class AnkiPlugin(object):
                     mainField = note.fields[flds['ord']]
                     break
         else:
-            mainField = note.fields[0]
+            try:
+                mainField = note.fields[0] if note.fields[0] != '' else note.fields[1]
+            except IndexError:
+                mainField = 'Empty note'
+
         # Clear Link Format
         mainField = re.sub(r'\[((?:[^\[]|\\\[)*?)\|(nid\d{13})\]',
                            r'\1', mainField).replace('\\[', '[')

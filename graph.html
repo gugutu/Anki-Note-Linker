@@ -24,7 +24,7 @@
         tempDiv.innerHTML = html
         text = tempDiv.innerText.replace(/\n+/g, ' ').trim()
         if (text === '') {
-            const t = html.replace(/(<br\/?>|\n)+/g, ' ').trim();
+            const t = html.replace(/(<br\s*\/?>|\n)+/g, ' ').trim();
             if (t === '') return ' '
             else return t
         } else return text
@@ -81,7 +81,13 @@
         .width(window.innerWidth)
         .height(window.innerHeight)
         .nodeAutoColorBy('group')
-        .nodeLabel(node => node.mainField !== null ? node.mainField : getTr('Invalid note') + node.id)
+        .nodeLabel(node =>
+            node.mainField !== null ? node.mainField
+                    .replaceAll('&', '&amp;')
+                    .replaceAll('<', '&lt;')
+                    .replaceAll('>', '&gt;')
+                : getTr('Invalid note') + node.id
+        )
         .linkColor(() => 'rgba(255,255,255,0.2)')
         .d3Force("x", d3.forceX())
         .d3Force("y", d3.forceY())

@@ -147,11 +147,12 @@ class AnkiPlugin(object):
         )
         editor.graphPage.set_bridge_command(lambda s: s, editor)
 
-        innerSplitter = QSplitter()
-        innerSplitter.setOrientation(Qt.Orientation.Vertical)
-        innerSplitter.addWidget(editor.linksPage)
-        innerSplitter.addWidget(editor.graphPage)
-        innerSplitter.setSizes([int(r) * 10000 for r in config["splitRatioBetweenLinksPageAndGraphPage"].split(":")])
+        editor.innerSplitter = QSplitter()
+        editor.innerSplitter.setOrientation(Qt.Orientation.Vertical)
+        editor.innerSplitter.addWidget(editor.linksPage)
+        editor.innerSplitter.addWidget(editor.graphPage)
+        editor.innerSplitter.setSizes(
+            [int(r) * 10000 for r in config["splitRatioBetweenLinksPageAndGraphPage"].split(":")])
 
         layout = editor.web.parentWidget().layout()
         if layout is None:
@@ -172,13 +173,13 @@ class AnkiPlugin(object):
 
         if location == "left":
             outerSplitter.setOrientation(Qt.Orientation.Horizontal)
-            outerSplitter.addWidget(innerSplitter)
+            outerSplitter.addWidget(editor.innerSplitter)
             outerSplitter.addWidget(wrappedWeb)
             sizes = [editorR, mainR]
         elif location == "right":
             outerSplitter.setOrientation(Qt.Orientation.Horizontal)
             outerSplitter.addWidget(wrappedWeb)
-            outerSplitter.addWidget(innerSplitter)
+            outerSplitter.addWidget(editor.innerSplitter)
             sizes = [mainR, editorR]
         else:
             raise ValueError("Invalid value for config key location")
@@ -194,19 +195,39 @@ class AnkiPlugin(object):
         if editor.addMode:
             return
 
+        def toggleLinksPage(e: Editor):
+            if e.linksPage.isHidden():
+                if e.innerSplitter.isHidden():
+                    e.innerSplitter.show()
+                e.linksPage.show()
+            else:
+                e.linksPage.hide()
+                if e.graphPage.isHidden():
+                    e.innerSplitter.hide()
+
+        def toggleGraphPage(e: Editor):
+            if e.graphPage.isHidden():
+                if e.innerSplitter.isHidden():
+                    e.innerSplitter.show()
+                e.graphPage.show()
+            else:
+                e.graphPage.hide()
+                if e.linksPage.isHidden():
+                    e.innerSplitter.hide()
+
         icons_dir = os.path.join(addon_path, "icons")
         toggleLinksPageButton = editor.addButton(
             icon=os.path.join(icons_dir, "showLinksPage.svg"),
             cmd="_editor_toggle_links",
             tip=getTr("Toggle Links Page"),
-            func=lambda e: e.linksPage.show() if e.linksPage.isHidden() else e.linksPage.hide(),
+            func=toggleLinksPage,
             disables=False,
         )
         toggleGraphPageButton = editor.addButton(
             icon=os.path.join(icons_dir, "showGraphPage.svg"),
             cmd="_editor_toggle_graph",
             tip=getTr("Toggle Graph Page"),
-            func=lambda e: e.graphPage.show() if e.graphPage.isHidden() else e.graphPage.hide(),
+            func=toggleGraphPage,
             disables=False,
         )
         buttons.append(toggleLinksPageButton)

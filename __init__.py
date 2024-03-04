@@ -34,11 +34,11 @@ def log(*args):
 
 config = mw.addonManager.getConfig(__name__)
 addon_path = os.path.dirname(__file__)
-links_html = open(os.path.join(addon_path, 'links.html'), 'r').read()
-graph_html = open(os.path.join(addon_path, 'graph.html'), 'r').read()
-translation_js = open(os.path.join(addon_path, 'translation.js'), 'r').read()
-force_graph_js = open(os.path.join(addon_path, 'force-graph.js'), 'r').read()
-d3_js = open(os.path.join(addon_path, 'd3.js'), 'r').read()
+links_html = open(os.path.join(addon_path, 'links.html'), 'r', encoding='utf-8').read()
+graph_html = open(os.path.join(addon_path, 'graph.html'), 'r', encoding='utf-8').read()
+translation_js = open(os.path.join(addon_path, 'translation.js'), 'r', encoding='utf-8').read()
+force_graph_js = open(os.path.join(addon_path, 'force-graph.js'), 'r', encoding='utf-8').read()
+d3_js = open(os.path.join(addon_path, 'd3.js'), 'r', encoding='utf-8').read()
 linkMaxLines = str(config['linkMaxLines'])
 
 

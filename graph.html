@@ -83,9 +83,9 @@
         .nodeAutoColorBy('group')
         .nodeLabel(node =>
             node.mainField !== null ? node.mainField
-                    .replaceAll('&', '&amp;')
-                    .replaceAll('<', '&lt;')
-                    .replaceAll('>', '&gt;')
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;')
                 : getTr('Invalid note') + node.id
         )
         .linkColor(() => 'rgba(255,255,255,0.2)')

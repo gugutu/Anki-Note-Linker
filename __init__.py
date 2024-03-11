@@ -576,14 +576,18 @@ class AnkiNoteLinker(object):
             print('changed ------------------ ' + 'study_queues')
 
     def openGlobalGraph(self):
-        state.globalGraph = GlobalGraph()
-        state.globalGraph.web.eval(
-            f'''reloadPage(
-                {json.dumps([x.toJsNoteNode('child') for x in self.noteCache.values()], default=lambda o: o.__dict__)},
-                {json.dumps(self.linkCache, default=lambda o: o.__dict__)},
-                true
-            )'''
-        )
+        if state.globalGraph is None:
+            state.globalGraph = GlobalGraph()
+            state.globalGraph.web.eval(
+                f'''reloadPage(
+                    {json.dumps([x.toJsNoteNode('child') for x in self.noteCache.values()], default=lambda o: o.__dict__)},
+                    {json.dumps(self.linkCache, default=lambda o: o.__dict__)},
+                    true
+                )'''
+            )
+        else:
+            state.globalGraph.showNormal()
+            state.globalGraph.activateWindow()
 
 
 AnkiNoteLinker()

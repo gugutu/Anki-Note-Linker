@@ -6,6 +6,7 @@ Creator Wang Rui <https://github.com/gugutu>
 import os
 
 import anki
+
 try:
     from PyQt6.QtWidgets import QWidget, QVBoxLayout, QPushButton
 except ImportError:
@@ -83,4 +84,6 @@ class GlobalGraph(QWidget):
 
     def closeEvent(self, event):
         saveGeom(self, "GlobalGraph")
+        global globalGraph
+        globalGraph = None
         event.accept()

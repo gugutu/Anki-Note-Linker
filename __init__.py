@@ -23,26 +23,11 @@ from aqt import mw
 
 from .translation import getTr
 from .editors import MyAddCards, MyEditCurrent
-from .state import Connection, JsNoteNode, NoteNode
+from .state import Connection, JsNoteNode, NoteNode, GlobalGraph, addon_path, log, config, translation_js, links_html, \
+    linkMaxLines, d3_js, force_graph_js, graph_html
 
 
-def log(*args):
-    debug = 0
-    if debug:
-        print(*args)
-
-
-config = mw.addonManager.getConfig(__name__)
-addon_path = os.path.dirname(__file__)
-links_html = open(os.path.join(addon_path, 'links.html'), 'r', encoding='utf-8').read()
-graph_html = open(os.path.join(addon_path, 'graph.html'), 'r', encoding='utf-8').read()
-translation_js = open(os.path.join(addon_path, 'translation.js'), 'r', encoding='utf-8').read()
-force_graph_js = open(os.path.join(addon_path, 'force-graph.js'), 'r', encoding='utf-8').read()
-d3_js = open(os.path.join(addon_path, 'd3.js'), 'r', encoding='utf-8').read()
-linkMaxLines = str(config['linkMaxLines'])
-
-
-class AnkiPlugin(object):
+class AnkiNoteLinker(object):
     def __init__(self):
         self.editors: Set[Editor] = set()
         self.noteCache: dict[int, NoteNode] = {}
@@ -59,6 +44,11 @@ class AnkiPlugin(object):
         gui_hooks.operation_did_execute.append(self.onOpChange)
         gui_hooks.browser_will_show_context_menu.append(self.injectRightClickMenu)
         gui_hooks.editor_will_show_context_menu.append(self.injectRightClickMenu)
+
+        openGlobalGraphAction = QAction(mw.form.menuTools)
+        openGlobalGraphAction.setText(getTr("Global Relationship Graph (Experimental)"))
+        qconnect(openGlobalGraphAction.triggered, lambda _: self.openGlobalGraph())
+        mw.form.menuTools.addAction(openGlobalGraphAction)
 
     def injectRightClickMenu(self, context, menu: QMenu):
         if isinstance(context, EditorWebView):
@@ -132,7 +122,10 @@ class AnkiPlugin(object):
         self.injectShortcuts(editor.web)
         if editor.addMode:
             return
-        editor.linksPage = AnkiWebView(title="links_page")
+        editor.innerSplitter = QSplitter()
+        editor.innerSplitter.setOrientation(Qt.Orientation.Vertical)
+
+        editor.linksPage = AnkiWebView(parent=editor.innerSplitter, title="links_page")
         editor.linksPage.stdHtml(
             f'<script>{translation_js}\n const ankiLanguage = "{anki.lang.current_lang}";</script>' +
             r'<style>.link-button-text{-webkit-line-clamp: ' + linkMaxLines + '; line-clamp: ' + linkMaxLines + ';}</style>' +
@@ -140,15 +133,13 @@ class AnkiPlugin(object):
         )
         editor.linksPage.set_bridge_command(lambda s: s, editor)
 
-        editor.graphPage = AnkiWebView(title="graph_page")
+        editor.graphPage = AnkiWebView(parent=editor.innerSplitter, title="graph_page")
         editor.graphPage.stdHtml(
             f'<script>\n{d3_js}{force_graph_js}{translation_js}\n const ankiLanguage = "{anki.lang.current_lang}";</script>' +
             graph_html
         )
         editor.graphPage.set_bridge_command(lambda s: s, editor)
 
-        editor.innerSplitter = QSplitter()
-        editor.innerSplitter.setOrientation(Qt.Orientation.Vertical)
         editor.innerSplitter.addWidget(editor.linksPage)
         editor.innerSplitter.addWidget(editor.graphPage)
         editor.innerSplitter.setSizes(
@@ -429,6 +420,10 @@ class AnkiPlugin(object):
             if len(aqt.mw.col.find_notes(f'nid:{nid}')) == 0:
                 tooltip(getTr('The corresponding note does not exist'))
                 return True, None
+            if isinstance(context, GlobalGraph):
+                ed = MyEditCurrent(NoteId(nid))
+                ed.activateWindow()
+                return True, None
             editor: Editor = context
             if editor.editorMode == EditorMode.BROWSER:
                 browser: Browser = aqt.dialogs.open('Browser', aqt.mw)
@@ -580,5 +575,15 @@ class AnkiPlugin(object):
         if changes.study_queues:
             print('changed ------------------ ' + 'study_queues')
 
+    def openGlobalGraph(self):
+        state.globalGraph = GlobalGraph()
+        state.globalGraph.web.eval(
+            f'''reloadPage(
+                {json.dumps([x.toJsNoteNode('child') for x in self.noteCache.values()], default=lambda o: o.__dict__)},
+                {json.dumps(self.linkCache, default=lambda o: o.__dict__)},
+                true
+            )'''
+        )
 
-AnkiPlugin()
+
+AnkiNoteLinker()

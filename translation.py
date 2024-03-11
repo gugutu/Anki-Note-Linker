@@ -27,6 +27,8 @@ def getTr(s: str) -> str:
             return '显示/隐藏链接页面'
         elif s == 'Toggle Graph Page':
             return '显示/隐藏关系图'
+        elif s == 'Global Relationship Graph (Experimental)':
+            return '全局关系图（实验性）'
         elif s == 'The corresponding note does not exist':
             return '对应笔记不存在'
         elif s == 'Please add the current note first':

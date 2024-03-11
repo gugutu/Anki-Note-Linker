@@ -1,3 +1,40 @@
+"""
+AGPL3 LICENSE
+Copyright (C) 2007 Free Software Foundation, Inc. <https://fsf.org/>
+Creator Wang Rui <https://github.com/gugutu>
+"""
+import os
+
+import anki
+try:
+    from PyQt6.QtWidgets import QWidget, QVBoxLayout, QPushButton
+except ImportError:
+    from PyQt5.QtWidgets import QWidget, QVBoxLayout, QPushButton
+from aqt import mw
+from aqt.utils import restoreGeom, saveGeom
+from aqt.webview import AnkiWebView
+
+from .translation import getTr
+
+
+def log(*args):
+    debug = 0
+    if debug:
+        print(*args)
+
+
+config = mw.addonManager.getConfig(__name__)
+addon_path = os.path.dirname(__file__)
+links_html = open(os.path.join(addon_path, 'links.html'), 'r', encoding='utf-8').read()
+graph_html = open(os.path.join(addon_path, 'graph.html'), 'r', encoding='utf-8').read()
+globalGraph_html = open(os.path.join(addon_path, 'globalGraph.html'), 'r', encoding='utf-8').read()
+translation_js = open(os.path.join(addon_path, 'translation.js'), 'r', encoding='utf-8').read()
+force_graph_js = open(os.path.join(addon_path, 'force-graph.js'), 'r', encoding='utf-8').read()
+d3_js = open(os.path.join(addon_path, 'd3.js'), 'r', encoding='utf-8').read()
+linkMaxLines = str(config['linkMaxLines'])
+globalGraph = None
+
+
 class Connection:
     def __init__(self, source_id, target_id):
         self.source = source_id
@@ -20,3 +57,30 @@ class JsNoteNode:
         self.id = nid
         self.mainField = mainField
         self.type = type
+
+
+class GlobalGraph(QWidget):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle(getTr("Global Relationship Graph (Experimental)"))
+        self.layout = QVBoxLayout()
+        self.layout.setContentsMargins(0, 0, 0, 0)
+        self.setLayout(self.layout)
+        restoreGeom(self, "GlobalGraph", default_size=(1000, 600))
+        self.web = AnkiWebView(self, title="GlobalGraph")
+        # self.web.stdHtml(
+        #     f'<script>\n{d3_js}{translation_js}\n const ankiLanguage = "{anki.lang.current_lang}";</script>' +
+        #     globalGraph_html
+        # )
+        self.web.stdHtml(
+            f'<script>\n{d3_js}{force_graph_js}{translation_js}\n const ankiLanguage = "{anki.lang.current_lang}";</script>' +
+            graph_html
+        )
+        self.web.set_bridge_command(lambda s: s, self)
+        self.layout.addWidget(self.web)
+        self.activateWindow()
+        self.show()
+
+    def closeEvent(self, event):
+        saveGeom(self, "GlobalGraph")
+        event.accept()

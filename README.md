@@ -2,6 +2,8 @@
 
 [View on AnkiWeb](https://ankiweb.net/shared/info/1077002392)
 
+![show.jpg](show.jpg)
+
 ![show.gif](show.gif)
 
 You can easily connect your Anki notes together by this add-on, forming a web of interconnected information. 
@@ -67,6 +69,12 @@ Open current note in new window by using the right-click menu or pressing `Alt+S
 
 `Middle click` to open the corresponding note in the browser (unsupported in graph page)
 
+### In the previewer / reviewer / global graph:
+
+`Left click` to open the corresponding note in an editor window
+
+`Right click` to open the corresponding note in a previewer window
+
 ### Customize shortcuts
 
 You can customize the shortcut keys according to your preferences in add-on configuration
@@ -90,11 +98,6 @@ If you have generated note links and need to use them without the add-on, you ca
     })
 </script>
 ```
-
----
-## Roadmap
-
-- Global relationship graph
 
 ---
 The following projects were used in this project:

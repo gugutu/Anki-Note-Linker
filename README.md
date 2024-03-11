@@ -75,6 +75,14 @@ Open current note in new window by using the right-click menu or pressing `Alt+S
 
 `Right click` to open the corresponding note in a previewer window
 
+### Global Relationship Graph (Experimental)
+
+entrance: `Menu -> Tools -> Global Relationship Graph (Experimental)`
+
+Please set the video driver in Anki preference to an option other than `Software`, as it can significantly impact graphic performance
+
+When the total number of notes is too high, it can cause lag. In the future version, filtering options will be provided to load only the needed notes
+
 ### Customize shortcuts
 
 You can customize the shortcut keys according to your preferences in add-on configuration

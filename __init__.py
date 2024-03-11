@@ -12,7 +12,6 @@ import anki
 from anki import notetypes_pb2
 from anki.cards import Card
 from anki.collection import OpChanges
-from anki.models import StockNotetype
 from anki.notes import Note, NoteId
 from aqt import gui_hooks, mw
 from aqt.browser import Browser
@@ -20,6 +19,12 @@ from aqt.browser.previewer import BrowserPreviewer
 from aqt.editor import Editor, EditorWebView, EditorMode
 from aqt.utils import *
 from aqt.webview import AnkiWebView
+
+oldVersion = False
+try:
+    from anki.models import StockNotetype
+except ImportError:
+    oldVersion = True
 
 from .editors import MyAddCards, MyEditCurrent
 from .state import Connection, JsNoteNode, NoteNode, GlobalGraph, addon_path, log, config, translation_js, links_html, \
@@ -395,8 +400,8 @@ class AnkiNoteLinker(object):
     def getMainField(self, note: Note) -> str:
         """If it is an image occlusion type, return its "Title" field; otherwise, return the first field"""
         mainField: str = ''
-        if note.note_type().get("originalStockKind",
-                                None) == StockNotetype.OriginalStockKind.ORIGINAL_STOCK_KIND_IMAGE_OCCLUSION:
+        if not oldVersion and note.note_type().get("originalStockKind",
+                                                   None) == StockNotetype.OriginalStockKind.ORIGINAL_STOCK_KIND_IMAGE_OCCLUSION:
             for flds in note.note_type()['flds']:
                 if flds['tag'] == notetypes_pb2.IMAGE_OCCLUSION_FIELD_HEADER:
                     mainField = note.fields[flds['ord']]
@@ -470,8 +475,8 @@ class AnkiNoteLinker(object):
             if match:
                 text = match.group(1).replace('\\[', '[')
             note = aqt.mw.col.new_note(editor.note.note_type())
-            if note.note_type().get("originalStockKind",
-                                    None) == StockNotetype.OriginalStockKind.ORIGINAL_STOCK_KIND_IMAGE_OCCLUSION:
+            if not oldVersion and note.note_type().get("originalStockKind",
+                                                       None) == StockNotetype.OriginalStockKind.ORIGINAL_STOCK_KIND_IMAGE_OCCLUSION:
                 for flds in note.note_type()['flds']:
                     if flds['tag'] == notetypes_pb2.IMAGE_OCCLUSION_FIELD_HEADER:
                         note.fields[flds['ord']] = text

@@ -247,6 +247,8 @@ class AnkiNoteLinker(object):
             for editor in self.editors:
                 log('-----reFlash page: note(s) added/removed or notetype changed', editor)
                 self.reFlashPage(editor)
+            if state.globalGraph is not None:
+                self.reFLashGlobalGraph()
 
     def reFlashPage(self, editor: Editor, resetCenter: bool = False):
         if editor.note is None or editor.addMode:
@@ -578,16 +580,19 @@ class AnkiNoteLinker(object):
     def openGlobalGraph(self):
         if state.globalGraph is None:
             state.globalGraph = GlobalGraph()
-            state.globalGraph.web.eval(
-                f'''reloadPage(
-                    {json.dumps([x.toJsNoteNode('child') for x in self.noteCache.values()], default=lambda o: o.__dict__)},
-                    {json.dumps(self.linkCache, default=lambda o: o.__dict__)},
-                    true
-                )'''
-            )
+            self.reFLashGlobalGraph()
         else:
             state.globalGraph.showNormal()
             state.globalGraph.activateWindow()
+
+    def reFLashGlobalGraph(self):
+        state.globalGraph.web.eval(
+            f'''reloadPage(
+                {json.dumps([x.toJsNoteNode('child') for x in self.noteCache.values()], default=lambda o: o.__dict__)},
+                {json.dumps(self.linkCache, default=lambda o: o.__dict__)},
+                false
+            )'''
+        )
 
 
 AnkiNoteLinker()

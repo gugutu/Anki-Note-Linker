@@ -77,7 +77,7 @@ Open current note in new window by using the right-click menu or pressing `Alt+S
 
 ### Global relationship graph (Experimental)
 
-entrance: `Menu -> Tools -> Global Relationship Graph (Experimental)`
+Entrance: `Menu -> Tools -> Global Relationship Graph (Experimental)`
 
 Please set the video driver in Anki preference to an option other than `Software`, as it can significantly impact graphic performance
 

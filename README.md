@@ -75,7 +75,7 @@ Open current note in new window by using the right-click menu or pressing `Alt+S
 
 `Right click` to open the corresponding note in a previewer window
 
-### Global Relationship Graph (Experimental)
+### Global relationship graph (Experimental)
 
 entrance: `Menu -> Tools -> Global Relationship Graph (Experimental)`
 

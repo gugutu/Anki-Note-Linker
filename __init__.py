@@ -5,26 +5,26 @@ Creator Wang Rui <https://github.com/gugutu>
 """
 import json
 import operator
-from typing import Set, Optional
 import uuid
+from typing import Set, Optional
 
 import anki
 from anki import notetypes_pb2
-from anki.models import StockNotetype
 from anki.cards import Card
-from anki.notes import Note, NoteId
 from anki.collection import OpChanges
-from aqt import gui_hooks
+from anki.models import StockNotetype
+from anki.notes import Note, NoteId
+from aqt import gui_hooks, mw
 from aqt.browser import Browser
+from aqt.browser.previewer import BrowserPreviewer
 from aqt.editor import Editor, EditorWebView, EditorMode
 from aqt.utils import *
 from aqt.webview import AnkiWebView
-from aqt import mw
 
-from .translation import getTr
 from .editors import MyAddCards, MyEditCurrent
 from .state import Connection, JsNoteNode, NoteNode, GlobalGraph, addon_path, log, config, translation_js, links_html, \
-    linkMaxLines, d3_js, force_graph_js, graph_html
+    linkMaxLines, d3_js, force_graph_js, graph_html, PreviewState
+from .translation import getTr
 
 
 class AnkiNoteLinker(object):
@@ -113,8 +113,9 @@ class AnkiNoteLinker(object):
                 '<script>AnkiNoteLinkerIsActive = true;</script>' +
                 re.sub(
                     r'\[((?:[^\[]|\\\[)*?)\|(nid\d{13})\]',
-                    lambda match: f'<a onclick="javascript:pycmd(`r`+`{match.group(2)}`);" style="cursor: pointer">' +
-                                  match.group(1).replace('\\[', '[') + '</a>', text
+                    lambda
+                        match: f'<a onclick="pycmd(`r`+`{match.group(2)}`);" oncontextmenu="event.preventDefault();pycmd(`p`+`{match.group(2)}`);" style="cursor: pointer">' +
+                               match.group(1).replace('\\[', '[') + '</a>', text
                 )
         )
 
@@ -423,20 +424,11 @@ class AnkiNoteLinker(object):
                 tooltip(getTr('The corresponding note does not exist'))
                 return True, None
             if isinstance(context, GlobalGraph):
-                ed = MyEditCurrent(NoteId(nid))
-                ed.activateWindow()
+                self.openNoteInNewWindow(context, nid)
                 return True, None
             editor: Editor = context
             if editor.editorMode == EditorMode.BROWSER:
-                browser: Browser = aqt.dialogs.open('Browser', aqt.mw)
-                browser.activateWindow()
-
-                card = aqt.mw.col.get_note(NoteId(nid)).cards()[0]
-                browser.table.select_single_card(card.id)
-                if not browser.table.has_current():
-                    browser.search_for('deck:' + aqt.mw.col.decks.get(card.did)['name'])
-                    browser.table.select_single_card(card.id)
-
+                self.openNoteInBrowser(context, nid)
             elif editor.editorMode == EditorMode.EDIT_CURRENT:
                 editor.set_note(aqt.mw.col.get_note(NoteId(nid)), focusTo=0)
             elif editor.editorMode == EditorMode.ADD_CARDS:
@@ -448,22 +440,24 @@ class AnkiNoteLinker(object):
             if len(aqt.mw.col.find_notes(f'nid:{nid}')) == 0:
                 tooltip(getTr('The corresponding note does not exist'))
                 return True, None
-            ed = MyEditCurrent(NoteId(nid))
-            ed.activateWindow()
+            if isinstance(context, GlobalGraph):
+                self.openNoteInPreviewer(context, nid)
+                return True, None
+            self.openNoteInNewWindow(context, nid)
             return True, None
         elif re.match(r'mnid\d{13}', message):
             nid = int(message[4:])
             if len(aqt.mw.col.find_notes(f'nid:{nid}')) == 0:
                 tooltip(getTr('The corresponding note does not exist'))
                 return True, None
-            browser: Browser = aqt.dialogs.open('Browser', aqt.mw)
-            browser.activateWindow()
-
-            card = aqt.mw.col.get_note(NoteId(nid)).cards()[0]
-            browser.table.select_single_card(card.id)
-            if not browser.table.has_current():
-                browser.search_for('deck:' + aqt.mw.col.decks.get(card.did)['name'])
-                browser.table.select_single_card(card.id)
+            self.openNoteInBrowser(context, nid)
+            return True, None
+        elif re.match(r'pnid\d{13}', message):
+            nid = int(message[4:])
+            if len(aqt.mw.col.find_notes(f'nid:{nid}')) == 0:
+                tooltip(getTr('The corresponding note does not exist'))
+                return True, None
+            self.openNoteInPreviewer(context, nid)
             return True, None
         elif re.match(r'new\d{8}', message):
             placeholder = message[3:]
@@ -528,10 +522,35 @@ class AnkiNoteLinker(object):
             QApplication.clipboard().setText('[|nid' + str(nid) + ']')
             tooltip(getTr('Copied note link'))
 
-    def openNoteInNewWindow(self, context):
-        nid = self._getNoteIDFromContext(context)
+    def openNoteInNewWindow(self, context, nid=None):
+        if nid is None:
+            nid = self._getNoteIDFromContext(context)
         if nid is not None:
-            self.handlePycmd((True, None), 'rnid' + str(nid), context)
+            ed = MyEditCurrent(NoteId(nid))
+            ed.activateWindow()
+
+    def openNoteInPreviewer(self, context, nid=None):
+        if nid is None:
+            nid = self._getNoteIDFromContext(context)
+        if nid is not None:
+            cards = aqt.mw.col.get_note(NoteId(nid)).cards()
+            previewState = PreviewState(cards)
+            previewer: BrowserPreviewer = BrowserPreviewer(previewState, mw, lambda: None)
+            previewState.setPreviewer(previewer)
+            previewer.open()
+
+    def openNoteInBrowser(self, context, nid=None):
+        if nid is None:
+            nid = self._getNoteIDFromContext(context)
+        if nid is not None:
+            browser: Browser = aqt.dialogs.open('Browser', aqt.mw)
+            browser.activateWindow()
+
+            card = aqt.mw.col.get_note(NoteId(nid)).cards()[0]
+            browser.table.select_single_card(card.id)
+            if not browser.table.has_current():
+                browser.search_for('deck:' + aqt.mw.col.decks.get(card.did)['name'])
+                browser.table.select_single_card(card.id)
 
     def insertLinkTemplate(self, editor: Editor):
         text = editor.web.selectedText().replace('[', '\\[')

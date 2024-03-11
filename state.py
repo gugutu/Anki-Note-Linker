@@ -6,6 +6,7 @@ Creator Wang Rui <https://github.com/gugutu>
 import os
 
 import anki
+from aqt.browser.previewer import BrowserPreviewer
 
 try:
     from PyQt6.QtWidgets import QWidget, QVBoxLayout, QPushButton
@@ -87,3 +88,33 @@ class GlobalGraph(QWidget):
         global globalGraph
         globalGraph = None
         event.accept()
+
+
+class PreviewState:
+    def __init__(self, cards):
+        self.previewer: None | BrowserPreviewer = None
+        self.cards = cards
+        self.index = 0
+        self.card = cards[self.index]
+        self.singleCard = True
+
+    def onNextCard(self):
+        if self.has_next_card() and self.previewer is not None:
+            self.index += 1
+            self.card = self.cards[self.index]
+            self.previewer.render_card()
+
+    def onPreviousCard(self):
+        if self.has_previous_card() and self.previewer is not None:
+            self.index -= 1
+            self.card = self.cards[self.index]
+            self.previewer.render_card()
+
+    def has_previous_card(self):
+        return self.index > 0
+
+    def has_next_card(self):
+        return self.index < len(self.cards) - 1
+
+    def setPreviewer(self, previewer):
+        self.previewer = previewer

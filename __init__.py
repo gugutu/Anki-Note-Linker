@@ -249,6 +249,8 @@ class AnkiNoteLinker(object):
         log('-----update cache: mainField or links of note changed')
         for editor in self.editors:
             self.refreshPage(editor, reason='mainField or links of note changed')
+        if state.globalGraph is not None:
+            self.refreshGlobalGraph()
 
     def onNoteAdded(self, note: Note):
         self.jumpRebuildCacheCount += 1
@@ -256,6 +258,8 @@ class AnkiNoteLinker(object):
         self.updateNodeCache(note)
         for editor in self.editors:
             self.refreshPage(editor, reason='note added')
+        if state.globalGraph is not None:
+            self.refreshGlobalGraph()
 
     def onOpChange(self, changes: OpChanges, handler: Optional[object]):
         # self.printChanges(changes)

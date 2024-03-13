@@ -52,7 +52,6 @@ class AnkiNoteLinker(object):
         gui_hooks.browser_will_show_context_menu.append(self.injectRightClickMenu)
         gui_hooks.editor_will_show_context_menu.append(self.injectRightClickMenu)
         gui_hooks.add_cards_did_add_note.append(self.onNoteAdded)
-        anki.hooks.notes_will_be_deleted.append(self.onNotesDelete)
 
         openGlobalGraphAction = QAction(mw.form.menuTools)
         openGlobalGraphAction.setText(getTr("Global Relationship Graph (Experimental)"))
@@ -257,9 +256,6 @@ class AnkiNoteLinker(object):
         self.updateNodeCache(note)
         for editor in self.editors:
             self.refreshPage(editor, reason='note added')
-
-    def onNotesDelete(self, col: Collection, ids: Sequence[NoteId]):
-        pass
 
     def onOpChange(self, changes: OpChanges, handler: Optional[object]):
         # self.printChanges(changes)

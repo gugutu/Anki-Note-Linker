@@ -13,7 +13,7 @@ try:
 except ImportError:
     from PyQt5.QtWidgets import QWidget, QVBoxLayout, QPushButton
 from aqt import mw
-from aqt.utils import restoreGeom, saveGeom
+from aqt.utils import restoreGeom, saveGeom, tooltip
 from aqt.webview import AnkiWebView
 
 from .translation import getTr
@@ -102,13 +102,23 @@ class PreviewState:
         if self.has_next_card() and self.previewer is not None:
             self.index += 1
             self.card = self.cards[self.index]
-            self.previewer.render_card()
+            try:
+                self.previewer.render_card()
+            except anki.errors.NotFoundError:
+                self.index -= 1
+                self.card = self.cards[self.index]
+                tooltip(getTr('Current note has been deleted'))
 
     def onPreviousCard(self):
         if self.has_previous_card() and self.previewer is not None:
             self.index -= 1
             self.card = self.cards[self.index]
-            self.previewer.render_card()
+            try:
+                self.previewer.render_card()
+            except anki.errors.NotFoundError:
+                self.index += 1
+                self.card = self.cards[self.index]
+                tooltip(getTr('Current note has been deleted'))
 
     def has_previous_card(self):
         return self.index > 0

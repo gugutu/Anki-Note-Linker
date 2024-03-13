@@ -17,6 +17,7 @@ from aqt import gui_hooks, mw
 from aqt.browser import Browser
 from aqt.browser.previewer import BrowserPreviewer
 from aqt.editor import Editor, EditorWebView, EditorMode
+from aqt.operations import QueryOp
 from aqt.utils import *
 from aqt.webview import AnkiWebView
 
@@ -267,10 +268,6 @@ class AnkiNoteLinker(object):
                 self.jumpRebuildCacheCount -= 1
                 return
             self.rebuildCache()
-            for editor in self.editors:
-                self.refreshPage(editor, reason='cache rebuild')
-            if state.globalGraph is not None:
-                self.reFLashGlobalGraph()
 
     def refreshPage(self, editor: Editor, resetCenter: bool = False, reason: str = ''):
         if editor.note is None or editor.addMode:
@@ -374,11 +371,21 @@ class AnkiNoteLinker(object):
 
     def rebuildCache(self):
         log('-----rebuild cache !!!')
-        self.noteCache = {}
-        self.linkCache = []
-        for noteId in aqt.mw.col.find_notes(''):
-            note = aqt.mw.col.get_note(noteId)
-            self.updateNodeCache(note)
+
+        def op(col):
+            self.noteCache = {}
+            self.linkCache = []
+            for noteId in col.find_notes(''):
+                note = col.get_note(noteId)
+                self.updateNodeCache(note)
+
+        def onSuccess(p):
+            for editor in self.editors:
+                self.refreshPage(editor, reason='cache rebuild')
+            if state.globalGraph is not None:
+                self.refreshGlobalGraph()
+
+        QueryOp(parent=None, op=op, success=onSuccess).run_in_background()
 
     def updateNodeCache(self, note: Note) -> bool:
         """Set the node for the note link, return False to indicate that there is no need to modify the node"""
@@ -387,8 +394,8 @@ class AnkiNoteLinker(object):
         oldChildIds = set()
         mainField = self.getMainField(note)
         # Set the forward link
-        if noteId in self.noteCache:  # If the node already exists
-            node = self.noteCache[noteId]  # Get the current node's information in the cache
+        node = self.noteCache.get(noteId, None)  # Get the current node's information in the cache
+        if node is not None:  # If the node already exists
             oldChildIds = node.childIds
             if node.mainField == mainField and operator.eq(oldChildIds, childIds):
                 return False
@@ -622,12 +629,12 @@ class AnkiNoteLinker(object):
     def openGlobalGraph(self):
         if state.globalGraph is None:
             state.globalGraph = GlobalGraph()
-            self.reFLashGlobalGraph()
+            self.refreshGlobalGraph()
         else:
             state.globalGraph.showNormal()
             state.globalGraph.activateWindow()
 
-    def reFLashGlobalGraph(self):
+    def refreshGlobalGraph(self):
         state.globalGraph.web.eval(
             f'''reloadPage(
                 {json.dumps([x.toJsNoteNode('child') for x in self.noteCache.values()], default=lambda o: o.__dict__)},

@@ -79,9 +79,9 @@ Open current note in new window by using the right-click menu or pressing `Alt+S
 
 Entrance: `Menu -> Tools -> Global Relationship Graph (Experimental)`
 
-Please set the video driver in Anki preference to an option other than `Software`, as it can significantly impact graphic performance
+Please set the video driver in Anki preference to an option other than `Software`, as it can significantly decrease graphic performance
 
-When the total number of notes is too high, it can cause lag. In the future version, filtering options will be provided to load only the needed notes
+When the total number of notes is too high, it can cause lag. In future versions, performance will continue to be optimized and filtering options will be provided to load only the required notes
 
 ### Customize shortcuts
 

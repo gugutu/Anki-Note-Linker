@@ -35,18 +35,25 @@
     const elem = document.getElementById('graph');
     const graph = ForceGraph()(elem)
         .nodeCanvasObject((node, ctx, globalScale) => {
+            const radius = node.type === 'me' ? 10 : 8
+            const nodeScreenPosition = graph.graph2ScreenCoords(node.x, node.y)
+            const nodeScreenRadius = radius * globalScale
+            if (nodeScreenPosition.x + nodeScreenRadius <= 0 ||
+                nodeScreenPosition.y + nodeScreenRadius + 20 * globalScale <= 0 ||
+                nodeScreenPosition.x - nodeScreenRadius >= graph.width() ||
+                nodeScreenPosition.y - nodeScreenRadius >= graph.height()
+            ) return
             if (!node.isPlainText && node.mainField !== null) {
                 node.mainField = convertHtmlToPlainText(node.mainField)
                 node.isPlainText = true
             }
-            node.size = node.type === 'me' ? 10 : 8
-            graph.nodeRelSize(node.size)
+            graph.nodeRelSize(radius)
             let label = node.mainField !== null ? node.mainField : getTr('Invalid note');
             const fontSize = 5;
             ctx.font = `${fontSize}px Sans-Serif`;
 
             ctx.beginPath()
-            ctx.arc(node.x, node.y, node.size, 0, 2 * 3.1415926, !1)
+            ctx.arc(node.x, node.y, radius, 0, 2 * Math.PI)
             switch (node.type) {
                 case 'me':
                     ctx.fillStyle = "rgb(31, 115, 205)"
@@ -65,7 +72,7 @@
             ctx.fill()
             if (node.type === 'me') {
                 ctx.beginPath()
-                ctx.arc(node.x, node.y, node.size * 0.6, 0, 2 * 3.1415926, !1)
+                ctx.arc(node.x, node.y, radius * 0.6, 0, 2 * 3.1415926, !1)
                 ctx.fillStyle = "rgba(28, 145, 255, 0.92)"
                 ctx.fill()
             }
@@ -74,7 +81,7 @@
                 ctx.textAlign = 'center';
                 ctx.textBaseline = 'middle';
                 ctx.fillStyle = node.color;
-                drawTextWithLineBreaks(ctx, label, node.x, node.y + node.size * 1.5, node.size * 4, 4, 5)
+                drawTextWithLineBreaks(ctx, label, node.x, node.y + radius * 1.5, radius * 4, 4, 5)
             }
         })
         .backgroundColor('#101020')

@@ -34,6 +34,7 @@ from .translation import getTr
 
 class AnkiNoteLinker(object):
     def __init__(self):
+        self.jumpRebuildCacheCount = 0
         self.editors: Set[Editor] = set()
         self.noteCache: dict[int, NoteNode] = {}
         self.linkCache: list[Connection] = []
@@ -49,6 +50,8 @@ class AnkiNoteLinker(object):
         gui_hooks.operation_did_execute.append(self.onOpChange)
         gui_hooks.browser_will_show_context_menu.append(self.injectRightClickMenu)
         gui_hooks.editor_will_show_context_menu.append(self.injectRightClickMenu)
+        gui_hooks.add_cards_did_add_note.append(self.onNoteAdded)
+        anki.hooks.notes_will_be_deleted.append(self.onNotesDelete)
 
         openGlobalGraphAction = QAction(mw.form.menuTools)
         openGlobalGraphAction.setText(getTr("Global Relationship Graph (Experimental)"))
@@ -232,31 +235,44 @@ class AnkiNoteLinker(object):
 
     def onLoadNote(self, editor: Editor):
         self.editors = set(filter(lambda it: it.note is not None, self.editors))
+        if editor.addMode:
+            return
         self.editors.add(editor)
-        log('-----reFlash page: loaded note')
         # log(json.dumps(editor.note.note_type(), default=lambda o: o.__dict__, indent = 4))
-        self.reFlashPage(editor, resetCenter=True)
+        self.refreshPage(editor, resetCenter=True, reason='loaded note')
 
     def onEditNote(self, note: Note):
-        if not self.updateNodeCache(note):
-            log('-----jumped reFlashing page: links or titel not changed')
+        if note.id == 0:
             return
+        if not self.updateNodeCache(note):
+            return
+        log('-----update cache: mainField or links of note changed')
         for editor in self.editors:
-            log('-----reFlash page: note edited', editor)
-            self.reFlashPage(editor)
+            self.refreshPage(editor, reason='mainField or links of note changed')
+
+    def onNoteAdded(self, note: Note):
+        self.jumpRebuildCacheCount += 1
+        log('-----update cache: note added')
+        self.updateNodeCache(note)
+        for editor in self.editors:
+            self.refreshPage(editor, reason='note added')
+
+    def onNotesDelete(self, col: Collection, ids: Sequence[NoteId]):
+        pass
 
     def onOpChange(self, changes: OpChanges, handler: Optional[object]):
         # self.printChanges(changes)
         if changes.study_queues or changes.notetype:
-            log('-----rebuild cache: note(s) added/removed or notetype changed')
+            if self.jumpRebuildCacheCount > 0:
+                self.jumpRebuildCacheCount -= 1
+                return
             self.rebuildCache()
             for editor in self.editors:
-                log('-----reFlash page: note(s) added/removed or notetype changed', editor)
-                self.reFlashPage(editor)
+                self.refreshPage(editor, reason='cache rebuild')
             if state.globalGraph is not None:
                 self.reFLashGlobalGraph()
 
-    def reFlashPage(self, editor: Editor, resetCenter: bool = False):
+    def refreshPage(self, editor: Editor, resetCenter: bool = False, reason: str = ''):
         if editor.note is None or editor.addMode:
             return
         currentId = int(editor.note.id)
@@ -264,6 +280,7 @@ class AnkiNoteLinker(object):
             currentNode = self.noteCache[currentId]
         else:
             return
+        log(f'-----refresh page: {reason}, at', editor)
         allIds = currentNode.parentIds + currentNode.childIds + [currentId]
 
         parentNodes: set[NoteNode] = set()
@@ -356,6 +373,7 @@ class AnkiNoteLinker(object):
         return idList
 
     def rebuildCache(self):
+        log('-----rebuild cache !!!')
         self.noteCache = {}
         self.linkCache = []
         for noteId in aqt.mw.col.find_notes(''):

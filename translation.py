@@ -14,7 +14,7 @@ def getTr(s: str) -> str:
         elif s == 'Open note in new window':
             return '在新窗口中打开笔记'
         elif s == 'Insert link with copied note ID':
-            return '插入带有剪贴板中笔记ID的链接'
+            return '插入带有已复制的笔记ID的链接'
         elif s == 'Insert new link':
             return '插入新链接'
         elif s == 'Insert link template':

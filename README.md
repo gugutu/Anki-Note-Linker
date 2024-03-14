@@ -1,5 +1,7 @@
 # Link Anki notes to build knowledge network
 
+**English | [简体中文](README-zh.md)**
+
 [View on AnkiWeb](https://ankiweb.net/shared/info/1077002392)
 
 ![show.jpg](show.jpg)

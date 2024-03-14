@@ -2,6 +2,8 @@
 
 # 链接Anki笔记构建知识网络
 
+[在 AnkiWeb 中查看](https://ankiweb.net/shared/info/1077002392)
+
 ![show.jpg](show.jpg)
 
 ![show.gif](show.gif)
@@ -121,3 +123,6 @@ _备注: 如果没有选中文本，使用上述操作将生成一个没有标�
 - [link Cards Notes and Preview them in extra window](https://ankiweb.net/shared/info/1423933177)
 
 - [Editor Live Preview](https://ankiweb.net/shared/info/1960039667)
+
+---
+插件代码：1077002392

@@ -121,3 +121,6 @@ The implementation of this add-on is inspired by the following add-ons:
 - [link Cards Notes and Preview them in extra window](https://ankiweb.net/shared/info/1423933177)
 
 - [Editor Live Preview](https://ankiweb.net/shared/info/1960039667)
+
+---
+Add-on code：1077002392

@@ -63,7 +63,7 @@ class AnkiNoteLinker(object):
             if context.editor.currentField is not None:
                 menu.addSeparator()
                 insertLinkWithClipboardIDAction = QAction(context)
-                insertLinkWithClipboardIDAction.setText(getTr("Insert link with clipboard ID"))
+                insertLinkWithClipboardIDAction.setText(getTr("Insert link with copied note ID"))
                 insertLinkWithClipboardIDAction.setShortcut(config['shortcuts']['insertLinkWithClipboardID'])
                 qconnect(insertLinkWithClipboardIDAction.triggered,
                          lambda _, c=context: self.insertLinkWithClipboardID(c.editor))

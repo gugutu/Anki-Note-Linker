@@ -29,7 +29,7 @@ Copy the ID of the current note in the editor by using the right-click menu or p
 
 Copy the link of the current note in the editor by using the right-click menu or pressing `Alt+Shift+L`
 
-#### Insert link with clipboard ID
+#### Insert link with copied note ID
 
 Generate a link from the note ID in the clipboard and the currently selected text by either using the right-click menu or pressing `Alt+Shift+V`
 

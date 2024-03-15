@@ -61,6 +61,7 @@ class AnkiNoteLinker(object):
             if hasattr(editor, "graphPage") and editor.graphPage:
                 editor.graphPage.cleanup()
                 editor.graphPage.close()
+
         Editor.cleanup = anki.hooks.wrap(Editor.cleanup, cleanUpEditor)
 
         openGlobalGraphAction = QAction(mw.form.menuTools)
@@ -137,30 +138,40 @@ class AnkiNoteLinker(object):
                 )
         )
 
-    def injectPage(self, editor: Editor):
-        self.injectShortcuts(editor.web)
-        if editor.addMode:
-            return
-        editor.innerSplitter = QSplitter()
-        editor.innerSplitter.setOrientation(Qt.Orientation.Vertical)
-
+    def injectLinksPage(self, editor: Editor):
         editor.linksPage = AnkiWebView(parent=editor.innerSplitter, title="links_page")
+        editor.linksPage.set_bridge_command(lambda s: s, editor)
         editor.linksPage.stdHtml(
             f'<script>{translation_js}\n const ankiLanguage = "{anki.lang.current_lang}";</script>' +
             r'<style>.link-button-text{-webkit-line-clamp: ' + linkMaxLines + '; line-clamp: ' + linkMaxLines + ';}</style>' +
             links_html
         )
-        editor.linksPage.set_bridge_command(lambda s: s, editor)
 
+    def injectGraphPage(self, editor: Editor):
         editor.graphPage = AnkiWebView(parent=editor.innerSplitter, title="graph_page")
+        editor.graphPage.set_bridge_command(lambda s: s, editor)
         editor.graphPage.stdHtml(
             f'<script>\n{d3_js}{force_graph_js}{translation_js}\n const ankiLanguage = "{anki.lang.current_lang}";</script>' +
             graph_html
         )
-        editor.graphPage.set_bridge_command(lambda s: s, editor)
 
-        editor.innerSplitter.addWidget(editor.linksPage)
-        editor.innerSplitter.addWidget(editor.graphPage)
+    def injectPage(self, editor: Editor):
+        self.injectShortcuts(editor.web)
+        if editor.addMode:
+            return
+
+        editor.innerSplitter = QSplitter()
+        editor.innerSplitter.setOrientation(Qt.Orientation.Vertical)
+        if not config['showLinksPageAutomatically'] and not config['showGraphPageAutomatically']:
+            editor.innerSplitter.hide()
+        else:
+            if config['showLinksPageAutomatically']:
+                self.injectLinksPage(editor)
+                editor.innerSplitter.addWidget(editor.linksPage)
+            if config['showGraphPageAutomatically']:
+                self.injectGraphPage(editor)
+                editor.innerSplitter.addWidget(editor.graphPage)
+
         editor.innerSplitter.setSizes(
             [int(r) * 10000 for r in config["splitRatioBetweenLinksPageAndGraphPage"].split(":")])
 
@@ -196,34 +207,44 @@ class AnkiNoteLinker(object):
 
         outerSplitter.setSizes(sizes)
         layout.insertWidget(web_index, outerSplitter)
-        if not config['showLinksPageAutomatically']:
-            editor.linksPage.hide()
-        if not config['showGraphPageAutomatically']:
-            editor.graphPage.hide()
 
     def injectButton(self, buttons: list[str], editor: Editor):
         if editor.addMode:
             return
 
         def toggleLinksPage(e: Editor):
-            if e.linksPage.isHidden():
-                if e.innerSplitter.isHidden():
+            if hasattr(e, 'linksPage'):
+                if e.linksPage.isHidden():
                     e.innerSplitter.show()
-                e.linksPage.show()
+                    e.linksPage.show()
+                else:
+                    e.linksPage.hide()
+                    if not hasattr(e, 'graphPage') or e.graphPage.isHidden():
+                        e.innerSplitter.hide()
             else:
-                e.linksPage.hide()
-                if e.graphPage.isHidden():
-                    e.innerSplitter.hide()
+                self.injectLinksPage(e)
+                e.innerSplitter.insertWidget(0, e.linksPage)
+                editor.innerSplitter.setSizes(
+                    [int(r) * 10000 for r in config["splitRatioBetweenLinksPageAndGraphPage"].split(":")])
+                e.innerSplitter.show()
+                self.refreshPage(e, reason='toggleLinksPage')
 
         def toggleGraphPage(e: Editor):
-            if e.graphPage.isHidden():
-                if e.innerSplitter.isHidden():
+            if hasattr(e, 'graphPage'):
+                if e.graphPage.isHidden():
                     e.innerSplitter.show()
-                e.graphPage.show()
+                    e.graphPage.show()
+                else:
+                    e.graphPage.hide()
+                    if not hasattr(e, 'linksPage') or e.linksPage.isHidden():
+                        e.innerSplitter.hide()
             else:
-                e.graphPage.hide()
-                if e.linksPage.isHidden():
-                    e.innerSplitter.hide()
+                self.injectGraphPage(e)
+                e.innerSplitter.addWidget(e.graphPage)
+                editor.innerSplitter.setSizes(
+                    [int(r) * 10000 for r in config["splitRatioBetweenLinksPageAndGraphPage"].split(":")])
+                e.innerSplitter.show()
+                self.refreshPage(e, reason='toggleGraphPage')
 
         icons_dir = os.path.join(addon_path, "icons")
         toggleLinksPageButton = editor.addButton(
@@ -282,6 +303,8 @@ class AnkiNoteLinker(object):
     def refreshPage(self, editor: Editor, resetCenter: bool = False, reason: str = ''):
         if editor.note is None or editor.addMode:
             return
+        if not hasattr(editor, "linksPage") and not hasattr(editor, "graphPage"):
+            return
         currentId = int(editor.note.id)
         if currentId in self.noteCache:
             currentNode = self.noteCache[currentId]
@@ -318,20 +341,21 @@ class AnkiNoteLinker(object):
             for childId in parentNode.childIds:
                 if childId in allIds:
                     allConnections.append(Connection(parentNode.id, childId))
-
-        editor.linksPage.eval(
-            f'''reloadPage(
-                {json.dumps(parentJsNodes, default=lambda o: o.__dict__)},
-                {json.dumps(childJsNodes, default=lambda o: o.__dict__)}
-            )'''
-        )
-        editor.graphPage.eval(
-            f'''reloadPage(
+        if hasattr(editor, "linksPage"):
+            editor.linksPage.eval(
+                f'''reloadPage(
+                    {json.dumps(parentJsNodes, default=lambda o: o.__dict__)},
+                    {json.dumps(childJsNodes, default=lambda o: o.__dict__)}
+                )'''
+            )
+        if hasattr(editor, "graphPage"):
+            editor.graphPage.eval(
+                f'''reloadPage(
                 {json.dumps(allJsNodes, default=lambda o: o.__dict__)},
                 {json.dumps(allConnections, default=lambda o: o.__dict__)},
                 {json.dumps(resetCenter)}
             )'''
-        )
+            )
 
     def appendJsToEditor(self, web_content, context):
         """Enable the editor to support shortcut keys and double-click nid trigger operations"""

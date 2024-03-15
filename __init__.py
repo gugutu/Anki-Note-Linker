@@ -53,6 +53,16 @@ class AnkiNoteLinker(object):
         gui_hooks.editor_will_show_context_menu.append(self.injectRightClickMenu)
         gui_hooks.add_cards_did_add_note.append(self.onNoteAdded)
 
+        def cleanUpEditor(editor):
+            self.editors.discard(editor)
+            if hasattr(editor, "linksPage") and editor.linksPage:
+                editor.linksPage.cleanup()
+                editor.linksPage.close()
+            if hasattr(editor, "graphPage") and editor.graphPage:
+                editor.graphPage.cleanup()
+                editor.graphPage.close()
+        Editor.cleanup = anki.hooks.wrap(Editor.cleanup, cleanUpEditor)
+
         openGlobalGraphAction = QAction(mw.form.menuTools)
         openGlobalGraphAction.setText(getTr("Global Relationship Graph (Experimental)"))
         qconnect(openGlobalGraphAction.triggered, lambda _: self.openGlobalGraph())

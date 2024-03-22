@@ -66,12 +66,12 @@ class JsNoteNode:
 class GlobalGraph(QWidget):
     def __init__(self):
         super().__init__()
-        self.linkCache = []
+        self.linkCache: list[Connection] = []
         self.noteCache = []
         self.setWindowTitle(getTr("Global Relationship Graph (Experimental)"))
         outerLayout = QVBoxLayout()
         topBarLayout = QHBoxLayout()
-        topBarLayout.setContentsMargins(10, 5, 10, 0)
+        topBarLayout.setContentsMargins(10, 7, 10, 0)
         outerLayout.setContentsMargins(0, 0, 0, 0)
         self.setLayout(outerLayout)
         self.topBar = QWidget(self)
@@ -107,15 +107,20 @@ class GlobalGraph(QWidget):
         def op(col):
             ids = set(col.find_notes(self.lineEdit.text()))
             showSingle = self.rButton.isChecked()
-            self.noteCache = [x.toJsNoteNode('child') for x in addon.noteCache.values()
+            self.noteCache = [x for x in addon.noteCache.values()
                               if (x.id in ids and showSingle) or
                               (x.id in ids and (len(x.childIds) != 0 or len(x.parentIds) != 0))]
+            needIds = set([n.id for n in self.noteCache])
 
-            self.linkCache = [x for x in addon.linkCache if x.source in ids and x.target in ids]
+            self.linkCache = []
+            for parentNode in self.noteCache:
+                for childId in parentNode.childIds:
+                    if childId in needIds:
+                        self.linkCache.append(Connection(parentNode.id, childId))
 
         QueryOp(parent=self, op=op, success=lambda c: self.web.eval(
             f'''reloadPage(
-                {json.dumps(self.noteCache, default=lambda o: o.__dict__)},
+                {json.dumps([x.toJsNoteNode('child') for x in self.noteCache], default=lambda o: o.__dict__)},
                 {json.dumps(self.linkCache, default=lambda o: o.__dict__)},
                 false
             )'''

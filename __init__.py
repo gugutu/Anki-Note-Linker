@@ -37,7 +37,6 @@ class AnkiNoteLinker(object):
         self.jumpRebuildCacheCount = 0
         self.editors: Set[Editor] = set()
         self.noteCache: dict[int, NoteNode] = {}
-        self.linkCache: list[Connection] = []
 
         gui_hooks.webview_did_receive_js_message.append(self.handlePycmd)
         gui_hooks.card_will_show.append(self.convertLink)
@@ -408,7 +407,6 @@ class AnkiNoteLinker(object):
 
         def op(col):
             self.noteCache = {}
-            self.linkCache = []
             for noteId in col.find_notes(''):
                 note = col.get_note(noteId)
                 self.updateNodeCache(note)
@@ -453,7 +451,6 @@ class AnkiNoteLinker(object):
             else:
                 # If the node doesn't exist, create a new NoteNode object and insert it into the cache
                 self.noteCache[childId] = NoteNode(childId, [], [noteId], None)
-            self.linkCache.append(Connection(noteId, childId))
         return True
 
     def getMainField(self, note: Note) -> str:

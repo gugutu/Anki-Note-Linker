@@ -58,6 +58,7 @@
                 case 'me':
                     ctx.fillStyle = "rgb(31, 115, 205)"
                     break;
+                case 'parent child':
                 case 'parent':
                     ctx.fillStyle = "rgba(255, 65, 60, 0.92)"
                     break;
@@ -72,8 +73,13 @@
             ctx.fill()
             if (node.type === 'me') {
                 ctx.beginPath()
-                ctx.arc(node.x, node.y, radius * 0.6, 0, 2 * 3.1415926, !1)
+                ctx.arc(node.x, node.y, radius * 0.6, 0, 2 * Math.PI)
                 ctx.fillStyle = "rgba(28, 145, 255, 0.92)"
+                ctx.fill()
+            } else if (node.type === 'parent child') {
+                ctx.beginPath()
+                ctx.arc(node.x, node.y, radius * 0.7, 0, 2 * Math.PI)
+                ctx.fillStyle = "rgba(244, 165, 0, 0.92)"
                 ctx.fill()
             }
 

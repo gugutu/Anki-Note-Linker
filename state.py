@@ -1,18 +1,19 @@
 """
 AGPL3 LICENSE
-Copyright (C) 2007 Free Software Foundation, Inc. <https://fsf.org/>
-Creator Wang Rui <https://github.com/gugutu>
+Author Wang Rui <https://github.com/gugutu>
 """
+import json
 import os
 
 import anki
 from aqt.browser.previewer import BrowserPreviewer
+from aqt.operations import QueryOp
 
 try:
-    from PyQt6.QtWidgets import QWidget, QVBoxLayout, QPushButton
+    from PyQt6.QtWidgets import QWidget, QVBoxLayout, QPushButton, QLabel, QLineEdit, QHBoxLayout, QRadioButton
 except ImportError:
-    from PyQt5.QtWidgets import QWidget, QVBoxLayout, QPushButton
-from aqt import mw
+    from PyQt5.QtWidgets import QWidget, QVBoxLayout, QPushButton, QLabel, QLineEdit, QHBoxLayout, QRadioButton
+from aqt import mw, qconnect
 from aqt.utils import restoreGeom, saveGeom, tooltip
 from aqt.webview import AnkiWebView
 
@@ -35,6 +36,7 @@ force_graph_js = open(os.path.join(addon_path, 'force-graph.js'), 'r', encoding=
 d3_js = open(os.path.join(addon_path, 'd3.js'), 'r', encoding='utf-8').read()
 linkMaxLines = str(config['linkMaxLines'])
 globalGraph = None
+addon = None
 
 
 class Connection:
@@ -64,10 +66,17 @@ class JsNoteNode:
 class GlobalGraph(QWidget):
     def __init__(self):
         super().__init__()
+        self.linkCache = []
+        self.noteCache = []
         self.setWindowTitle(getTr("Global Relationship Graph (Experimental)"))
-        self.layout = QVBoxLayout()
-        self.layout.setContentsMargins(0, 0, 0, 0)
-        self.setLayout(self.layout)
+        outerLayout = QVBoxLayout()
+        topBarLayout = QHBoxLayout()
+        topBarLayout.setContentsMargins(10, 5, 10, 0)
+        outerLayout.setContentsMargins(0, 0, 0, 0)
+        self.setLayout(outerLayout)
+        self.topBar = QWidget(self)
+        self.topBar.setLayout(topBarLayout)
+        self.topBar.setFixedHeight(30)
         restoreGeom(self, "GlobalGraph", default_size=(1000, 600))
         self.web = AnkiWebView(self, title="GlobalGraph")
         # self.web.stdHtml(
@@ -79,9 +88,38 @@ class GlobalGraph(QWidget):
             graph_html
         )
         self.web.set_bridge_command(lambda s: s, self)
-        self.layout.addWidget(self.web)
+        outerLayout.addWidget(self.topBar)
+        outerLayout.addWidget(self.web)
+        self.lineEdit = QLineEdit()
+        self.lineEdit.setText('deck:current')
+        self.rButton = QRadioButton(getTr('Including single notes'), self)
+        self.sButton = QPushButton(getTr('Search'))
+        qconnect(self.sButton.clicked, self.refreshGlobalGraph)
+        topBarLayout.addWidget(QLabel(getTr('Search notes:')))
+        topBarLayout.addWidget(self.lineEdit)
+        topBarLayout.addWidget(self.rButton)
+        topBarLayout.addWidget(self.sButton)
+
         self.activateWindow()
         self.show()
+
+    def refreshGlobalGraph(self):
+        def op(col):
+            ids = set(col.find_notes(self.lineEdit.text()))
+            showSingle = self.rButton.isChecked()
+            self.noteCache = [x.toJsNoteNode('child') for x in addon.noteCache.values()
+                              if (x.id in ids and showSingle) or
+                              (x.id in ids and (len(x.childIds) != 0 or len(x.parentIds) != 0))]
+
+            self.linkCache = [x for x in addon.linkCache if x.source in ids and x.target in ids]
+
+        QueryOp(parent=self, op=op, success=lambda c: self.web.eval(
+            f'''reloadPage(
+                {json.dumps(self.noteCache, default=lambda o: o.__dict__)},
+                {json.dumps(self.linkCache, default=lambda o: o.__dict__)},
+                false
+            )'''
+        )).run_in_background()
 
     def closeEvent(self, event):
         saveGeom(self, "GlobalGraph")

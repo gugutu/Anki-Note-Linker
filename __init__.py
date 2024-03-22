@@ -1,7 +1,6 @@
 """
 AGPL3 LICENSE
-Copyright (C) 2007 Free Software Foundation, Inc. <https://fsf.org/>
-Creator Wang Rui <https://github.com/gugutu>
+Author Wang Rui <https://github.com/gugutu>
 """
 import json
 import operator
@@ -281,7 +280,7 @@ class AnkiNoteLinker(object):
         for editor in self.editors:
             self.refreshPage(editor, reason='mainField or links of note changed')
         if state.globalGraph is not None:
-            self.refreshGlobalGraph()
+            state.globalGraph.refreshGlobalGraph()
 
     def onNoteAdded(self, note: Note):
         self.jumpRebuildCacheCount += 1
@@ -290,7 +289,7 @@ class AnkiNoteLinker(object):
         for editor in self.editors:
             self.refreshPage(editor, reason='note added')
         if state.globalGraph is not None:
-            self.refreshGlobalGraph()
+            state.globalGraph.refreshGlobalGraph()
 
     def onOpChange(self, changes: OpChanges, handler: Optional[object]):
         # self.printChanges(changes)
@@ -317,7 +316,7 @@ class AnkiNoteLinker(object):
         childNodes: list[NoteNode] = []
         parentJsNodes: list[JsNoteNode] = []
         childJsNodes: list[JsNoteNode] = []
-        duplicatedJsNodes: set[JsNoteNode] = set()
+        duplicatedJsNodeIds: set[int] = set()
 
         for parentId in currentNode.parentIds:
             parentNode = self.noteCache[parentId]
@@ -330,10 +329,11 @@ class AnkiNoteLinker(object):
             jsNode = childNode.toJsNoteNode('child')
             childJsNodes.append(jsNode)
             if childNode in parentNodes:  # When a node is both a parent node and a child node
-                duplicatedJsNodes.add(jsNode)
+                jsNode.type = 'parent child'
+                duplicatedJsNodeIds.add(jsNode.id)
 
         allNodes = parentNodes | set(childNodes) | {currentNode}
-        allJsNodes = parentJsNodes + [x for x in childJsNodes if x not in duplicatedJsNodes] + [
+        allJsNodes = childJsNodes + [x for x in parentJsNodes if x.id not in duplicatedJsNodeIds] + [
             currentNode.toJsNoteNode('me')]
 
         allConnections: list[Connection] = []
@@ -417,7 +417,7 @@ class AnkiNoteLinker(object):
             for editor in self.editors:
                 self.refreshPage(editor, reason='cache rebuild')
             if state.globalGraph is not None:
-                self.refreshGlobalGraph()
+                state.globalGraph.refreshGlobalGraph()
 
         QueryOp(parent=None, op=op, success=onSuccess).run_in_background()
 
@@ -663,19 +663,10 @@ class AnkiNoteLinker(object):
     def openGlobalGraph(self):
         if state.globalGraph is None:
             state.globalGraph = GlobalGraph()
-            self.refreshGlobalGraph()
+            state.globalGraph.refreshGlobalGraph()
         else:
             state.globalGraph.showNormal()
             state.globalGraph.activateWindow()
 
-    def refreshGlobalGraph(self):
-        state.globalGraph.web.eval(
-            f'''reloadPage(
-                {json.dumps([x.toJsNoteNode('child') for x in self.noteCache.values()], default=lambda o: o.__dict__)},
-                {json.dumps(self.linkCache, default=lambda o: o.__dict__)},
-                false
-            )'''
-        )
 
-
-AnkiNoteLinker()
+state.addon = AnkiNoteLinker()

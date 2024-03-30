@@ -21,6 +21,11 @@ from aqt.utils import *
 from aqt.webview import AnkiWebView
 
 oldVersion = False
+import sys
+import importlib
+from pathlib import Path
+
+sys.path.append(str(Path(__file__).resolve().parents[1]))
 try:
     from anki.models import StockNotetype
 except ImportError:
@@ -596,7 +601,13 @@ class AnkiNoteLinker(object):
         if nid is not None:
             cards = aqt.mw.col.get_note(NoteId(nid)).cards()
             previewState = PreviewState(cards)
-            previewer: BrowserPreviewer = BrowserPreviewer(previewState, mw, lambda: None)
+            # Attempt to support the review button for the hjp-linkmaster addon
+            try:
+                hjp = importlib.import_module('1420819673')
+                hjp.lib.common_tools.funcs.MonkeyPatch.BrowserPreviewer
+                previewer = hjp.lib.common_tools.funcs.MonkeyPatch.BrowserPreviewer(previewState, mw, lambda: None)
+            except Exception:
+                previewer: BrowserPreviewer = BrowserPreviewer(previewState, mw, lambda: None)
             previewState.setPreviewer(previewer)
             previewer.open()
 

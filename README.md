@@ -1,8 +1,10 @@
 **English | [简体中文](README-zh.md)**
 
-# Link Anki notes to build knowledge network
+# Anki Note Linker
 
 [View on AnkiWeb](https://ankiweb.net/shared/info/1077002392)
+
+![show0.jpg](show0.jpg)
 
 ![show.jpg](show.jpg)
 
@@ -108,6 +110,8 @@ If you have generated note links and need to use them without the add-on, you ca
 ```
 
 ---
+This add-on is inspired by [Obsidian](https://obsidian.md/)
+
 The following projects were used in this project:
 
 - [Force graph](https://github.com/vasturiano/force-graph)
@@ -117,6 +121,8 @@ The following projects were used in this project:
 The implementation of this add-on is inspired by the following add-ons:
 
 - [link Cards Notes and Preview them in extra window](https://ankiweb.net/shared/info/1423933177)
+
+- [hjp-linkmaster](https://ankiweb.net/shared/info/1420819673)
 
 - [Editor Live Preview](https://ankiweb.net/shared/info/1960039667)
 

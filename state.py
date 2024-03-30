@@ -130,7 +130,7 @@ class GlobalGraph(QWidget):
 
         QueryOp(parent=self, op=op, success=lambda c: self.web.eval(
             f'''reloadPage(
-                {json.dumps([x.toJsNoteNode('child') if x.id in self.hlIds else x.toJsNoteNode('normal') for x in self.noteCache], default=lambda o: o.__dict__)},
+                {json.dumps([x.toJsNoteNode('highlight') if x.id in self.hlIds else x.toJsNoteNode('normal') for x in self.noteCache], default=lambda o: o.__dict__)},
                 {json.dumps(self.linkCache, default=lambda o: o.__dict__)},
                 false
             )'''

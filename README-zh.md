@@ -1,8 +1,10 @@
 **[English](README.md) | 简体中文**
 
-# 链接Anki笔记构建知识网络
+# Anki 笔记链接器
 
 [在 AnkiWeb 中查看](https://ankiweb.net/shared/info/1077002392)
+
+![show0.jpg](show0.jpg)
 
 ![show.jpg](show.jpg)
 
@@ -110,6 +112,8 @@ _备注: 如果没有选中文本，使用上述操作将生成一个没有标�
 ```
 
 ---
+本插件创作灵感来源于 [Obsidian](https://obsidian.md/)
+
 本项目中使用到了以下项目：
 
 - [Force graph](https://github.com/vasturiano/force-graph)
@@ -119,6 +123,8 @@ _备注: 如果没有选中文本，使用上述操作将生成一个没有标�
 此插件的实现受到以下插件的启发：
 
 - [link Cards Notes and Preview them in extra window](https://ankiweb.net/shared/info/1423933177)
+
+- [hjp-linkmaster](https://ankiweb.net/shared/info/1420819673)
 
 - [Editor Live Preview](https://ankiweb.net/shared/info/1960039667)
 

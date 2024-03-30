@@ -56,7 +56,10 @@
             ctx.arc(node.x, node.y, radius, 0, 2 * Math.PI)
             switch (node.type) {
                 case 'normal':
-                    ctx.fillStyle = "rgba(28, 145, 255, 0.92)"
+                    ctx.fillStyle = "rgb(57, 125, 237)"
+                    break;
+                case 'highlight':
+                    ctx.fillStyle = "rgb(244, 165, 0)"
                     break;
                 case 'me':
                     ctx.fillStyle = "rgb(31, 115, 205)"

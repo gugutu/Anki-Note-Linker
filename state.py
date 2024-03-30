@@ -10,9 +10,11 @@ from aqt.browser.previewer import BrowserPreviewer
 from aqt.operations import QueryOp
 
 try:
-    from PyQt6.QtWidgets import QWidget, QVBoxLayout, QPushButton, QLabel, QLineEdit, QHBoxLayout, QRadioButton
+    from PyQt6.QtWidgets import QWidget, QVBoxLayout, QPushButton, QLabel, QLineEdit, QHBoxLayout, QRadioButton, \
+        QButtonGroup
 except ImportError:
-    from PyQt5.QtWidgets import QWidget, QVBoxLayout, QPushButton, QLabel, QLineEdit, QHBoxLayout, QRadioButton
+    from PyQt5.QtWidgets import QWidget, QVBoxLayout, QPushButton, QLabel, QLineEdit, QHBoxLayout, QRadioButton, \
+        QButtonGroup
 from aqt import mw, qconnect
 from aqt.utils import restoreGeom, saveGeom, tooltip
 from aqt.webview import AnkiWebView
@@ -68,6 +70,7 @@ class GlobalGraph(QWidget):
         super().__init__()
         self.linkCache: list[Connection] = []
         self.noteCache = []
+        self.hlIds = set()
         self.setWindowTitle(getTr("Global Relationship Graph (Experimental)"))
         outerLayout = QVBoxLayout()
         topBarLayout = QHBoxLayout()
@@ -92,11 +95,15 @@ class GlobalGraph(QWidget):
         outerLayout.addWidget(self.web)
         self.lineEdit = QLineEdit()
         self.lineEdit.setText('deck:current')
-        self.rButton = QRadioButton(getTr('Including single notes'), self)
+        self.lineEdit2 = QLineEdit()
+        self.lineEdit2.setText('is:due')
+        self.rButton = QRadioButton(getTr('Display single notes'), self)
         self.sButton = QPushButton(getTr('Search'))
         qconnect(self.sButton.clicked, self.refreshGlobalGraph)
         topBarLayout.addWidget(QLabel(getTr('Search notes:')))
         topBarLayout.addWidget(self.lineEdit)
+        topBarLayout.addWidget(QLabel(getTr('Highlight specified notes:')))
+        topBarLayout.addWidget(self.lineEdit2)
         topBarLayout.addWidget(self.rButton)
         topBarLayout.addWidget(self.sButton)
 
@@ -106,6 +113,9 @@ class GlobalGraph(QWidget):
     def refreshGlobalGraph(self):
         def op(col):
             ids = set(col.find_notes(self.lineEdit.text()))
+            self.hlIds = set(
+                col.find_notes('deck:ankiankianki' if self.lineEdit2.text() == '' else self.lineEdit2.text())
+            )
             showSingle = self.rButton.isChecked()
             self.noteCache = [x for x in addon.noteCache.values()
                               if (x.id in ids and showSingle) or
@@ -120,7 +130,7 @@ class GlobalGraph(QWidget):
 
         QueryOp(parent=self, op=op, success=lambda c: self.web.eval(
             f'''reloadPage(
-                {json.dumps([x.toJsNoteNode('child') for x in self.noteCache], default=lambda o: o.__dict__)},
+                {json.dumps([x.toJsNoteNode('child') if x.id in self.hlIds else x.toJsNoteNode('normal') for x in self.noteCache], default=lambda o: o.__dict__)},
                 {json.dumps(self.linkCache, default=lambda o: o.__dict__)},
                 false
             )'''

@@ -39,11 +39,13 @@ def getTr(s: str) -> str:
             return '剪贴板中的内容不是笔记ID'
         elif s == 'Current note has been deleted':
             return '当前笔记已被删除'
-        elif s == 'Including single notes':
-            return '包括单独的笔记'
+        elif s == 'Display single notes':
+            return '显示单独的笔记'
         elif s == 'Search':
             return '搜索'
         elif s == 'Search notes:':
             return '搜索笔记：'
+        elif s == 'Highlight specified notes:':
+            return '高亮指定笔记：'
         else:
             return s

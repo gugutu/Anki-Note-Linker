@@ -55,6 +55,7 @@
             ctx.beginPath()
             ctx.arc(node.x, node.y, radius, 0, 2 * Math.PI)
             switch (node.type) {
+                case 'normal':
                 case 'me':
                     ctx.fillStyle = "rgb(31, 115, 205)"
                     break;

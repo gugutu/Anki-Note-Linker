@@ -28,7 +28,21 @@
 
 - Defines whether to collapse cloze in links page (cloze will be displayed as `[...]`)(default: `true`)
 
-`shortcuts` `{"action": "shortcut", ...}`
+`shortcuts` `{"action": "shortcut", ...}`:
 
 - Defines shortcut keys for actions
 - If there is no response when using the shortcut key, it may be due to a shortcut key conflict. Please try changing the shortcut key.
+
+`globalGraph.defaultSearchText` `[string]`:
+
+- Default search text when entering the global graph (default: `"deck:current"`)
+
+`globalGraph.defaultHighlightFilter` `[string]`:
+
+- Default highlight filter text when entering the global graph (default: `"is:due"`)
+
+`Use the previewer of hjp-linkmaster if it is installed` `[boolean (true | false)]`:
+
+- Use the previewer of `hjp-linkmaster` if it is installed (default: `true`)
+- `hjp-linkmaster` is another Anki note linking plugin that allows for direct review of cards in its previews
+- https://ankiweb.net/shared/info/1420819673

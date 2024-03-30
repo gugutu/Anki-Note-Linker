@@ -46,6 +46,6 @@ def getTr(s: str) -> str:
         elif s == 'Search notes:':
             return '搜索笔记：'
         elif s == 'Highlight specified notes:':
-            return '高亮指定笔记：'
+            return '高亮指定的笔记：'
         else:
             return s

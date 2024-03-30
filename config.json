@@ -13,5 +13,10 @@
     "insertLinkWithClipboardID": "Alt+Shift+V",
     "insertNewLink": "Alt+Shift+N",
     "insertLinkTemplate": "Alt+Shift+T"
-  }
+  },
+  "globalGraph": {
+    "defaultSearchText": "deck:current",
+    "defaultHighlightFilter": "is:due"
+  },
+  "Use the previewer of hjp-linkmaster if it is installed": true
 }

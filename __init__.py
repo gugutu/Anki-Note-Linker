@@ -603,6 +603,8 @@ class AnkiNoteLinker(object):
             previewState = PreviewState(cards)
             # Attempt to support the review button for the hjp-linkmaster addon
             try:
+                if not config["Use the previewer of hjp-linkmaster if it is installed"]:
+                    raise Exception
                 hjp = importlib.import_module('1420819673')
                 hjp.lib.common_tools.funcs.MonkeyPatch.BrowserPreviewer
                 previewer = hjp.lib.common_tools.funcs.MonkeyPatch.BrowserPreviewer(previewState, mw, lambda: None)

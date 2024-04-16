@@ -418,7 +418,10 @@ class AnkiNoteLinker(object):
             if state.globalGraph is not None:
                 state.globalGraph.refreshGlobalGraph()
 
-        QueryOp(parent=None, op=op, success=onSuccess).run_in_background()
+        def onFailure(e: Exception):
+            print(e)
+
+        QueryOp(parent=None, op=op, success=onSuccess).failure(onFailure).run_in_background()
 
     def updateNodeCache(self, note: Note) -> bool:
         """Set the node for the note link, return False to indicate that there is no need to modify the node"""

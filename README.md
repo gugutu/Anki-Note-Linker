@@ -79,7 +79,7 @@ Entrance: `Menu -> Anki Note Linker -> Global Relationship Graph (Experimental)`
 
 Please set the video driver in Anki preference to an option other than `Software`, as it can significantly decrease graphic performance
 
-### Customize shortcuts
+### Customize shortcut keys
 
 You can customize the shortcut keys according to your preferences in add-on configuration
 

@@ -93,5 +93,7 @@ def getTr(s: str) -> str:
             return '确认'
         elif s == 'The format of "split ratio" is incorrect':
             return '“显示比例”的格式不正确'
+        elif s == 'Max displayed lines per link in links panel':
+            return '链接面板中每个链接的最大显示行数'
         else:
             return s

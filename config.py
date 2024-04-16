@@ -5,7 +5,7 @@ Author Wang Rui <https://github.com/gugutu>
 
 import re
 from aqt import QColor, QWidget, QVBoxLayout, QPushButton, QLabel, QLineEdit, QHBoxLayout, QColorDialog, Qt, QCheckBox, \
-    QComboBox, QRegularExpressionValidator, QRegularExpression, QFormLayout, QFont, QScrollArea
+    QComboBox, QRegularExpressionValidator, QRegularExpression, QFormLayout, QFont, QScrollArea, QIntValidator
 from aqt import mw, qconnect
 from aqt.utils import restoreGeom, saveGeom, tooltip
 from .translation import getTr
@@ -125,6 +125,10 @@ class ConfigView(QWidget):
         layout.addRow(getTr('Split ratio between links panel and graph panel') + ':',
                       self.splitRatioBetweenLinksPageAndGraphPage_LineEdit)
 
+        self.linkMaxLines_LineEdit = QLineEdit(str(config["linkMaxLines"]))
+        self.linkMaxLines_LineEdit.setValidator(QIntValidator(1, 999))
+        layout.addRow(getTr('Max displayed lines per link in links panel') + ':', self.linkMaxLines_LineEdit)
+
         lab2 = QLabel(getTr('Global Relationship Graph'))
         lab2.setFont(QFont("Sans-Serif", 15, 75))
         layout.addRow(lab2)
@@ -186,6 +190,7 @@ class ConfigView(QWidget):
         self.splitRatio_LineEdit.setText(defaultConfig["splitRatio"])
         self.splitRatioBetweenLinksPageAndGraphPage_LineEdit.setText(
             defaultConfig["splitRatioBetweenLinksPageAndGraphPage"])
+        self.linkMaxLines_LineEdit.setText(str(defaultConfig["linkMaxLines"]))
         self.globalGraph_defaultSearchText_LineEdit.setText(defaultConfig["globalGraph"]["defaultSearchText"])
         self.globalGraph_defaultHighlightFilter_LineEdit.setText(defaultConfig["globalGraph"]["defaultHighlightFilter"])
         self.globalGraph_nodeColor_Button.qColor = QColor.fromRgb(*defaultConfig["globalGraph"]["nodeColor"])
@@ -208,6 +213,9 @@ class ConfigView(QWidget):
                 not re.match(r'^\d+:\d+$', self.splitRatioBetweenLinksPageAndGraphPage_LineEdit.text())):
             tooltip(getTr('The format of "split ratio" is incorrect'))
             return
+        if self.linkMaxLines_LineEdit.text() == '' or int(self.linkMaxLines_LineEdit.text()) == 0:
+            self.linkMaxLines_LineEdit.setText(str(defaultConfig["linkMaxLines"]))
+
         config["showLinksPageAutomatically"] = self.showLinksPageAutomatically_CheckBox.isChecked()
         config["showGraphPageAutomatically"] = self.showGraphPageAutomatically_CheckBox.isChecked()
         config["collapseClozeInLinksPage"] = self.collapseClozeInLinksPage_CheckBox.isChecked()
@@ -215,6 +223,7 @@ class ConfigView(QWidget):
         config["location"] = 'left' if self.location_ComboBox.currentIndex() == 0 else 'right'
         config["splitRatio"] = self.splitRatio_LineEdit.text()
         config["splitRatioBetweenLinksPageAndGraphPage"] = self.splitRatioBetweenLinksPageAndGraphPage_LineEdit.text()
+        config["linkMaxLines"] = int(self.linkMaxLines_LineEdit.text())
         config["globalGraph"]["defaultSearchText"] = self.globalGraph_defaultSearchText_LineEdit.text()
         config["globalGraph"]["defaultHighlightFilter"] = self.globalGraph_defaultHighlightFilter_LineEdit.text()
         color = self.globalGraph_nodeColor_Button.qColor

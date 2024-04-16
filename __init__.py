@@ -34,7 +34,7 @@ except ImportError:
 from .config import ConfigView, config
 from .editors import MyAddCards, MyEditCurrent
 from .state import Connection, JsNoteNode, NoteNode, GlobalGraph, addon_path, log, translation_js, links_html, \
-    linkMaxLines, d3_js, force_graph_js, graph_html, PreviewState
+    d3_js, force_graph_js, graph_html, PreviewState
 from .translation import getTr
 
 
@@ -153,7 +153,8 @@ class AnkiNoteLinker(object):
         editor.linksPage.set_bridge_command(lambda s: s, editor)
         editor.linksPage.stdHtml(
             f'<script>{translation_js}\n const ankiLanguage = "{anki.lang.current_lang}";</script>' +
-            r'<style>.link-button-text{-webkit-line-clamp: ' + linkMaxLines + '; line-clamp: ' + linkMaxLines + ';}</style>' +
+            r'<style>.link-button-text{-webkit-line-clamp: ' + str(config['linkMaxLines']) + '; line-clamp: ' + str(
+                config['linkMaxLines']) + ';}</style>' +
             links_html
         )
 

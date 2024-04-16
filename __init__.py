@@ -386,18 +386,6 @@ class AnkiNoteLinker(object):
                     }
                 }
             });
-            document.addEventListener("keydown", function (event) {
-                if (event.altKey && event.key.toLowerCase() === "k") {
-                    event.preventDefault();
-                    pycmd(`insertLinkWithPlaceholder`);
-                } else if (event.altKey && event.key.toLowerCase() === "j") {
-                    event.preventDefault();
-                    pycmd(`insertLink`);
-                } else if (event.altKey && event.key.toLowerCase() === "l") {
-                    event.preventDefault();
-                    pycmd(`insertLinkWithClipboardID`);
-                }
-            });
             </script>
             """
         web_content.head += script_str

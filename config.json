@@ -16,7 +16,9 @@
   },
   "globalGraph": {
     "defaultSearchText": "deck:current",
-    "defaultHighlightFilter": "is:due"
+    "defaultHighlightFilter": "is:due",
+    "nodeColor": [57, 125, 237],
+    "highlightedNodeColor": [244, 165, 0]
   },
   "Use the previewer of hjp-linkmaster if it is installed": true
 }

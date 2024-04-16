@@ -31,8 +31,9 @@ try:
 except ImportError:
     oldVersion = True
 
+from .config import ConfigView, config
 from .editors import MyAddCards, MyEditCurrent
-from .state import Connection, JsNoteNode, NoteNode, GlobalGraph, addon_path, log, config, translation_js, links_html, \
+from .state import Connection, JsNoteNode, NoteNode, GlobalGraph, addon_path, log, translation_js, links_html, \
     linkMaxLines, d3_js, force_graph_js, graph_html, PreviewState
 from .translation import getTr
 
@@ -67,10 +68,16 @@ class AnkiNoteLinker(object):
 
         Editor.cleanup = anki.hooks.wrap(Editor.cleanup, cleanUpEditor)
 
-        openGlobalGraphAction = QAction(mw.form.menuTools)
+        menu = QMenu("Anki Note Linker", mw.form.menubar)
+        openGlobalGraphAction = QAction(menu)
         openGlobalGraphAction.setText(getTr("Global Relationship Graph (Experimental)"))
         qconnect(openGlobalGraphAction.triggered, lambda _: self.openGlobalGraph())
-        mw.form.menuTools.addAction(openGlobalGraphAction)
+        menu.addAction(openGlobalGraphAction)
+        openConfigAction = QAction(menu)
+        openConfigAction.setText(getTr("Config"))
+        qconnect(openConfigAction.triggered, lambda _: ConfigView.openConfigView())
+        menu.addAction(openConfigAction)
+        mw.form.menubar.addMenu(menu)
 
     def injectRightClickMenu(self, context, menu: QMenu):
         if isinstance(context, EditorWebView):
@@ -99,19 +106,19 @@ class AnkiNoteLinker(object):
                 return
         menu.addSeparator()
         copyNoteIdAction = QAction(context)
-        copyNoteIdAction.setText(getTr("Copy note ID"))
+        copyNoteIdAction.setText(getTr("Copy current note ID"))
         copyNoteIdAction.setShortcut(config['shortcuts']['copyNoteID'])
         qconnect(copyNoteIdAction.triggered, lambda _, c=context: self.copyNoteID(c))
         menu.addAction(copyNoteIdAction)
 
         copyNoteLinkAction = QAction(context)
-        copyNoteLinkAction.setText(getTr("Copy note link"))
+        copyNoteLinkAction.setText(getTr("Copy current note link"))
         copyNoteLinkAction.setShortcut(config['shortcuts']['copyNoteLink'])
         qconnect(copyNoteLinkAction.triggered, lambda _, c=context: self.copyNoteLink(c))
         menu.addAction(copyNoteLinkAction)
 
         openNoteInNewWindowAction = QAction(context)
-        openNoteInNewWindowAction.setText(getTr("Open note in new window"))
+        openNoteInNewWindowAction.setText(getTr("Open current note in new window"))
         openNoteInNewWindowAction.setShortcut(config['shortcuts']['openNoteInNewWindow'])
         qconnect(openNoteInNewWindowAction.triggered, lambda _, c=context: self.openNoteInNewWindow(c))
         menu.addAction(openNoteInNewWindowAction)
@@ -253,14 +260,14 @@ class AnkiNoteLinker(object):
         toggleLinksPageButton = editor.addButton(
             icon=os.path.join(icons_dir, "showLinksPage.svg"),
             cmd="_editor_toggle_links",
-            tip=getTr("Toggle Links Page"),
+            tip=getTr("Toggle Links Panel"),
             func=toggleLinksPage,
             disables=False,
         )
         toggleGraphPageButton = editor.addButton(
             icon=os.path.join(icons_dir, "showGraphPage.svg"),
             cmd="_editor_toggle_graph",
-            tip=getTr("Toggle Graph Page"),
+            tip=getTr("Toggle Graph Panel"),
             func=toggleGraphPage,
             disables=False,
         )
@@ -606,7 +613,6 @@ class AnkiNoteLinker(object):
                 if not config["Use the previewer of hjp-linkmaster if it is installed"]:
                     raise Exception
                 hjp = importlib.import_module('1420819673')
-                hjp.lib.common_tools.funcs.MonkeyPatch.BrowserPreviewer
                 previewer = hjp.lib.common_tools.funcs.MonkeyPatch.BrowserPreviewer(previewState, mw, lambda: None)
             except Exception:
                 previewer: BrowserPreviewer = BrowserPreviewer(previewState, mw, lambda: None)

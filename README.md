@@ -65,13 +65,13 @@ Open current note in new window by using the right-click menu or pressing `Alt+S
 
 `Double click` link to open the corresponding note in a new window
 
-### In the link page / graph page:
+### In the link panel / graph panel:
 
 `Left click` to open the corresponding note in the current window
 
 `Right click` to open the corresponding note in a new window
 
-`Middle click` to open the corresponding note in the browser (unsupported in graph page)
+`Middle click` to open the corresponding note in the browser (unsupported in graph view)
 
 ### In the previewer / reviewer / global graph:
 
@@ -81,7 +81,7 @@ Open current note in new window by using the right-click menu or pressing `Alt+S
 
 ### Global relationship graph (Experimental)
 
-Entrance: `Menu -> Tools -> Global Relationship Graph (Experimental)`
+Entrance: `Menu -> Anki Note Linker -> Global Relationship Graph (Experimental)`
 
 Please set the video driver in Anki preference to an option other than `Software`, as it can significantly decrease graphic performance
 

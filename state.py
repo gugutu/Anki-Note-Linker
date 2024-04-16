@@ -8,17 +8,12 @@ import os
 import anki
 from aqt.browser.previewer import BrowserPreviewer
 from aqt.operations import QueryOp
-
-try:
-    from PyQt6.QtWidgets import QWidget, QVBoxLayout, QPushButton, QLabel, QLineEdit, QHBoxLayout, QRadioButton, \
-        QButtonGroup
-except ImportError:
-    from PyQt5.QtWidgets import QWidget, QVBoxLayout, QPushButton, QLabel, QLineEdit, QHBoxLayout, QRadioButton, \
-        QButtonGroup
+from aqt import QColor, QWidget, QVBoxLayout, QPushButton, QLabel, QLineEdit, QHBoxLayout, QCheckBox
 from aqt import mw, qconnect
 from aqt.utils import restoreGeom, saveGeom, tooltip
 from aqt.webview import AnkiWebView
 
+from .config import config
 from .translation import getTr
 
 
@@ -28,7 +23,6 @@ def log(*args):
         print(*args)
 
 
-config = mw.addonManager.getConfig(__name__)
 addon_path = os.path.dirname(__file__)
 links_html = open(os.path.join(addon_path, 'links.html'), 'r', encoding='utf-8').read()
 graph_html = open(os.path.join(addon_path, 'graph.html'), 'r', encoding='utf-8').read()
@@ -97,14 +91,14 @@ class GlobalGraph(QWidget):
         self.lineEdit.setText(config['globalGraph']['defaultSearchText'])
         self.lineEdit2 = QLineEdit()
         self.lineEdit2.setText(config['globalGraph']['defaultHighlightFilter'])
-        self.rButton = QRadioButton(getTr('Display single notes'), self)
+        self.checkBox = QCheckBox(getTr('Display single notes'))
         self.sButton = QPushButton(getTr('Search'))
         qconnect(self.sButton.clicked, self.refreshGlobalGraph)
         topBarLayout.addWidget(QLabel(getTr('Search notes:')))
         topBarLayout.addWidget(self.lineEdit)
         topBarLayout.addWidget(QLabel(getTr('Highlight specified notes:')))
         topBarLayout.addWidget(self.lineEdit2)
-        topBarLayout.addWidget(self.rButton)
+        topBarLayout.addWidget(self.checkBox)
         topBarLayout.addWidget(self.sButton)
 
         self.activateWindow()
@@ -116,7 +110,7 @@ class GlobalGraph(QWidget):
             self.hlIds = set(
                 col.find_notes('deck:ankiankianki' if self.lineEdit2.text() == '' else self.lineEdit2.text())
             )
-            showSingle = self.rButton.isChecked()
+            showSingle = self.checkBox.isChecked()
             self.noteCache = [x for x in addon.noteCache.values()
                               if (x.id in ids and showSingle) or
                               (x.id in ids and (len(x.childIds) != 0 or len(x.parentIds) != 0))]
@@ -132,7 +126,9 @@ class GlobalGraph(QWidget):
             f'''reloadPage(
                 {json.dumps([x.toJsNoteNode('highlight') if x.id in self.hlIds else x.toJsNoteNode('normal') for x in self.noteCache], default=lambda o: o.__dict__)},
                 {json.dumps(self.linkCache, default=lambda o: o.__dict__)},
-                false
+                false,
+                "{self.qColorToString(QColor.fromRgb(*config["globalGraph"]["nodeColor"]))}",
+                "{self.qColorToString(QColor.fromRgb(*config["globalGraph"]["highlightedNodeColor"]))}"
             )'''
         )).run_in_background()
 
@@ -143,6 +139,9 @@ class GlobalGraph(QWidget):
         global globalGraph
         globalGraph = None
         event.accept()
+
+    def qColorToString(self, qColor: QColor):
+        return f"rgb({qColor.red()},{qColor.green()},{qColor.blue()})"
 
 
 class PreviewState:

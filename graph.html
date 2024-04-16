@@ -30,6 +30,8 @@
         } else return text
     }
 
+    let normalNodeColor = "rgb(57, 125, 237)"
+    let highlightNodeColor = "rgb(244, 165, 0)"
     let init = false
     const largeSize = false//gData.links.length + gData.nodes.length > 10000
     const elem = document.getElementById('graph');
@@ -56,10 +58,10 @@
             ctx.arc(node.x, node.y, radius, 0, 2 * Math.PI)
             switch (node.type) {
                 case 'normal':
-                    ctx.fillStyle = "rgb(57, 125, 237)"
+                    ctx.fillStyle = normalNodeColor
                     break;
                 case 'highlight':
-                    ctx.fillStyle = "rgb(244, 165, 0)"
+                    ctx.fillStyle = highlightNodeColor
                     break;
                 case 'me':
                     ctx.fillStyle = "rgb(31, 115, 205)"
@@ -155,9 +157,10 @@
     });
     init = true
 
-    function reloadPage(nodes, connections, resetCenter) {
+    function reloadPage(nodes, connections, resetCenter, normalColor = null, highlightColor = null) {
         while (!init) setTimeout(null, 200);
-
+        normalNodeColor = normalColor
+        highlightNodeColor = highlightColor
         let oldNodes = graph.graphData().nodes
         let oldNodeMap = new Map(oldNodes.map(it => [it.id, it]))
 

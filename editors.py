@@ -1,14 +1,6 @@
 import aqt
 
-try:
-    from PyQt6.QtCore import Qt
-    from PyQt6.QtGui import QKeySequence, QShortcut
-    from PyQt6.QtWidgets import QMainWindow, QDialogButtonBox, QPushButton
-except ImportError:
-    from PyQt5.QtCore import Qt
-    from PyQt5.QtGui import QKeySequence
-    from PyQt5.QtWidgets import QMainWindow, QDialogButtonBox, QPushButton, QShortcut
-
+from aqt import QMainWindow, QDialogButtonBox, QPushButton, QKeySequence, QShortcut, Qt
 from anki.collection import OpChanges
 from anki.notes import Note, NoteId
 from aqt import gui_hooks, qconnect

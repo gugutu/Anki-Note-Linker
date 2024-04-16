@@ -59,7 +59,7 @@ Open current note in new window by using the right-click menu or pressing `Alt+S
 
 `Double click` link to open the corresponding note in a new window
 
-### In the link panel / graph panel:
+### In the links panel / graph panel:
 
 `Left click` to open the corresponding note in the current window
 

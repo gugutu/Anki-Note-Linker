@@ -41,6 +41,8 @@ from .translation import getTr
 class AnkiNoteLinker(object):
     def __init__(self):
         self.jumpRebuildCacheCount = 0
+        self.needRebuildCache = False
+        self.inRebuildCacheProcess = False
         self.editors: Set[Editor] = set()
         self.noteCache: dict[int, NoteNode] = {}
 
@@ -404,22 +406,38 @@ class AnkiNoteLinker(object):
         return idList
 
     def rebuildCache(self):
+        if self.inRebuildCacheProcess:
+            self.needRebuildCache = True
+            return
+
         log('-----rebuild cache !!!')
+        self.inRebuildCacheProcess = True
 
         def op(col):
             self.noteCache = {}
             for noteId in col.find_notes(''):
+                if self.needRebuildCache:
+                    raise Exception('-----Interrupted Rebuild Cache Process')
                 note = col.get_note(noteId)
                 self.updateNodeCache(note)
 
         def onSuccess(p):
+            self.inRebuildCacheProcess = False
+            if self.needRebuildCache:
+                self.needRebuildCache = False
+                self.rebuildCache()
+                return
             for editor in self.editors:
                 self.refreshPage(editor, reason='cache rebuild')
             if state.globalGraph is not None:
                 state.globalGraph.refreshGlobalGraph()
 
         def onFailure(e: Exception):
-            print(e)
+            self.inRebuildCacheProcess = False
+            log(e)
+            if self.needRebuildCache:
+                self.needRebuildCache = False
+                self.rebuildCache()
 
         QueryOp(parent=None, op=op, success=onSuccess).failure(onFailure).run_in_background()
 

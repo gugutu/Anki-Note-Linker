@@ -289,9 +289,8 @@ class AnkiNoteLinker(object):
                     return
                 else:
                     self.refreshPage(editor, reason='mainField or links of note changed')
-                    break
 
-        if state.globalGraph is not None:
+        if state.globalGraph is not None and note.id in state.globalGraph.searchedIds:
             state.globalGraph.refreshGlobalGraph(note, 'mainField or links of note changed')
 
     def idToNoteNode(self, nid: NoteId):

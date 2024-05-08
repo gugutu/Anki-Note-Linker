@@ -5,18 +5,17 @@ Author Wang Rui <https://github.com/gugutu>
 import json
 import operator
 import uuid
-from typing import Set, Optional
+from typing import Set
 
 import anki
 from anki import notetypes_pb2
 from anki.cards import Card
-from anki.collection import OpChanges
+from anki.errors import NotFoundError
 from anki.notes import Note, NoteId
 from aqt import gui_hooks, mw
 from aqt.browser import Browser
 from aqt.browser.previewer import BrowserPreviewer
 from aqt.editor import Editor, EditorWebView, EditorMode
-from aqt.operations import QueryOp
 from aqt.utils import *
 from aqt.webview import AnkiWebView
 
@@ -33,31 +32,25 @@ except ImportError:
 
 from .config import ConfigView, config
 from .editors import MyAddCards, MyEditCurrent
-from .state import Connection, JsNoteNode, NoteNode, GlobalGraph, addon_path, log, translation_js, links_html, \
+from .state import Connection, JsNoteNode, NoteNode, addon_path, log, translation_js, links_html, \
     d3_js, force_graph_js, graph_html, PreviewState
 from .translation import getTr
+from .globalGraph import GlobalGraph
 
 
 class AnkiNoteLinker(object):
     def __init__(self):
-        self.jumpRebuildCacheCount = 0
-        self.needRebuildCache = False
-        self.inRebuildCacheProcess = False
         self.editors: Set[Editor] = set()
-        self.noteCache: dict[int, NoteNode] = {}
 
         gui_hooks.webview_did_receive_js_message.append(self.handlePycmd)
         gui_hooks.card_will_show.append(self.convertLink)
         gui_hooks.editor_did_init.append(self.injectPage)
         gui_hooks.editor_did_init_buttons.append(self.injectButton)
         gui_hooks.editor_did_load_note.append(self.onLoadNote)
-        gui_hooks.collection_did_load.append(lambda o: self.rebuildCache())
         gui_hooks.editor_did_fire_typing_timer.append(self.onEditNote)
         gui_hooks.webview_will_set_content.append(self.appendJsToEditor)
-        gui_hooks.operation_did_execute.append(self.onOpChange)
         gui_hooks.browser_will_show_context_menu.append(self.injectRightClickMenu)
         gui_hooks.editor_will_show_context_menu.append(self.injectRightClickMenu)
-        gui_hooks.add_cards_did_add_note.append(self.onNoteAdded)
 
         def cleanUpEditor(editor):
             self.editors.discard(editor)
@@ -278,7 +271,7 @@ class AnkiNoteLinker(object):
         buttons.append(toggleGraphPageButton)
 
     def onLoadNote(self, editor: Editor):
-        self.editors = set(filter(lambda it: it.note is not None, self.editors))
+        # self.editors = set(filter(lambda it: it.note is not None, self.editors))
         if editor.addMode:
             return
         self.editors.add(editor)
@@ -288,61 +281,60 @@ class AnkiNoteLinker(object):
     def onEditNote(self, note: Note):
         if note.id == 0:
             return
-        if not self.updateNodeCache(note):
-            return
-        log('-----update cache: mainField or links of note changed')
         for editor in self.editors:
-            self.refreshPage(editor, reason='mainField or links of note changed')
-        if state.globalGraph is not None:
-            state.globalGraph.refreshGlobalGraph()
+            if editor.note.id == note.id:
+                if hasattr(editor, "noteNode") and \
+                        editor.noteNode.mainField == self.getMainField(note) and \
+                        operator.eq(editor.noteNode.childIds, self.findChildIds(note.id, ' '.join(note.fields))):
+                    return
+                else:
+                    self.refreshPage(editor, reason='mainField or links of note changed')
+                    break
 
-    def onNoteAdded(self, note: Note):
-        self.jumpRebuildCacheCount += 1
-        log('-----update cache: note added')
-        self.updateNodeCache(note)
-        for editor in self.editors:
-            self.refreshPage(editor, reason='note added')
         if state.globalGraph is not None:
-            state.globalGraph.refreshGlobalGraph()
+            state.globalGraph.refreshGlobalGraph(note, 'mainField or links of note changed')
 
-    def onOpChange(self, changes: OpChanges, handler: Optional[object]):
-        # self.printChanges(changes)
-        if changes.study_queues or changes.notetype:
-            if self.jumpRebuildCacheCount > 0:
-                self.jumpRebuildCacheCount -= 1
-                return
-            self.rebuildCache()
+    def idToNoteNode(self, nid: NoteId):
+        try:
+            note = mw.col.get_note(nid)
+        except NotFoundError:
+            return NoteNode(nid, [], set(), None)
+        return NoteNode(nid, self.findChildIds(nid, ' '.join(note.fields)),
+                        self.findParentIds(nid), self.getMainField(note))
 
     def refreshPage(self, editor: Editor, resetCenter: bool = False, reason: str = ''):
         if editor.note is None or editor.addMode:
             return
         if not hasattr(editor, "linksPage") and not hasattr(editor, "graphPage"):
             return
-        currentId = int(editor.note.id)
-        if currentId in self.noteCache:
-            currentNode = self.noteCache[currentId]
-        else:
-            return
+
         log(f'-----refresh page: {reason}, at', editor)
-        allIds = currentNode.parentIds + currentNode.childIds + [currentId]
+
+        currentId = editor.note.id
+        currentNode = self.idToNoteNode(currentId)
+        editor.noteNode = currentNode
+
+        allIds = currentNode.parentIds | set(currentNode.childIds) | {currentId}
 
         parentNodes: set[NoteNode] = set()
+        parentNodeIds: set[NoteId] = set()
         childNodes: list[NoteNode] = []
         parentJsNodes: list[JsNoteNode] = []
         childJsNodes: list[JsNoteNode] = []
         duplicatedJsNodeIds: set[int] = set()
 
         for parentId in currentNode.parentIds:
-            parentNode = self.noteCache[parentId]
+            parentNode = self.idToNoteNode(parentId)
             parentNodes.add(parentNode)
+            parentNodeIds.add(parentId)
             parentJsNodes.append(parentNode.toJsNoteNode('parent'))
 
         for childId in currentNode.childIds:
-            childNode = self.noteCache[childId]
+            childNode = self.idToNoteNode(childId)
             childNodes.append(childNode)
             jsNode = childNode.toJsNoteNode('child')
             childJsNodes.append(jsNode)
-            if childNode in parentNodes:  # When a node is both a parent node and a child node
+            if childNode.id in parentNodeIds:  # When a node is both a parent node and a child node
                 jsNode.type = 'parent child'
                 duplicatedJsNodeIds.add(jsNode.id)
 
@@ -368,7 +360,7 @@ class AnkiNoteLinker(object):
                 {json.dumps(allJsNodes, default=lambda o: o.__dict__)},
                 {json.dumps(allConnections, default=lambda o: o.__dict__)},
                 {json.dumps(resetCenter)}
-            )'''
+                )'''
             )
 
     def appendJsToEditor(self, web_content, context):
@@ -393,87 +385,21 @@ class AnkiNoteLinker(object):
             """
         web_content.head += script_str
 
-    def _findChildIds(self, myId, joinedFields: str):
-        idSet = set()  # Used to remove duplicates
-        idList: list[int] = []
+    def findChildIds(self, myId: NoteId, joinedFields: str, rangeIdSet=None):
+        duplicateIdSet = set()  # Used to remove duplicates
+        idList: list[NoteId] = []
         matches = re.finditer(r'\[(?:[^\[]|\\\[)*?\|nid(\d{13})\]', joinedFields)
         if matches:
             for match in matches:
-                childId = int(match.group(1))
-                if myId != childId and childId not in idSet:  # Shield self ring connection and remove duplicates
-                    idSet.add(childId)
-                    idList.append(childId)
+                childId = NoteId(int(match.group(1)))
+                if myId != childId and childId not in duplicateIdSet:  # Shield self ring connection and remove duplicates
+                    if rangeIdSet is None or childId in rangeIdSet:
+                        duplicateIdSet.add(childId)
+                        idList.append(childId)
         return idList
 
-    def rebuildCache(self):
-        if self.inRebuildCacheProcess:
-            self.needRebuildCache = True
-            return
-
-        log('-----rebuild cache !!!')
-        self.inRebuildCacheProcess = True
-
-        def op(col):
-            self.noteCache = {}
-            for noteId in col.find_notes(''):
-                if self.needRebuildCache:
-                    raise Exception('-----Interrupted Rebuild Cache Process')
-                note = col.get_note(noteId)
-                self.updateNodeCache(note)
-
-        def onSuccess(p):
-            self.inRebuildCacheProcess = False
-            if self.needRebuildCache:
-                self.needRebuildCache = False
-                self.rebuildCache()
-                return
-            for editor in self.editors:
-                self.refreshPage(editor, reason='cache rebuild')
-            if state.globalGraph is not None:
-                state.globalGraph.refreshGlobalGraph()
-
-        def onFailure(e: Exception):
-            self.inRebuildCacheProcess = False
-            log(e)
-            if self.needRebuildCache:
-                self.needRebuildCache = False
-                self.rebuildCache()
-
-        QueryOp(parent=None, op=op, success=onSuccess).failure(onFailure).run_in_background()
-
-    def updateNodeCache(self, note: Note) -> bool:
-        """Set the node for the note link, return False to indicate that there is no need to modify the node"""
-        noteId = int(note.id)
-        childIds = self._findChildIds(noteId, ' '.join(note.fields))
-        oldChildIds = set()
-        mainField = self.getMainField(note)
-        # Set the forward link
-        node = self.noteCache.get(noteId, None)  # Get the current node's information in the cache
-        if node is not None:  # If the node already exists
-            oldChildIds = node.childIds
-            if node.mainField == mainField and operator.eq(oldChildIds, childIds):
-                return False
-            node.mainField = mainField  # Set the node's first field as the new main field
-            node.childIds = childIds  # Update its forward link to the new childIds list
-        else:
-            # If the node doesn't exist, create a new NoteNode object and insert it into the cache
-            self.noteCache[noteId] = NoteNode(noteId, childIds, [], mainField)
-
-        # Remove the reverse link of old child nodes (need optimization: Operate only on nodes with changes)
-        for id in oldChildIds:
-            if id in self.noteCache:
-                self.noteCache[id].parentIds.remove(noteId)
-
-        # Set the back link of child nodes
-        for childId in childIds:
-            if childId in self.noteCache:  # If the node already exists
-                childNode = self.noteCache[childId]  # Get the information of the forward-linked node in the cache
-                if noteId not in childNode.parentIds:  # Prevent adding duplicate IDs
-                    childNode.parentIds.append(noteId)  # Add the current node ID to its back link list
-            else:
-                # If the node doesn't exist, create a new NoteNode object and insert it into the cache
-                self.noteCache[childId] = NoteNode(childId, [], [noteId], None)
-        return True
+    def findParentIds(self, myId):
+        return set(mw.col.find_notes('[*|nid' + str(myId) + ']'))
 
     def getMainField(self, note: Note) -> str:
         """If it is an image occlusion type, return its "Title" field; otherwise, return the first field"""
@@ -659,37 +585,9 @@ class AnkiNoteLinker(object):
         placeholder = str(uuid.uuid4().int)[0:8]
         editor.doPaste(f'[{text}|new{placeholder}]', True)
 
-    def printChanges(self, changes):
-        """Used for debugging and developing new features"""
-        if changes.card:
-            print('changed ------------------ ' + 'card')
-        if changes.note:
-            print('changed ------------------ ' + 'note')
-        if changes.deck:
-            print('changed ------------------ ' + 'deck')
-        if changes.tag:
-            print('changed ------------------ ' + 'tag')
-        if changes.notetype:
-            print('changed ------------------ ' + 'notetype')
-        if changes.config:
-            print('changed ------------------ ' + 'config')
-        if changes.deck_config:
-            print('changed ------------------ ' + 'deck_config')
-        if changes.mtime:
-            print('changed ------------------ ' + 'mtime')
-        if changes.browser_table:
-            print('changed ------------------ ' + 'browser_table')
-        if changes.browser_sidebar:
-            print('changed ------------------ ' + 'browser_sidebar')
-        if changes.note_text:
-            print('changed ------------------ ' + 'note_text')
-        if changes.study_queues:
-            print('changed ------------------ ' + 'study_queues')
-
     def openGlobalGraph(self):
         if state.globalGraph is None:
             state.globalGraph = GlobalGraph()
-            state.globalGraph.refreshGlobalGraph()
         else:
             state.globalGraph.showNormal()
             state.globalGraph.activateWindow()

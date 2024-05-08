@@ -2,18 +2,13 @@
 AGPL3 LICENSE
 Author Wang Rui <https://github.com/gugutu>
 """
-import json
 import os
 
 import anki
+from anki.notes import NoteId
 from aqt.browser.previewer import BrowserPreviewer
-from aqt.operations import QueryOp
-from aqt import QColor, QWidget, QVBoxLayout, QPushButton, QLabel, QLineEdit, QHBoxLayout, QCheckBox
-from aqt import mw, qconnect
-from aqt.utils import restoreGeom, saveGeom, tooltip
-from aqt.webview import AnkiWebView
+from aqt.utils import tooltip
 
-from .config import config
 from .translation import getTr
 
 
@@ -41,10 +36,10 @@ class Connection:
 
 
 class NoteNode:
-    def __init__(self, nid: int, childIds: list[int], parentIds: list[int], mainField: str):
+    def __init__(self, nid: NoteId, childIds: list[NoteId], parentIds: set[NoteId], mainField: str):
         self.id = nid
-        self.childIds: list[int] = childIds
-        self.parentIds: list[int] = parentIds
+        self.childIds: list[NoteId] = childIds
+        self.parentIds: set[NoteId] = parentIds
         self.mainField: str = mainField
 
     def toJsNoteNode(self, type):
@@ -56,91 +51,6 @@ class JsNoteNode:
         self.id = nid
         self.mainField = mainField
         self.type = type
-
-
-class GlobalGraph(QWidget):
-    def __init__(self):
-        super().__init__()
-        self.linkCache: list[Connection] = []
-        self.noteCache = []
-        self.hlIds = set()
-        self.setWindowTitle(getTr("Global Relationship Graph (Experimental)"))
-        outerLayout = QVBoxLayout()
-        topBarLayout = QHBoxLayout()
-        topBarLayout.setContentsMargins(10, 7, 10, 0)
-        outerLayout.setContentsMargins(0, 0, 0, 0)
-        self.setLayout(outerLayout)
-        self.topBar = QWidget(self)
-        self.topBar.setLayout(topBarLayout)
-        self.topBar.setFixedHeight(30)
-        restoreGeom(self, "GlobalGraph", default_size=(1000, 600))
-        self.web = AnkiWebView(self, title="GlobalGraph")
-        # self.web.stdHtml(
-        #     f'<script>\n{d3_js}{translation_js}\n const ankiLanguage = "{anki.lang.current_lang}";</script>' +
-        #     globalGraph_html
-        # )
-        self.web.stdHtml(
-            f'<script>\n{d3_js}{force_graph_js}{translation_js}\n const ankiLanguage = "{anki.lang.current_lang}";</script>' +
-            graph_html
-        )
-        self.web.set_bridge_command(lambda s: s, self)
-        outerLayout.addWidget(self.topBar)
-        outerLayout.addWidget(self.web)
-        self.lineEdit = QLineEdit()
-        self.lineEdit.setText(config['globalGraph']['defaultSearchText'])
-        self.lineEdit2 = QLineEdit()
-        self.lineEdit2.setText(config['globalGraph']['defaultHighlightFilter'])
-        self.checkBox = QCheckBox(getTr('Display single notes'))
-        self.sButton = QPushButton(getTr('Search'))
-        qconnect(self.sButton.clicked, self.refreshGlobalGraph)
-        topBarLayout.addWidget(QLabel(getTr('Search notes:')))
-        topBarLayout.addWidget(self.lineEdit)
-        topBarLayout.addWidget(QLabel(getTr('Highlight specified notes:')))
-        topBarLayout.addWidget(self.lineEdit2)
-        topBarLayout.addWidget(self.checkBox)
-        topBarLayout.addWidget(self.sButton)
-
-        self.activateWindow()
-        self.show()
-
-    def refreshGlobalGraph(self):
-        def op(col):
-            ids = set(col.find_notes(self.lineEdit.text()))
-            self.hlIds = set(
-                col.find_notes('deck:ankiankianki' if self.lineEdit2.text() == '' else self.lineEdit2.text())
-            )
-            showSingle = self.checkBox.isChecked()
-            self.noteCache = [x for x in addon.noteCache.values()
-                              if (x.id in ids and showSingle) or
-                              (x.id in ids and (len(x.childIds) != 0 or len(x.parentIds) != 0))]
-            needIds = set([n.id for n in self.noteCache])
-
-            self.linkCache = []
-            for parentNode in self.noteCache:
-                for childId in parentNode.childIds:
-                    if childId in needIds:
-                        self.linkCache.append(Connection(parentNode.id, childId))
-
-        QueryOp(parent=self, op=op, success=lambda c: self.web.eval(
-            f'''reloadPage(
-                {json.dumps([x.toJsNoteNode('highlight') if x.id in self.hlIds else x.toJsNoteNode('normal') for x in self.noteCache], default=lambda o: o.__dict__)},
-                {json.dumps(self.linkCache, default=lambda o: o.__dict__)},
-                false,
-                "{self.qColorToString(QColor.fromRgb(*config["globalGraph"]["nodeColor"]))}",
-                "{self.qColorToString(QColor.fromRgb(*config["globalGraph"]["highlightedNodeColor"]))}"
-            )'''
-        )).run_in_background()
-
-    def closeEvent(self, event):
-        saveGeom(self, "GlobalGraph")
-        self.web.cleanup()
-        self.web.close()
-        global globalGraph
-        globalGraph = None
-        event.accept()
-
-    def qColorToString(self, qColor: QColor):
-        return f"rgb({qColor.red()},{qColor.green()},{qColor.blue()})"
 
 
 class PreviewState:

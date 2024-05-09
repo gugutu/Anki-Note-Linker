@@ -288,7 +288,7 @@ class AnkiNoteLinker(object):
                         operator.eq(editor.noteNode.childIds, self.findChildIds(note.id, ' '.join(note.fields))):
                     return
                 else:
-                    self.refreshPage(editor, note=note, reason='mainField or links of note changed')
+                    self.refreshPage(editor, reason='mainField or links of note changed')
 
         if state.globalGraph is not None and note.id in state.globalGraph.searchedIds:
             state.globalGraph.refreshGlobalGraph(note, 'mainField or links of note changed')
@@ -298,10 +298,13 @@ class AnkiNoteLinker(object):
             note = mw.col.get_note(nid)
         except NotFoundError:
             return NoteNode(nid, [], set(), None)
-        return NoteNode(nid, self.findChildIds(nid, ' '.join(note.fields)),
-                        self.findParentIds(nid), self.getMainField(note))
+        return self.noteToNoteNode(note)
 
-    def refreshPage(self, editor: Editor, note: Note = None, resetCenter: bool = False, reason: str = ''):
+    def noteToNoteNode(self, note: Note):
+        return NoteNode(note.id, self.findChildIds(note.id, ' '.join(note.fields)),
+                        self.findParentIds(note.id), self.getMainField(note))
+
+    def refreshPage(self, editor: Editor, resetCenter: bool = False, reason: str = ''):
         if editor.note is None or editor.addMode:
             return
         if not hasattr(editor, "linksPage") and not hasattr(editor, "graphPage"):
@@ -309,11 +312,8 @@ class AnkiNoteLinker(object):
 
         log(f'-----refresh page: {reason}, at', editor)
 
-        # 如果提供了note参数，则使用提供的参数，因为idToNoteNode获取的笔记信息可能过时
-        currentId = editor.note.id if note is None else note.id
-        currentNode = self.idToNoteNode(currentId) if note is None else \
-            NoteNode(currentId, self.findChildIds(currentId, ' '.join(note.fields)),
-                     self.findParentIds(currentId), self.getMainField(note))
+        currentId = editor.note.id
+        currentNode = self.noteToNoteNode(editor.note)
         editor.noteNode = currentNode
 
         allIds = currentNode.parentIds | set(currentNode.childIds) | {currentId}

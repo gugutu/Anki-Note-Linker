@@ -95,10 +95,10 @@ _备注: 如果没有选中文本，使用上述操作将生成一个没有标�
 1. 在卡片模版中，给每个笔记字段加上`class`属性`"linkRender"`，您也可以自定义它的名称
 
 ```html
-<div class="linkRender">{{Front}}</div>
-<div class="linkRender">{{Back}}</div>
+<div class="linkRender">{{问题}}</div>
+<div class="linkRender">{{答案}}</div>
 <!-- 如果字段已经拥有了class属性，可以使用空格将新的属性与原来的属性隔开 -->
-<div class="otherClassName linkRender">{{Addition}}</div>
+<div class="otherClassName linkRender">{{补充}}</div>
 ```
 2. 将以下代码复制到卡片模版末尾
 

@@ -86,42 +86,40 @@ _备注: 如果没有选中文本，使用上述操作将生成一个没有标�
 如果使用快捷键时没有响应，则可能是由于快捷键冲突，请尝试更改快捷键
 
 ---
-## 如何在没有此插件的情况下正确显示笔记（如AnkiDroid）
+## 如何在没有此插件的情况下正确显示笔记（例如在AnkiDroid、AnkiMobile中）
 
-此插件会自动将笔记链接转换为卡片中显示的相应内容。但是，如果没有此插件，链接将不会被转换，例如在AnkiDroid中。
+此插件会自动将笔记链接转换为卡片中显示的相应内容。但是，如果没有此插件，链接将不会被转换，例如在移动设备中
 
-如果您已经生成了笔记链接，并且需要在没有此插件的情况下使用，则可以将以下代码添加到卡片模板中。它会在没有这个插件的情况下自动呈现正确的笔记内容。
+如果您已经生成了笔记链接，并且需要在没有此插件的情况下使用，则可以按以下步骤操作：
+
+1. 在卡片模版中，给每个笔记字段加上`class`属性`"linkRender"`，您也可以自定义它的名称
+
+```html
+<div class="linkRender">{{Front}}</div>
+<div class="linkRender">{{Back}}</div>
+<!-- 如果字段已经拥有了class属性，可以使用空格将新的属性与原来的属性隔开 -->
+<div class="otherClassName linkRender">{{Addition}}</div>
+```
+2. 将以下代码复制到卡片模版末尾
 
 ```html
 <script>
-    requestIdleCallback(() => {
-        try { AnkiNoteLinkerIsActive } catch (e) {
-            document.documentElement.innerHTML = document.documentElement.innerHTML
-                .replace(/\[((?:[^\[]|\\\[)*?)\|nid\d{13}\]/g, (match, title) => title.replace(/\\\[/g, '['))
+    function renderLinks(_) {
+        for (const element of document.getElementsByClassName("linkRender")) {
+            element.innerHTML = element.innerHTML.replace(
+                /\[((?:[^\[]|\\\[)*)\|nid\d{13}\]/g,
+                (match, title) => title.replace(/\\\[/g, '[')
+            )
         }
-    })
+    }
+    try { AnkiNoteLinkerIsActive } catch (err) {
+        if (document.readyState !== "loading") renderLinks(null)
+        else document.addEventListener("DOMContentLoaded", renderLinks, { once: true })
+    }
 </script>
 ```
 
-如果您在AnkiMobile（iOS）平台使用，上述代码或不会正确呈现笔记内容。此时您需要将以下代码添加到卡片模板中。注意`{{Back}}`可以替换成您包含有引用其他卡片的字段。
-
-```html
-<div id="back";>{{Back}}</div>
-
-<script>
-var contentDiv = document.getElementById('back');
-var onlyContent = document.getElementById('back').innerHTML;
-var regex = /\[(.*?)\|nid\d{13}\]/g;
-var matches = onlyContent.match(regex);
-if (matches) {
-    var replacedContent = onlyContent.replace(/\[((?:[^\[]|\\\[)*?)\|nid\d{13}\]/g, function(match, group) {
-        return group;
-    });
-    contentDiv.innerHTML = replacedContent;
-}
-</script>
-```
-
+完成这些操作后，Anki会在没有此插件的情况下自动呈现正确的笔记内容
 
 ---
 本插件创作灵感来源于 [Obsidian](https://obsidian.md/)

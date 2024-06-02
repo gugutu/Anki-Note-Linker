@@ -103,6 +103,26 @@ _备注: 如果没有选中文本，使用上述操作将生成一个没有标�
 </script>
 ```
 
+如果您在AnkiMobile（iOS）平台使用，上述代码或不会正确呈现笔记内容。此时您需要将以下代码添加到卡片模板中。注意`{{Back}}`可以替换成您包含有引用其他卡片的字段。
+
+```html
+<div id="back";>{{Back}}</div>
+
+<script>
+var contentDiv = document.getElementById('back');
+var onlyContent = document.getElementById('back').innerHTML;
+var regex = /\[(.*?)\|nid\d{13}\]/g;
+var matches = onlyContent.match(regex);
+if (matches) {
+    var replacedContent = onlyContent.replace(/\[((?:[^\[]|\\\[)*?)\|nid\d{13}\]/g, function(match, group) {
+        return group;
+    });
+    contentDiv.innerHTML = replacedContent;
+}
+</script>
+```
+
+
 ---
 本插件创作灵感来源于 [Obsidian](https://obsidian.md/)
 

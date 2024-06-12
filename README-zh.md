@@ -77,7 +77,7 @@ _备注: 如果没有选中文本，使用上述操作将生成一个没有标�
 
 入口: `菜单 -> Anki Note Linker -> 全局关系图（实验性）`
 
-请将Anki首选项中的视频驱动程序设置为`Software`以外的选项，因为它会显著降低图形性能
+请将Anki设置中的显示驱动设置为`Software`以外的选项，因为它会显著降低图形性能
 
 ### 自定义快捷键
 
@@ -126,9 +126,11 @@ _备注: 如果没有选中文本，使用上述操作将生成一个没有标�
 
 本项目中使用到了以下项目：
 
-- [Force graph](https://github.com/vasturiano/force-graph)
+- [pixijs](https://github.com/pixijs/pixijs)
 
 - [d3](https://github.com/d3/d3)
+
+- [Force graph](https://github.com/vasturiano/force-graph)
 
 此插件的实现受到以下插件的启发：
 

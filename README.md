@@ -127,9 +127,11 @@ This add-on is inspired by [Obsidian](https://obsidian.md/)
 
 The following projects were used in this project:
 
-- [Force graph](https://github.com/vasturiano/force-graph)
+- [pixijs](https://github.com/pixijs/pixijs)
 
 - [d3](https://github.com/d3/d3)
+
+- [Force graph](https://github.com/vasturiano/force-graph)
 
 The implementation of this add-on is inspired by the following add-ons:
 

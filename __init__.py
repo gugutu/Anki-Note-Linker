@@ -411,7 +411,9 @@ class AnkiNoteLinker(object):
         return idList
 
     def findParentIds(self, myId):
-        return set(mw.col.find_notes('[*|nid' + str(myId) + ']'))
+        parentIds = set(mw.col.find_notes('[*|nid' + str(myId) + ']'))
+        parentIds.discard(myId)
+        return parentIds
 
     def getMainField(self, note: Note) -> str:
         """If it is an image occlusion type, return its "Title" field; otherwise, return the first field"""

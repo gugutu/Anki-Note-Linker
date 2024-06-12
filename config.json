@@ -17,6 +17,7 @@
   "globalGraph": {
     "defaultSearchText": "deck:current",
     "defaultHighlightFilter": "is:due",
+    "defaultShowSingleNode": false,
     "nodeColor": [57, 125, 237],
     "highlightedNodeColor": [244, 165, 0]
   },

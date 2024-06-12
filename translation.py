@@ -81,6 +81,8 @@ def getTr(s: str) -> str:
             return '默认搜索文本'
         elif s == 'Default filter text for highlighted nodes':
             return '高亮节点的默认筛选文本'
+        elif s == 'Default display of single nodes':
+            return '默认显示单独的节点'
         elif s == 'Node color':
             return '节点颜色'
         elif s == 'Highlighted node color':

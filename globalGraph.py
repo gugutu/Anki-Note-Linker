@@ -61,6 +61,7 @@ class GlobalGraph(QWidget):
         self.lineEdit2 = QLineEdit()
         self.lineEdit2.setText(config['globalGraph']['defaultHighlightFilter'])
         self.checkBox = QCheckBox(getTr('Display single notes'))
+        self.checkBox.setChecked(config['globalGraph']['defaultShowSingleNode'])
         self.sButton = QPushButton(getTr('Search'))
         qconnect(self.sButton.clicked, lambda: self.refreshGlobalGraph(reason='Search Button Clicked'))
         topBarLayout.addWidget(QLabel(getTr('Search notes:')))

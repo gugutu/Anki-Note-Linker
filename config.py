@@ -29,6 +29,7 @@ defaultConfig = {
     "globalGraph": {
         "defaultSearchText": "deck:current",
         "defaultHighlightFilter": "is:due",
+        "defaultShowSingleNode": False,
         "nodeColor": [57, 125, 237],
         "highlightedNodeColor": [244, 165, 0]
     },
@@ -43,6 +44,7 @@ configTemp["shortcuts"].setdefault("insertNewLink", defaultConfig["shortcuts"]["
 configTemp["shortcuts"].setdefault("insertLinkTemplate", defaultConfig["shortcuts"]["insertLinkTemplate"])
 configTemp["globalGraph"].setdefault("defaultSearchText", defaultConfig["globalGraph"]["defaultSearchText"])
 configTemp["globalGraph"].setdefault("defaultHighlightFilter", defaultConfig["globalGraph"]["defaultHighlightFilter"])
+configTemp["globalGraph"].setdefault("defaultShowSingleNode", defaultConfig["globalGraph"]["defaultShowSingleNode"])
 configTemp["globalGraph"].setdefault("nodeColor", defaultConfig["globalGraph"]["nodeColor"])
 configTemp["globalGraph"].setdefault("highlightedNodeColor", defaultConfig["globalGraph"]["highlightedNodeColor"])
 mw.addonManager.writeConfig(__name__, configTemp)
@@ -140,6 +142,11 @@ class ConfigView(QWidget):
         layout.addRow(getTr('Default filter text for highlighted nodes') + ':',
                       self.globalGraph_defaultHighlightFilter_LineEdit)
 
+        self.globalGraph_defaultShowSingleNode_CheckBox = QCheckBox()
+        self.globalGraph_defaultShowSingleNode_CheckBox.setChecked(config["globalGraph"]["defaultShowSingleNode"])
+        layout.addRow(getTr('Default display of single nodes') + ':',
+                      self.globalGraph_defaultShowSingleNode_CheckBox)
+
         self.globalGraph_nodeColor_Button = QPushButton()
         qconnect(self.globalGraph_nodeColor_Button.clicked, self.changeNodeColor)
         self.globalGraph_nodeColor_Button.qColor = QColor.fromRgb(*config["globalGraph"]["nodeColor"])
@@ -193,6 +200,8 @@ class ConfigView(QWidget):
         self.linkMaxLines_LineEdit.setText(str(defaultConfig["linkMaxLines"]))
         self.globalGraph_defaultSearchText_LineEdit.setText(defaultConfig["globalGraph"]["defaultSearchText"])
         self.globalGraph_defaultHighlightFilter_LineEdit.setText(defaultConfig["globalGraph"]["defaultHighlightFilter"])
+        self.globalGraph_defaultShowSingleNode_CheckBox.setChecked(
+            defaultConfig["globalGraph"]["defaultShowSingleNode"])
         self.globalGraph_nodeColor_Button.qColor = QColor.fromRgb(*defaultConfig["globalGraph"]["nodeColor"])
         self.globalGraph_nodeColor_Button.setStyleSheet(
             'QPushButton{background:' + self.globalGraph_nodeColor_Button.qColor.name() + ';}')
@@ -226,6 +235,7 @@ class ConfigView(QWidget):
         config["linkMaxLines"] = int(self.linkMaxLines_LineEdit.text())
         config["globalGraph"]["defaultSearchText"] = self.globalGraph_defaultSearchText_LineEdit.text()
         config["globalGraph"]["defaultHighlightFilter"] = self.globalGraph_defaultHighlightFilter_LineEdit.text()
+        config["globalGraph"]["defaultShowSingleNode"] = self.globalGraph_defaultShowSingleNode_CheckBox.isChecked()
         color = self.globalGraph_nodeColor_Button.qColor
         config["globalGraph"]["nodeColor"] = [color.red(), color.green(), color.blue()]
         color = self.globalGraph_highlightedNodeColor_Button.qColor

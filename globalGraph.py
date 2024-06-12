@@ -13,13 +13,14 @@ from aqt.errors import show_exception
 from aqt.operations import QueryOp
 from aqt import QColor, QWidget, QVBoxLayout, QPushButton, QLabel, QLineEdit, QHBoxLayout, QCheckBox, gui_hooks
 from aqt import mw, qconnect
-from aqt.utils import restoreGeom, saveGeom
+from aqt.utils import restoreGeom, saveGeom, tooltip
 from aqt.webview import AnkiWebView
 
 from . import state
 from .config import config
 from .translation import getTr
-from .state import Connection, d3_js, force_graph_js, translation_js, graph_html, NoteNode, log
+from .state import Connection, d3_js, force_graph_js, translation_js, graph_html, NoteNode, log, pixi_js, \
+    newGraph_html
 
 
 class GlobalGraph(QWidget):
@@ -46,13 +47,11 @@ class GlobalGraph(QWidget):
         self.topBar.setFixedHeight(30)
         restoreGeom(self, "GlobalGraph", default_size=(1000, 600))
         self.web = AnkiWebView(self, title="GlobalGraph")
-        # self.web.stdHtml(
-        #     f'<script>\n{d3_js}{translation_js}\n const ankiLanguage = "{anki.lang.current_lang}";</script>' +
-        #     globalGraph_html
-        # )
         self.web.stdHtml(
-            f'<script>\n{d3_js}{force_graph_js}{translation_js}\n const ankiLanguage = "{anki.lang.current_lang}";</script>' +
-            graph_html
+            f'<script>const ankiLanguage = "{anki.lang.current_lang}"</script>'
+            f'<script>{d3_js}</script>'
+            f'<script>{pixi_js}</script>'
+            f'<script>{translation_js}</script>' + newGraph_html
         )
         self.web.set_bridge_command(lambda s: s, self)
         outerLayout.addWidget(self.topBar)
@@ -73,7 +72,17 @@ class GlobalGraph(QWidget):
 
         self.activateWindow()
         self.show()
-        self.refreshGlobalGraph(reason='Init Global Graph')
+        self.refreshGlobalGraph(adaptScale=True, reason='Init Global Graph')
+
+    def switchToOldRenderer(self):
+        self.web.stdHtml(
+            f'<script>\n{d3_js}{force_graph_js}{translation_js}\n const ankiLanguage = "{anki.lang.current_lang}";</script>' +
+            graph_html
+        )
+        self.refreshGlobalGraph(adaptScale=True, reason='Switch To Old Renderer')
+        tooltip(getTr(
+            'For better performance, select a display driver other than "Software" to enable the new renderer. The old renderer is no longer maintained.'),
+                10000)
 
     def onOpChange(self, changes: OpChanges, handler: Optional[object]):
         # self.printChanges(changes)
@@ -127,7 +136,7 @@ class GlobalGraph(QWidget):
                 # If the node doesn't exist, create a new NoteNode object and insert it into the cache
                 self.noteCache[childId] = NoteNode(childId, [], {noteId}, None)
 
-    def refreshGlobalGraph(self, onlyChangedNote: Note = None, reason: str = ''):
+    def refreshGlobalGraph(self, onlyChangedNote: Note = None, reason: str = '', adaptScale=False):
         if isinstance(onlyChangedNote, Collection):
             onlyChangedNote = None
             reason = 'collection_did_load'
@@ -169,6 +178,7 @@ class GlobalGraph(QWidget):
                             {json.dumps([x.toJsNoteNode('highlight') if x.id in self.hlIds else x.toJsNoteNode('normal') for x in self.noteCacheList], default=lambda o: o.__dict__)},
                             {json.dumps(self.linkCache, default=lambda o: o.__dict__)},
                             false,
+                            {json.dumps(adaptScale)},
                             "{self.qColorToString(QColor.fromRgb(*config["globalGraph"]["nodeColor"]))}",
                             "{self.qColorToString(QColor.fromRgb(*config["globalGraph"]["highlightedNodeColor"]))}"
                         )'''

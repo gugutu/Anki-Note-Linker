@@ -33,7 +33,7 @@ except ImportError:
 from .config import ConfigView, config
 from .editors import MyAddCards, MyEditCurrent
 from .state import Connection, JsNoteNode, NoteNode, addon_path, log, translation_js, links_html, \
-    d3_js, force_graph_js, graph_html, PreviewState
+    d3_js, force_graph_js, graph_html, PreviewState, pixi_js, newGraph_html
 from .translation import getTr
 from .globalGraph import GlobalGraph
 
@@ -157,9 +157,18 @@ class AnkiNoteLinker(object):
         editor.graphPage = AnkiWebView(parent=editor.innerSplitter, title="graph_page")
         editor.graphPage.set_bridge_command(lambda s: s, editor)
         editor.graphPage.stdHtml(
+            f'<script>const ankiLanguage = "{anki.lang.current_lang}"</script>'
+            f'<script>{d3_js}</script>'
+            f'<script>{pixi_js}</script>'
+            f'<script>{translation_js}</script>' + newGraph_html
+        )
+
+    def switchToOldRenderer(self, e):
+        e.graphPage.stdHtml(
             f'<script>\n{d3_js}{force_graph_js}{translation_js}\n const ankiLanguage = "{anki.lang.current_lang}";</script>' +
             graph_html
         )
+        self.refreshPage(e, resetCenter=True, reason='Switch To Old Renderer')
 
     def injectPage(self, editor: Editor):
         self.injectShortcuts(editor.web)
@@ -361,7 +370,8 @@ class AnkiNoteLinker(object):
                 f'''reloadPage(
                 {json.dumps(allJsNodes, default=lambda o: o.__dict__)},
                 {json.dumps(allConnections, default=lambda o: o.__dict__)},
-                {json.dumps(resetCenter)}
+                {json.dumps(resetCenter)},
+                true
                 )'''
             )
 
@@ -503,6 +513,12 @@ class AnkiNoteLinker(object):
         elif message == 'insertLink':
             editor: Editor = context
             self.insertLinkTemplate(editor)
+            return True, None
+        elif message == 'switchToOldRenderer':
+            if isinstance(context, Editor):
+                self.switchToOldRenderer(context)
+            else:
+                context.switchToOldRenderer()
             return True, None
         else:
             return handled

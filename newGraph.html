@@ -1,0 +1,632 @@
+<!--
+AGPL3 LICENSE
+Author Wang Rui <https://github.com/gugutu>
+-->
+
+<style>
+    * {
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+    }
+
+    body {
+        margin: 0;
+    }
+
+    .circleText {
+        font-family: Arial, sans-serif;
+        color: rgb(166, 206, 227);
+        word-break: break-all;
+        position: absolute !important;
+        text-align: center;
+        line-clamp: 4;
+        -webkit-line-clamp: 4;
+        display: -webkit-box;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        pointer-events: none;
+
+        -webkit-user-select: none;
+        /* Safari */
+        -moz-user-select: none;
+        /* Firefox */
+        -ms-user-select: none;
+        /* IE/Edge */
+        user-select: none;
+        /* 标准语法 */
+    }
+
+    .label {
+        font-family: Arial, sans-serif;
+        font-size: 18px;
+        padding: 5px;
+        border-radius: 6px;
+        color: rgb(255, 255, 255);
+        background-color: rgba(0, 0, 0, 0.7);
+        max-width: 500px;
+        /* word-break: break-all; */
+        position: absolute !important;
+        text-overflow: ellipsis;
+        pointer-events: none;
+        -webkit-user-select: none;
+        /* Safari */
+        -moz-user-select: none;
+        /* Firefox */
+        -ms-user-select: none;
+        /* IE/Edge */
+        user-select: none;
+        /* 标准语法 */
+    }
+</style>
+
+<body>
+<div id="texts"></div>
+</body>
+<!--<script src="./pixi.js"></script>-->
+<!--<script src="./d3.v7.js"></script>-->
+
+<script>
+    let init = false
+    let nodes = []
+    let links = []
+
+    // const count = 100
+    // for (let i = 0; i < count; i++) {
+    //     nodes.push({
+    //         id: i,
+    //         mainField: "test test test test test test test test test test test test test"
+    //     })
+    // }
+    // for (let i = 0; i < count / 3; i++) {
+    //     links.push({
+    //         source: Math.floor(Math.random() * count),
+    //         target: Math.floor(Math.random() * count)
+    //     })
+    // }
+
+
+    let simulation = d3.forceSimulation(nodes)
+        .force("link", d3.forceLink(links).id(d => d.id).distance(95))
+        .force("charge", d3.forceManyBody().strength(-700))
+        //.force("collide", d3.forceCollide().radius(d => 200 + 1))
+        .force("x", d3.forceX(0).strength(0.06))
+        .force("y", d3.forceY(0).strength(0.06))
+        .force('center', null)
+        .velocityDecay(0.3)
+    // .alphaDecay(0.03)
+    // .alphaMin(0.002)
+
+    const app = new PIXI.Application()
+
+
+    app.init({
+        background: 'rgb(16, 16, 32)',
+        width: window.innerWidth,
+        height: window.innerHeight,
+        antialias: true,
+        resolution: 1.5,
+        autoDensity: true,
+        useContextAlpha: false
+    }).then(initPixi)
+
+
+    const lineClamp = 4
+    const fontSize = 12
+    const particleNum = 3
+    let normalNodeColor = "rgb(57, 125, 237)"
+    let highlightNodeColor = "rgb(244, 165, 0)"
+    let draggingNode = null
+    let inDragCanvas = false
+    let dragGapX = 0
+    let dragGapY = 0
+    let stageDragGapX = 0
+    let stageDragGapY = 0
+    let labelElement = null
+    let needAdaptScale = true
+    let lineContainerList
+    let circleList
+    let textList
+    const tempDiv = document.createElement("div");
+    const textContainer = document.getElementById('texts')
+    const toCanvasX = clientX => (clientX - app.stage.x) / app.stage.scale.x
+    const toCanvasY = clientY => (clientY - app.stage.y) / app.stage.scale.y
+    const toCanvasLength = clientLength => clientLength / app.stage.scale.x
+    const toClientX = canvasX => canvasX * app.stage.scale.x + app.stage.x
+    const toClientY = canvasY => canvasY * app.stage.scale.x + app.stage.y
+    const toClientLength = canvasLength => canvasLength * app.stage.scale.x
+    const linkTools = {
+        shouldRenderLink: (link, radius) => boundary.contains(link.source.x, link.source.y, radius) || boundary.contains(link.target.x, link.target.y, radius),
+        calculateDistance: (x1, y1, x2, y2) => Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2)),
+        calculateAngleWithXAxis: (x1, y1, x2, y2) => Math.atan2(y2 - y1, x2 - x1),
+        particleStep: 0 //线段粒子步进程度
+    }
+    const boundary = {
+        left: 0,
+        top: 0,
+        right: 0,
+        bottom: 0,
+        contains: function (x, y, r = 0) {
+            return x + r > this.left && x - r < this.right && y + r > this.top && y - r < this.bottom
+        },
+        set: function (left, top, right, bottom) {
+            this.left = left
+            this.top = top
+            this.right = right
+            this.bottom = bottom
+        },
+        getWidth: function () {
+            return this.right - this.left
+        },
+        getHeight: function () {
+            return this.bottom - this.top
+        },
+        update: function (updateHitArea = true) {
+            this.set(toCanvasX(0), toCanvasY(0), toCanvasX(window.innerWidth), toCanvasY(window.innerHeight))
+            if (updateHitArea)
+                app.stage.hitArea = new PIXI.Rectangle(this.left, this.top, this.getWidth(), this.getHeight())
+        }
+    }
+    const zoomAnimation = {
+        running: false, time: 0, b: 1, c: 0, eventX: null, eventY: null,
+        getNowValue: function (t = this.time, b = this.b, c = this.c, d = 100) {
+            let result
+            if (t >= d) {
+                result = b + c
+                zoomAnimation.running = false
+            } else result = c * t / d + b
+
+            if (result <= 0.01) {
+                zoomAnimation.running = false
+                return 0.01
+            }
+            if (result >= 100) {
+                zoomAnimation.running = false
+                return 100
+            }
+            return result
+        },
+        start: function (event) {
+            if (event.deltaY === 0 || inDragCanvas) return
+
+            const step = -event.deltaY / 400
+
+            const now = app.stage.scale.x
+
+            if (now === 100 && step > 0 || now === 0.01 && step < 0) return
+
+            if (this.running) {
+                const nextStart = this.b + this.c
+
+                if (step > 0) this.c = nextStart * (1 + step) - now
+                else this.c = nextStart / (1 - step) - now
+            } else {
+                if (step > 0) this.c = now * step
+                else this.c = now / (1 - step) - now
+            }
+
+            this.time = 0
+            this.b = app.stage.scale.x
+            this.eventX = event.x
+            this.eventY = event.y
+            this.running = true
+        }
+    }
+    const resetCenterAnimation = {
+        running: false, time: 0, bx: 0, cx: 0, by: 0, cy: 0,
+        getNowValue: function (t, b, c, d = 180) {
+            let result
+            if (t >= d) {
+                result = b + c
+                this.running = false
+            } else //result = -c / 2 * (Math.cos(Math.PI * t / d) - 1) + b
+                result = c * (-Math.pow(2, -10 * t / d) + 1) + b
+
+            return result
+        },
+        getNowValueX: function () {
+            return this.getNowValue(this.time, b = this.bx, c = this.cx)
+        },
+        getNowValueY: function () {
+            return this.getNowValue(this.time, b = this.by, c = this.cy)
+        },
+        start: function () {
+            this.time = 0
+            this.bx = app.stage.x
+            this.cx = window.innerWidth / 2 - this.bx
+            this.by = app.stage.y
+            this.cy = window.innerHeight / 2 - this.by
+            this.running = true
+        }
+    }
+
+    let normalNodeContext
+    let highlightNodeContext
+    const meNodeContext = new PIXI.GraphicsContext()
+        .circle(0, 0, 25)
+        .fill('rgb(31, 115, 205)')
+        .circle(0, 0, 15)
+        .fill('rgb(28, 143, 251)')
+    const childNodeContext = new PIXI.GraphicsContext()
+        .circle(0, 0, 20)
+        .fill('rgb(226, 153, 2)')
+    const parentNodeContext = new PIXI.GraphicsContext()
+        .circle(0, 0, 20)
+        .fill('rgb(236, 61, 57)')
+    const invalidNodeContext = new PIXI.GraphicsContext()
+        .circle(0, 0, 20)
+        .fill('rgb(195, 195, 199)')
+    const lineContext = new PIXI.GraphicsContext()
+        .rect(0, -0.5, 1, 1)
+        .fill(0x40404d)
+    const particleContext = new PIXI.GraphicsContext()
+        .circle(0, 0, 1)
+        .fill('rgb(102, 102, 112)')
+
+
+    function reloadGraphData() {
+        app.stage.removeChildren().forEach(it => it.destroy({children: true}))
+        while (textContainer.firstChild) textContainer.removeChild(textContainer.firstChild)//移除所有文本DOM
+        document.body.style.cursor = 'default'
+        if (labelElement !== null) {
+            document.body.removeChild(labelElement)
+            labelElement = null
+        }
+
+        lineContainerList = links.map(_ => {//将links列表转换为对应的图形列表
+            const lineContainer = new PIXI.Container()
+            lineContainer.interactiveChildren = false
+            const line = new PIXI.Graphics(lineContext)//生成线段图形
+            line.eventMode = 'none'
+            lineContainer.addChild(line)
+            for (let j = 0; j < particleNum; j++) {//生成线段粒子图形
+                const particle = new PIXI.Graphics(particleContext)
+                particle.eventMode = 'none'
+                lineContainer.addChild(particle)
+            }
+
+            return lineContainer
+        })
+
+        function convertHtmlToPlainText(html) {
+            tempDiv.innerHTML = html
+            text = tempDiv.innerText.replace(/\n+/g, ' ').trim()
+            if (text === '') {
+                const t = html.replace(/(<br\s*\/?>|\n)+/g, ' ').trim();
+                if (t === '') return '\n'
+                else return t
+            } else return text
+        }
+
+        normalNodeContext = new PIXI.GraphicsContext()
+            .circle(0, 0, 20)
+            .fill(normalNodeColor)
+        highlightNodeContext = new PIXI.GraphicsContext()
+            .circle(0, 0, 20)
+            .fill(highlightNodeColor)
+
+        circleList = nodes.map(node => {//将nodes列表转换为对应的图形列表
+            if (node.mainField === null) {
+                node.mainField = getTr('Invalid note')
+                node.type = 'invalid'
+            } else {
+                node.mainField = convertHtmlToPlainText(node.mainField)
+            }
+            let circle
+            switch (node.type) {
+                case 'normal':
+                    circle = new PIXI.Graphics(normalNodeContext)
+                    break
+                case 'highlight':
+                    circle = new PIXI.Graphics(highlightNodeContext)
+                    break
+                case 'me':
+                    circle = new PIXI.Graphics(meNodeContext)
+                    break
+                case 'parent child':
+                case 'parent':
+                    circle = new PIXI.Graphics(parentNodeContext)
+                    break
+                case 'child':
+                    circle = new PIXI.Graphics(childNodeContext)
+                    break
+                case 'invalid':
+                    circle = new PIXI.Graphics(invalidNodeContext)
+                    break
+                default:
+                    circle = new PIXI.Graphics(normalNodeContext)
+            }
+
+            circle.on('click', event => {
+                if (node.type !== 'me') pycmd('lnid' + node.id)
+            })
+
+            circle.on('rightclick', event => {
+                pycmd('rnid' + node.id)
+            })
+
+            circle.on('pointerdown', (event) => {//当鼠标按下时
+                if (draggingNode === node) return//如果正在拖动的节点是当前节点，则不做操作
+                draggingNode = node//设定正在拖动的节点为当前节点
+
+                draggingNode.fx = circle.x//设定当前节点固定坐标为显示坐标（让图不要乱动）
+                draggingNode.fy = circle.y
+                dragGapX = circle.x - toCanvasX(event.x) //计算鼠标坐标和显示坐标的差值
+                dragGapY = circle.y - toCanvasY(event.y)
+            })
+
+            circle.on('pointerenter', (event) => {
+                document.body.style.cursor = 'pointer'
+                labelElement = document.createElement('div')
+                labelElement.classList.add("label")
+                labelElement.textContent = node.mainField// 设置div的内容
+                document.body.appendChild(labelElement)
+            })
+
+            circle.on('pointerleave', (event) => {
+                document.body.style.cursor = 'default'
+                if (labelElement !== null) {
+                    document.body.removeChild(labelElement)
+                    labelElement = null
+                }
+            })
+
+            circle.eventMode = 'static'//设定事件类型为静态交互
+            return circle
+        })
+
+        textList = nodes.map(node => {//生成每个节点对应的文本DOM
+            // 创建一个新的div元素
+            const myDiv = document.createElement('div')
+            myDiv.classList.add("circleText")
+            // 设置div的内容
+            myDiv.textContent = node.mainField
+            myDiv.inDOM = false
+            return myDiv
+        })
+
+        if (lineContainerList.length > 0)
+            app.stage.addChild(...lineContainerList)//把线段添加到画布中渲染
+
+        if (circleList.length > 0)
+            app.stage.addChild(...circleList)//把图形添加到画布中渲染
+    }
+
+    function initPixi() {//初始化Pixi并设置事件监听
+        document.body.appendChild(app.canvas)//将canvas设置到body中
+        app.canvas.addEventListener('contextmenu', event => event.preventDefault())
+        app.stage.x = window.innerWidth / 2
+        app.stage.y = window.innerHeight / 2
+        boundary.update()
+        app.stage.eventMode = 'static'
+        init = true
+        reloadGraphData()
+
+        window.addEventListener('resize', () => {
+            app.renderer.resize(window.innerWidth, window.innerHeight)
+            boundary.update()
+        })
+
+        app.stage.on('pointerdown', event => {//当鼠标按下时
+            stageDragGapX = app.stage.x - event.x
+            stageDragGapY = app.stage.y - event.y
+            inDragCanvas = true
+        })
+
+        const onPointerUp = (event) => {
+            if (inDragCanvas) {
+                inDragCanvas = false
+                boundary.update()
+            }
+            app.stage.interactiveChildren = true
+            if (draggingNode === null) return//如果当前没有正在拖动的节点，则不做操作
+            draggingNode.fx = null//取消节点的固定坐标
+            draggingNode.fy = null
+            draggingNode = null//设定没有正在拖动的节点
+            simulation.alphaTarget(0).restart()//重新启动力学仿真
+        }
+        app.stage.on('pointerup', onPointerUp)//当鼠标抬起时
+        app.stage.on('pointerupoutside', onPointerUp)
+        app.stage.on('globalpointermove', (event) => {//指针移动时
+            if (draggingNode !== null) {
+                app.stage.interactiveChildren = false
+                if (labelElement !== null) {
+                    document.body.removeChild(labelElement)
+                    labelElement = null
+                }
+                draggingNode.fx = toCanvasX(event.x) + dragGapX//设定正在拖动的节点的固定坐标为指针坐标
+                draggingNode.fy = toCanvasY(event.y) + dragGapY
+
+                if (simulation.alphaTarget() < 0.5) simulation.alphaTarget(0.5).restart()//重新启动力学仿真
+
+                inDragCanvas = false
+            } else if (inDragCanvas) {
+                app.stage.interactiveChildren = false
+                app.stage.x = event.x + stageDragGapX
+                app.stage.y = event.y + stageDragGapY
+                boundary.update(false)
+            }
+            if (labelElement !== null) {
+                let left = event.x - labelElement.offsetWidth / 2
+                if (left < 0) left = 1
+                labelElement.style.left = left + 'px'
+                labelElement.style.top = event.y + 25 + 'px'
+            }
+        })
+        app.stage.on('wheel', (event) => zoomAnimation.start(event))//滚轮滚动时
+        app.ticker.add(ticker => onTick(ticker))//每一帧要做的事
+    }
+
+    function onTick(ticker) {//每一帧要做的事
+
+        // console.log(Math.floor(ticker.FPS), Math.floor(ticker.deltaMS), app.renderer.name)
+        if (needAdaptScale) { //自适应比例
+            let mostLeft = 0, mostRight = 0, mostTop = 0, mostBottom = 0
+            nodes.forEach(node => {
+                if (node.x < mostLeft) mostLeft = node.x
+                else if (node.x > mostRight) mostRight = node.x
+                if (node.y < mostTop) mostTop = node.y
+                else if (node.y > mostBottom) mostBottom = node.y
+            })
+
+            const scaleX = 0.8 * (window.innerWidth) / (mostRight - mostLeft + 80)
+            const scaleY = 0.8 * (window.innerHeight) / (mostBottom - mostTop + 80)
+            scale = scaleX < scaleY ? scaleX : scaleY
+            app.stage.scale.x = app.stage.scale.y = scale < 1.4 ? scale : 1.4
+            app.stage.x = window.innerWidth / 2
+            app.stage.y = window.innerHeight / 2
+            needAdaptScale = false
+            boundary.update()
+        }
+
+        if (resetCenterAnimation.running) {//回中心动画
+            resetCenterAnimation.time += ticker.deltaMS
+            const valueX = resetCenterAnimation.getNowValueX()
+            const valueY = resetCenterAnimation.getNowValueY()
+            if (resetCenterAnimation.running) {
+                app.stage.x = valueX
+                app.stage.y = valueY
+                boundary.update()
+            }
+        }
+
+        if (zoomAnimation.running) {//滚轮缩放动画
+            zoomAnimation.time += ticker.deltaMS
+            const value = zoomAnimation.getNowValue()
+            // console.log(value.toFixed(4))
+            // console.log(zoomAnimate)
+            if (zoomAnimation.running) {
+                const beforeX = toCanvasX(zoomAnimation.eventX)
+                const beforeY = toCanvasY(zoomAnimation.eventY)
+                app.stage.scale.x = value
+                app.stage.scale.y = value
+                const afterX = toCanvasX(zoomAnimation.eventX)
+                const afterY = toCanvasY(zoomAnimation.eventY)
+                app.stage.x += toClientLength(afterX - beforeX)
+                app.stage.y += toClientLength(afterY - beforeY)
+                boundary.update()
+            }
+        }
+
+        for (let i = 0; i < circleList.length; i++) {//对每个节点进行布局
+            const x = nodes[i].x
+            const y = nodes[i].y
+            circleList[i].x = x
+            circleList[i].y = y
+            circleList[i].renderable = boundary.contains(circleList[i].x, circleList[i].y, 20)
+
+            //对每个节点的文本进行布局
+            const text = textList[i]
+            if (app.stage.scale.x < 0.5) {
+                if (text.inDOM) {
+                    textContainer.removeChild(text)
+                    text.inDOM = false
+                }
+                continue
+            }
+            text.width = toClientLength(100)
+            text.fontSize = toClientLength(fontSize)
+            text.lineHeight = text.fontSize * 1.1
+            text.left = toClientX(x - 50)
+            const offsetY = nodes[i].type === 'me' ? 27 : 22
+            text.top = toClientY(y + offsetY)
+
+            if (text.left + text.width > 0 && //检测是在可视范围内
+                text.top + text.lineHeight * lineClamp > 0 &&
+                text.left < window.innerWidth &&
+                text.top < window.innerHeight
+            ) {
+                text.setAttribute('style', `left:${text.left}px;top:${text.top}px;width:${text.width}px;font-size:${text.fontSize}px;line-height:${text.lineHeight}px;`)
+                if (!text.inDOM) {
+                    textContainer.appendChild(text)
+                    text.inDOM = true
+                }
+            } else if (text.inDOM) {
+                textContainer.removeChild(text)
+                text.inDOM = false
+            }
+        }
+
+        for (let i = 0; i < lineContainerList.length; i++) {//对每个线段进行布局
+            const lineContainer = lineContainerList[i]
+            if (!linkTools.shouldRenderLink(links[i], 20)) {
+                lineContainer.renderable = false
+                lineContainer.children.forEach(it => it.renderable = false)
+                continue
+            }
+
+            //设定线段的位置
+            lineContainer.x = links[i].source.x
+            lineContainer.y = links[i].source.y
+            lineContainer.scale.x = linkTools.calculateDistance(links[i].source.x, links[i].source.y, links[i].target.x, links[i].target.y)
+            lineContainer.scale.y = toCanvasLength(3)
+            lineContainer.rotation = linkTools.calculateAngleWithXAxis(links[i].source.x, links[i].source.y, links[i].target.x, links[i].target.y)
+            lineContainer.renderable = true
+
+            lineContainer.children.forEach((particle, j) => {//对每个线段粒子进行布局
+                if (j === 0) {//此时particle是line
+                    particle.renderable = true
+                    return
+                }
+                if (app.stage.scale.x < 0.2) {
+                    particle.renderable = false
+                    return
+                }
+                particle.scale.x = 3 / lineContainer.scale.x
+                particle.scale.y = 3 / lineContainer.scale.y
+                particle.x = (j / particleNum + linkTools.particleStep) % 1
+                particle.renderable = true
+            })
+        }
+        linkTools.particleStep += ticker.deltaMS / 1600
+        linkTools.particleStep = linkTools.particleStep % 1
+    }
+
+    let webGLSupported = false
+    function reloadPage(newNodes, connections, resetCenter, adaptScale = false, normalColor = null, highlightColor = null) {
+        function isWebGLSupported() {
+            try {
+                const canvas = document.createElement('canvas');
+                return !!(window.WebGLRenderingContext && (canvas.getContext('webgl') || canvas.getContext('experimental-webgl')));
+            } catch (e) {
+                return false;
+            }
+        }
+
+        if (!webGLSupported && !isWebGLSupported()) {
+            pycmd('switchToOldRenderer')
+            return
+        } else {
+            webGLSupported = true
+        }
+
+        while (!init) setTimeout(null, 200)
+        normalNodeColor = normalColor
+        highlightNodeColor = highlightColor
+        let oldNodes = nodes
+        let oldNodeMap = new Map(oldNodes.map(it => [it.id, it]))
+
+        for (const node of newNodes) {
+            const oldNode = oldNodeMap.get(node.id)
+            if (oldNode) {
+                const tempMainField = node.mainField
+                const tempType = node.type
+                Object.assign(node, oldNode)
+                node.mainField = tempMainField
+                node.type = tempType
+            }
+        }
+        nodes = newNodes
+        links = connections
+
+        simulation.nodes(nodes)
+            .force("link", d3.forceLink(links).id(d => d.id).distance(95))
+            .alpha(1).restart()//重新启动力学仿真
+        simulation.alphaTarget(0).restart()//重新启动力学仿真
+        reloadGraphData()
+        needAdaptScale = adaptScale
+        if (adaptScale) simulation.tick(5)
+        if (resetCenter) resetCenterAnimation.start()
+    }
+</script>

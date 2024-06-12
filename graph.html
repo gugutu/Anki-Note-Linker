@@ -157,7 +157,7 @@
     });
     init = true
 
-    function reloadPage(nodes, connections, resetCenter, normalColor = null, highlightColor = null) {
+    function reloadPage(nodes, connections, resetCenter, adaptScale = false, normalColor = null, highlightColor = null) {
         while (!init) setTimeout(null, 200);
         normalNodeColor = normalColor
         highlightNodeColor = highlightColor

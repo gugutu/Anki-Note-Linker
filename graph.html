@@ -21,10 +21,10 @@
     const tempDiv = document.createElement("div");
 
     function convertHtmlToPlainText(html) {
-        tempDiv.innerHTML = html
+        tempDiv.innerHTML = html.replace(/\[sound:.*?\]/g, ' ')
         text = tempDiv.innerText.replace(/\n+/g, ' ').trim()
         if (text === '') {
-            const t = html.replace(/(<br\s*\/?>|\n)+/g, ' ').trim();
+            const t = tempDiv.innerHTML.replace(/(<br\s*\/?>|\n)+/g, ' ').trim();
             if (t === '') return '\n'
             else return t
         } else return text

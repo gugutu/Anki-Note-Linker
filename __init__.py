@@ -232,6 +232,7 @@ class AnkiNoteLinker(object):
                 if e.linksPage.isHidden():
                     e.innerSplitter.show()
                     e.linksPage.show()
+                    self.refreshPage(e, target='linksPage', reason='toggleLinksPage')
                 else:
                     e.linksPage.hide()
                     if not hasattr(e, 'graphPage') or e.graphPage.isHidden():
@@ -242,13 +243,14 @@ class AnkiNoteLinker(object):
                 editor.innerSplitter.setSizes(
                     [int(r) * 10000 for r in config["splitRatioBetweenLinksPageAndGraphPage"].split(":")])
                 e.innerSplitter.show()
-                self.refreshPage(e, reason='toggleLinksPage')
+                self.refreshPage(e, target='linksPage', reason='toggleLinksPage')
 
         def toggleGraphPage(e: Editor):
             if hasattr(e, 'graphPage'):
                 if e.graphPage.isHidden():
                     e.innerSplitter.show()
                     e.graphPage.show()
+                    self.refreshPage(e, target='graphPage', reason='toggleGraphPage')
                 else:
                     e.graphPage.hide()
                     if not hasattr(e, 'linksPage') or e.linksPage.isHidden():
@@ -259,7 +261,7 @@ class AnkiNoteLinker(object):
                 editor.innerSplitter.setSizes(
                     [int(r) * 10000 for r in config["splitRatioBetweenLinksPageAndGraphPage"].split(":")])
                 e.innerSplitter.show()
-                self.refreshPage(e, reason='toggleGraphPage')
+                self.refreshPage(e, target='graphPage', reason='toggleGraphPage')
 
         icons_dir = os.path.join(addon_path, "icons")
         toggleLinksPageButton = editor.addButton(
@@ -297,7 +299,7 @@ class AnkiNoteLinker(object):
                         operator.eq(editor.noteNode.childIds, self.findChildIds(note.id, ' '.join(note.fields))):
                     return
                 else:
-                    self.refreshPage(editor, reason='mainField or links of note changed')
+                    self.refreshPage(editor, adaptScale=False, reason='mainField or links of note changed')
 
         if state.globalGraph is not None and note.id in state.globalGraph.searchedIds:
             state.globalGraph.refreshGlobalGraph(note, 'mainField or links of note changed')
@@ -313,10 +315,23 @@ class AnkiNoteLinker(object):
         return NoteNode(note.id, self.findChildIds(note.id, ' '.join(note.fields)),
                         self.findParentIds(note.id), self.getMainField(note))
 
-    def refreshPage(self, editor: Editor, resetCenter: bool = False, reason: str = ''):
+    def _isPanelsShow(self, e: Editor):
+        if hasattr(e, "linksPage") and not e.linksPage.isHidden():
+            linksPageShow = True
+        else:
+            linksPageShow = False
+        if hasattr(e, "graphPage") and not e.graphPage.isHidden():
+            graphPageShow = True
+        else:
+            graphPageShow = False
+        return linksPageShow, graphPageShow
+
+    def refreshPage(self, editor: Editor, resetCenter: bool = False, adaptScale: bool = True, target='all',
+                    reason: str = ''):
         if editor.note is None or editor.addMode:
             return
-        if not hasattr(editor, "linksPage") and not hasattr(editor, "graphPage"):
+        panelShows = self._isPanelsShow(editor)
+        if not panelShows[0] and not panelShows[1]:
             return
 
         log(f'-----refresh page: {reason}, at', editor)
@@ -358,20 +373,20 @@ class AnkiNoteLinker(object):
             for childId in parentNode.childIds:
                 if childId in allIds:
                     allConnections.append(Connection(parentNode.id, childId))
-        if hasattr(editor, "linksPage"):
+        if target != 'graphPage' and panelShows[0]:
             editor.linksPage.eval(
                 f'''reloadPage(
                     {json.dumps(parentJsNodes, default=lambda o: o.__dict__)},
                     {json.dumps(childJsNodes, default=lambda o: o.__dict__)}
                 )'''
             )
-        if hasattr(editor, "graphPage"):
+        if target != 'linksPage' and panelShows[1]:
             editor.graphPage.eval(
                 f'''reloadPage(
                 {json.dumps(allJsNodes, default=lambda o: o.__dict__)},
                 {json.dumps(allConnections, default=lambda o: o.__dict__)},
                 {json.dumps(resetCenter)},
-                true
+                {json.dumps(adaptScale)}
                 )'''
             )
 

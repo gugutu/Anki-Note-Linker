@@ -583,9 +583,10 @@ Author Wang Rui <https://github.com/gugutu>
         linkTools.particleStep = linkTools.particleStep % 1
     }
 
+    const delay = ms => new Promise(resolve => setTimeout(resolve, ms))
     let webGLSupported = false
 
-    function reloadPage(newNodes, connections, resetCenter, adaptScale = false, normalColor = null, highlightColor = null) {
+    async function reloadPage(newNodes, connections, resetCenter, adaptScale = false, normalColor = null, highlightColor = null) {
         function isWebGLSupported() {
             try {
                 const canvas = document.createElement('canvas');
@@ -602,7 +603,7 @@ Author Wang Rui <https://github.com/gugutu>
             webGLSupported = true
         }
 
-        while (!init) setTimeout(null, 200)
+        while (!init || window.innerHeight === 0 || window.innerWidth === 0) await delay(20)
         normalNodeColor = normalColor
         highlightNodeColor = highlightColor
         let oldNodes = nodes

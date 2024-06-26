@@ -157,8 +157,10 @@
     });
     init = true
 
-    function reloadPage(nodes, connections, resetCenter, adaptScale = false, normalColor = null, highlightColor = null) {
-        while (!init) setTimeout(null, 200);
+    const delay = ms => new Promise(resolve => setTimeout(resolve, ms))
+
+    async function reloadPage(nodes, connections, resetCenter, adaptScale = false, normalColor = null, highlightColor = null) {
+        while (!init || window.innerHeight === 0 || window.innerWidth === 0) await delay(20)
         normalNodeColor = normalColor
         highlightNodeColor = highlightColor
         let oldNodes = graph.graphData().nodes

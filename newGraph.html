@@ -125,6 +125,8 @@ Author Wang Rui <https://github.com/gugutu>
     let stageDragGapY = 0
     let labelElement = null
     let needAdaptScale = true
+    let lastWindowWidth = null
+    let lastWindowHeight = null
     let lineContainerList
     let circleList
     let textList
@@ -405,6 +407,12 @@ Author Wang Rui <https://github.com/gugutu>
 
         window.addEventListener('resize', () => {
             app.renderer.resize(window.innerWidth, window.innerHeight)
+            if (lastWindowWidth !== null && lastWindowWidth !== 0 && lastWindowHeight !== null && lastWindowHeight !== 0) {
+                app.stage.x *= window.innerWidth / lastWindowWidth
+                app.stage.y *= window.innerHeight / lastWindowHeight
+            }
+            lastWindowWidth = window.innerWidth
+            lastWindowHeight = window.innerHeight
             boundary.update()
         })
 

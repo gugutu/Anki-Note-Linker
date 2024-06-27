@@ -86,13 +86,13 @@ You can customize the shortcut keys according to your preferences in add-on conf
 If there is no response when using the shortcut key, it may be due to a shortcut key conflict. Please try changing the shortcut key
 
 ---
-## How to display notes properly without this add-on (such as in AnkiDroid、AnkiMobile)
+## How to display note links properly without this add-on (such as on AnkiDroid, AnkiWeb, or AnkiMobile clients)
 
-This add-on automatically renders note links as corresponding content. However, without the add-on, the links will not be rendered, such as on mobile devices
+This add-on automatically renders note links as corresponding content on the desktop version of Anki. Without the add-on, the links will not be rendered properly, affecting use on mobile devices. However, you can still regain some functionality.
 
-If you have generated note links and need to use them without the add-on, you can follow the steps below to operate:
+If you have already generated note links and need to use them without the add-on, you can follow the steps below to get links working:
 
-1. In the card template, add a `class` attribute `"linkRender"` to each note field, you can also customize its name
+1. In the card template, add a `class` attribute `"linkRender"` to each note field on the front and back sides. You can also customize the attribute's name.
 
 ```html
 <div class="linkRender">{{Front}}</div>
@@ -101,26 +101,46 @@ If you have generated note links and need to use them without the add-on, you ca
 you can use a space to separate the new attribute from the original one -->
 <div class="otherClassName linkRender">{{Addition}}</div>
 ```
-2. Copy the following code to the end of the card template
+2. Copy the following code to the end of the card template on both sides. Rename the `"linkRender"` attribute in the code if you changed it.
 
 ```html
 <script>
+    if (document.documentElement.classList.contains("android")) {
+        const jsApiContract = { version: "0.0.3", developer: "Submit an issue at https://github.com/gugutu/Anki-Note-Linker/issues"};
+        window.api = new AnkiDroidJS(jsApiContract);
+    }
+
     function renderLinks(_) {
         for (const element of document.getElementsByClassName("linkRender")) {
             element.innerHTML = element.innerHTML.replace(
-                /\[((?:[^\[]|\\\[)*)\|nid\d{13}\]/g,
-                (match, title) => title.replace(/\\\[/g, '[')
-            )
+                /\[((?:[^\[]|\\\[)*)\|nid(\d{13})\]/g,
+                (match, title, nid) => {
+                    title = title.replace(/\\\[/g, '[');
+                    if (document.documentElement.classList.contains("android")) {
+                        return `<a href="javascript:void(0);" onClick="window.api.ankiSearchCard('nid:${nid}')" class="noteLink">${title}</a>`;
+                    } else {
+                        return `<a href="https://ankiuser.net/edit/${nid}" target="_blank" class="noteLink">${title}</a>`;
+                    }
+                }
+            );
         }
     }
-    try { AnkiNoteLinkerIsActive } catch (err) {
-        if (document.readyState !== "loading") renderLinks(null)
-        else document.addEventListener("DOMContentLoaded", renderLinks, { once: true })
+
+    try { 
+        AnkiNoteLinkerIsActive 
+    } catch (err) {
+        if (document.readyState !== "loading") {
+            renderLinks(null);
+        } else {
+            document.addEventListener("DOMContentLoaded", renderLinks, { once: true });
+        }
     }
 </script>
 ```
 
-After completing these operations, Anki will automatically display the correct note content without this add-on
+3. Save the card template and sync your deck to AnkiWeb.
+
+After completing these steps, AnkiWeb clients will display a hyperlink that will take you to the edit page of the linked card, and AnkiDroid clients will display a clickable link that searches for the linked card in the card browser.
 
 ---
 This add-on is inspired by [Obsidian](https://obsidian.md/)

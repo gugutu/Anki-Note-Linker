@@ -446,8 +446,7 @@ class AnkiNoteLinker(object):
                 mainField = 'Empty note'
 
         # Clear Link Format
-        mainField = re.sub(r'\[((?:[^\[]|\\\[)*?)\|(nid\d{13})\]',
-                           r'\1', mainField).replace('\\[', '[')
+        mainField = re.sub(r'\[((?:[^\[]|\\\[)*?)\|(nid\d{13})\]', lambda m: m[1].replace('\\[', '['), mainField)
         # Clear Cloze Format
         pattern = r'\{\{c\d+?::((:?(?!\{\{c\d+?::).|\n)*?)\}\}'
         while re.search(pattern, mainField):

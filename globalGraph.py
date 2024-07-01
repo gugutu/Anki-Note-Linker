@@ -19,7 +19,7 @@ from aqt.webview import AnkiWebView
 from . import state
 from .config import config
 from .translation import getTr
-from .state import Connection, graph_html, NoteNode, log, newGraph_html, getFileLink
+from .state import Connection, graph_html, NoteNode, log, newGraph_html, getWebFileLink
 
 
 class GlobalGraph(QWidget):
@@ -48,9 +48,9 @@ class GlobalGraph(QWidget):
         self.web = AnkiWebView(self, title="GlobalGraph")
         self.web.stdHtml(
             f'<script>const ankiLanguage = "{anki.lang.current_lang}"</script>'
-            f'<script src="{getFileLink("d3.js")}"></script>'
-            f'<script src="{getFileLink("pixi.js")}"></script>'
-            f'<script src="{getFileLink("translation.js")}"></script>' + newGraph_html
+            f'<script src="{getWebFileLink("js/d3.js")}"></script>'
+            f'<script src="{getWebFileLink("js/pixi.js")}"></script>'
+            f'<script src="{getWebFileLink("js/translation.js")}"></script>' + newGraph_html
         )
         self.web.set_bridge_command(lambda s: s, self)
         outerLayout.addWidget(self.topBar)
@@ -77,9 +77,9 @@ class GlobalGraph(QWidget):
     def switchToOldRenderer(self):
         self.web.stdHtml(
             f'<script>const ankiLanguage = "{anki.lang.current_lang}"</script>'
-            f'<script src="{getFileLink("d3.js")}"></script>'
-            f'<script src="{getFileLink("force-graph.js")}"></script>'
-            f'<script src="{getFileLink("translation.js")}"></script>' + graph_html
+            f'<script src="{getWebFileLink("js/d3.js")}"></script>'
+            f'<script src="{getWebFileLink("js/force-graph.js")}"></script>'
+            f'<script src="{getWebFileLink("js/translation.js")}"></script>' + graph_html
         )
         self.refreshGlobalGraph(adaptScale=True, reason='Switch To Old Renderer')
         tooltip(getTr(

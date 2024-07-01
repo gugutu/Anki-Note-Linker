@@ -19,15 +19,16 @@ def log(*args):
         print(*args)
 
 
-mw.addonManager.setWebExports(__name__, '.*')
+mw.addonManager.setWebExports(__name__, 'web/.*')
 addon_path = os.path.dirname(__file__)
 addon_folder = os.path.basename(addon_path)
-links_html = open(os.path.join(addon_path, 'links.html'), 'r', encoding='utf-8').read()
-graph_html = open(os.path.join(addon_path, 'graph.html'), 'r', encoding='utf-8').read()
-newGraph_html = open(os.path.join(addon_path, 'newGraph.html'), 'r', encoding='utf-8').read()
+links_html = open(os.path.join(addon_path, 'web', 'links.html'), 'r', encoding='utf-8').read()
+graph_html = open(os.path.join(addon_path, 'web', 'graph.html'), 'r', encoding='utf-8').read()
+newGraph_html = open(os.path.join(addon_path, 'web', 'newGraph.html'), 'r', encoding='utf-8').read()
 
-def getFileLink(fileName: str):
-    return f"http://127.0.0.1:{mw.mediaServer.getPort()}/_addons/{addon_folder}/{fileName}"
+
+def getWebFileLink(fileName: str):
+    return f"http://127.0.0.1:{mw.mediaServer.getPort()}/_addons/{addon_folder}/web/{fileName}"
 
 
 globalGraph = None

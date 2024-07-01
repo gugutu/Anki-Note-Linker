@@ -19,8 +19,7 @@ from aqt.webview import AnkiWebView
 from . import state
 from .config import config
 from .translation import getTr
-from .state import Connection, d3_js, force_graph_js, translation_js, graph_html, NoteNode, log, pixi_js, \
-    newGraph_html
+from .state import Connection, graph_html, NoteNode, log, newGraph_html, getFileLink
 
 
 class GlobalGraph(QWidget):
@@ -49,9 +48,9 @@ class GlobalGraph(QWidget):
         self.web = AnkiWebView(self, title="GlobalGraph")
         self.web.stdHtml(
             f'<script>const ankiLanguage = "{anki.lang.current_lang}"</script>'
-            f'<script>{d3_js}</script>'
-            f'<script>{pixi_js}</script>'
-            f'<script>{translation_js}</script>' + newGraph_html
+            f'<script src="{getFileLink("d3.js")}"></script>'
+            f'<script src="{getFileLink("pixi.js")}"></script>'
+            f'<script src="{getFileLink("translation.js")}"></script>' + newGraph_html
         )
         self.web.set_bridge_command(lambda s: s, self)
         outerLayout.addWidget(self.topBar)
@@ -77,13 +76,15 @@ class GlobalGraph(QWidget):
 
     def switchToOldRenderer(self):
         self.web.stdHtml(
-            f'<script>\n{d3_js}{force_graph_js}{translation_js}\n const ankiLanguage = "{anki.lang.current_lang}";</script>' +
-            graph_html
+            f'<script>const ankiLanguage = "{anki.lang.current_lang}"</script>'
+            f'<script src="{getFileLink("d3.js")}"></script>'
+            f'<script src="{getFileLink("force-graph.js")}"></script>'
+            f'<script src="{getFileLink("translation.js")}"></script>' + graph_html
         )
         self.refreshGlobalGraph(adaptScale=True, reason='Switch To Old Renderer')
         tooltip(getTr(
             'For better performance, select a display driver other than "Software" to enable the new renderer. The old renderer is no longer maintained.'),
-                10000)
+            10000)
 
     def onOpChange(self, changes: OpChanges, handler: Optional[object]):
         # self.printChanges(changes)

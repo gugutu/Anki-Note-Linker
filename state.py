@@ -6,6 +6,7 @@ import os
 
 import anki
 from anki.notes import NoteId
+from aqt import mw
 from aqt.browser.previewer import BrowserPreviewer
 from aqt.utils import tooltip
 
@@ -18,22 +19,16 @@ def log(*args):
         print(*args)
 
 
+mw.addonManager.setWebExports(__name__, '.*')
 addon_path = os.path.dirname(__file__)
+addon_folder = os.path.basename(addon_path)
 links_html = open(os.path.join(addon_path, 'links.html'), 'r', encoding='utf-8').read()
 graph_html = open(os.path.join(addon_path, 'graph.html'), 'r', encoding='utf-8').read()
-translation_js = open(os.path.join(addon_path, 'translation.js'), 'r', encoding='utf-8').read()
-force_graph_js = open(os.path.join(addon_path, 'force-graph.js'), 'r', encoding='utf-8').read()
-d3_js = open(os.path.join(addon_path, 'd3.js'), 'r', encoding='utf-8').read()
-pixi_js = open(os.path.join(addon_path, 'pixi.js'), 'r', encoding='utf-8').read()
 newGraph_html = open(os.path.join(addon_path, 'newGraph.html'), 'r', encoding='utf-8').read()
 
-# links_html_path = os.path.join(addon_path, 'links.html')
-# graph_html_path = os.path.join(addon_path, 'graph.html')
-# translation_js_path = os.path.join(addon_path, 'translation.js')
-# force_graph_js_path = os.path.join(addon_path, 'force-graph.js')
-# d3_js_path = os.path.join(addon_path, 'd3.js')
-# pixi_js_path = os.path.join(addon_path, 'pixi.js')
-# newGraph_html_path = os.path.join(addon_path, 'newGraph.html')
+def getFileLink(fileName: str):
+    return f"http://127.0.0.1:{mw.mediaServer.getPort()}/_addons/{addon_folder}/{fileName}"
+
 
 globalGraph = None
 addon = None

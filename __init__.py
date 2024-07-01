@@ -32,8 +32,8 @@ except ImportError:
 
 from .config import ConfigView, config
 from .editors import MyAddCards, MyEditCurrent
-from .state import Connection, JsNoteNode, NoteNode, addon_path, log, translation_js, links_html, \
-    d3_js, force_graph_js, graph_html, PreviewState, pixi_js, newGraph_html
+from .state import Connection, JsNoteNode, NoteNode, addon_path, log, links_html, \
+    graph_html, PreviewState, newGraph_html, getFileLink
 from .translation import getTr
 from .globalGraph import GlobalGraph
 
@@ -147,7 +147,8 @@ class AnkiNoteLinker(object):
         editor.linksPage = AnkiWebView(parent=editor.innerSplitter, title="links_page")
         editor.linksPage.set_bridge_command(lambda s: s, editor)
         editor.linksPage.stdHtml(
-            f'<script>{translation_js}\n const ankiLanguage = "{anki.lang.current_lang}";</script>' +
+            f'<script src="{getFileLink("translation.js")}"></script>'
+            f'<script>const ankiLanguage = "{anki.lang.current_lang}"</script>'
             r'<style>.link-button-text{-webkit-line-clamp: ' + str(config['linkMaxLines']) + '; line-clamp: ' + str(
                 config['linkMaxLines']) + ';}</style>' +
             links_html
@@ -158,15 +159,17 @@ class AnkiNoteLinker(object):
         editor.graphPage.set_bridge_command(lambda s: s, editor)
         editor.graphPage.stdHtml(
             f'<script>const ankiLanguage = "{anki.lang.current_lang}"</script>'
-            f'<script>{d3_js}</script>'
-            f'<script>{pixi_js}</script>'
-            f'<script>{translation_js}</script>' + newGraph_html
+            f'<script src="{getFileLink("d3.js")}"></script>'
+            f'<script src="{getFileLink("pixi.js")}"></script>'
+            f'<script src="{getFileLink("translation.js")}"></script>' + newGraph_html
         )
 
     def switchToOldRenderer(self, e):
         e.graphPage.stdHtml(
-            f'<script>\n{d3_js}{force_graph_js}{translation_js}\n const ankiLanguage = "{anki.lang.current_lang}";</script>' +
-            graph_html
+            f'<script>const ankiLanguage = "{anki.lang.current_lang}"</script>'
+            f'<script src="{getFileLink("d3.js")}"></script>'
+            f'<script src="{getFileLink("force-graph.js")}"></script>'
+            f'<script src="{getFileLink("translation.js")}"></script>' + graph_html
         )
         self.refreshPage(e, resetCenter=True, reason='Switch To Old Renderer')
 

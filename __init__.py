@@ -138,7 +138,7 @@ class AnkiNoteLinker(object):
                 re.sub(
                     r'\[((?:[^\[]|\\\[)*?)\|(nid\d{13})\]',
                     lambda
-                        match: f'<a onclick="pycmd(`r`+`{match.group(2)}`);" oncontextmenu="event.preventDefault();pycmd(`p`+`{match.group(2)}`);" style="cursor: pointer">' +
+                        match: f'<a class="noteLink" onclick="pycmd(`r`+`{match.group(2)}`);" oncontextmenu="event.preventDefault();pycmd(`p`+`{match.group(2)}`);" style="cursor: pointer">' +
                                match.group(1).replace('\\[', '[') + '</a>', text
                 )
         )

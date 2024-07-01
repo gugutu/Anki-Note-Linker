@@ -4,27 +4,29 @@ Author Wang Rui <https://github.com/gugutu>
 -->
 
 <style>
-    * {
-        margin: 0;
-        padding: 0;
-        overflow: hidden;
-    }
-
     body {
         margin: 0;
+        padding: 0;
+        overflow: clip;
+    }
+
+    .katex {
+        white-space: normal !important;
+        font-size: 100%;
     }
 
     .circleText {
         font-family: Arial, sans-serif;
         color: rgb(166, 206, 227);
-        word-break: break-all;
+        word-break: break-word;
         position: absolute !important;
         text-align: center;
         line-clamp: 4;
         -webkit-line-clamp: 4;
         display: -webkit-box;
         -webkit-box-orient: vertical;
-        overflow: hidden;
+        overflow-x: visible;
+        overflow-y: clip;
         text-overflow: ellipsis;
         pointer-events: none;
 
@@ -38,11 +40,16 @@ Author Wang Rui <https://github.com/gugutu>
         /* 标准语法 */
     }
 
+    .circleText .katex-display {
+        margin: 0;
+    }
+
     .label {
         font-family: Arial, sans-serif;
         font-size: 18px;
         padding: 5px;
         border-radius: 6px;
+        word-break: break-word;
         color: rgb(255, 255, 255);
         background-color: rgba(0, 0, 0, 0.7);
         max-width: 500px;
@@ -58,6 +65,10 @@ Author Wang Rui <https://github.com/gugutu>
         /* IE/Edge */
         user-select: none;
         /* 标准语法 */
+    }
+
+    .label .katex-display {
+        margin: 5px;
     }
 </style>
 
@@ -132,6 +143,13 @@ Author Wang Rui <https://github.com/gugutu>
     let textList
     const tempDiv = document.createElement("div");
     const textContainer = document.getElementById('texts')
+    const renderKatex = () => renderMathInElement(document.body, {
+        delimiters: [
+            {left: '\\(', right: '\\)', display: false},
+            {left: '\\[', right: '\\]', display: true}
+        ],
+        throwOnError: false
+    })
     const toCanvasX = clientX => (clientX - app.stage.x) / app.stage.scale.x
     const toCanvasY = clientY => (clientY - app.stage.y) / app.stage.scale.y
     const toCanvasLength = clientLength => clientLength / app.stage.scale.x
@@ -364,6 +382,11 @@ Author Wang Rui <https://github.com/gugutu>
                 labelElement.classList.add("label")
                 labelElement.textContent = node.mainField// 设置div的内容
                 document.body.appendChild(labelElement)
+                try {
+                    renderKatex()
+                } catch (e) {
+                    console.log(e)
+                }
             })
 
             circle.on('pointerleave', (event) => {
@@ -517,6 +540,7 @@ Author Wang Rui <https://github.com/gugutu>
             }
         }
 
+        let newTextDomAdded = false
         for (let i = 0; i < circleList.length; i++) {//对每个节点进行布局
             const x = nodes[i].x
             const y = nodes[i].y
@@ -549,10 +573,22 @@ Author Wang Rui <https://github.com/gugutu>
                 if (!text.inDOM) {
                     textContainer.appendChild(text)
                     text.inDOM = true
+                    if (!text.addedBefoer) {
+                        newTextDomAdded = true
+                        text.addedBefoer = true
+                    }
                 }
             } else if (text.inDOM) {
                 textContainer.removeChild(text)
                 text.inDOM = false
+            }
+        }
+        if (newTextDomAdded) {
+            try {
+                renderKatex()
+                // console.log('render Katex!')
+            } catch (e) {
+                console.log(e)
             }
         }
 

@@ -9,30 +9,35 @@
         --active-color: rgba(0, 0, 0, 0.2);
     }
 
-    * {
+    body, div, h4 {
         font-family: Arial, sans-serif;
         margin: 0;
         padding: 0;
         overflow: hidden;
     }
 
-    body {
-        margin: 0;
-    }
-
     .links {
         overflow-y: auto !important;
-        word-break: break-all;
+        word-break: break-word;
     }
 
     .link-button-text {
         text-align: center;
         font-family: Arial, sans-serif;
         font-size: 14px;
-        overflow: hidden;
+        overflow: clip;
         text-overflow: ellipsis;
         display: -webkit-box;
         -webkit-box-orient: vertical;
+    }
+
+    .katex {
+        white-space: normal !important;
+        font-size: 16px;
+    }
+
+    .katex-display {
+        margin: 5px 0;
     }
 
     .link-button {
@@ -76,6 +81,13 @@
 <div class="links" id="forwardLinks"></div>
 
 <script>
+    const renderKatex = () => renderMathInElement(document.body, {
+        delimiters: [
+            {left: '\\(', right: '\\)', display: false},
+            {left: '\\[', right: '\\]', display: true}
+        ],
+        throwOnError: false
+    });
     document.getElementById("backTitle").innerText = getTr('Back Links')
     document.getElementById("forwardTitle").innerText = getTr('Forward Links')
 
@@ -137,6 +149,7 @@
         childNodes.forEach(it => {
             createButton(it, forwardLinksDiv);
         });
+        renderKatex()
         adjustHeights()
     }
 

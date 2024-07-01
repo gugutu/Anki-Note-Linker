@@ -149,6 +149,9 @@ class AnkiNoteLinker(object):
         editor.linksPage.stdHtml(
             f'<script src="{getWebFileLink("js/translation.js")}"></script>'
             f'<script>const ankiLanguage = "{anki.lang.current_lang}"</script>'
+            f'<link rel="stylesheet" href="{getWebFileLink("katex.css")}">'
+            f'<script defer src="{getWebFileLink("js/katex.js")}"></script>'
+            f'<script defer src="{getWebFileLink("js/katex-auto-render.js")}"></script>'
             r'<style>.link-button-text{-webkit-line-clamp: ' + str(config['linkMaxLines']) + '; line-clamp: ' + str(
                 config['linkMaxLines']) + ';}</style>' +
             links_html
@@ -159,6 +162,9 @@ class AnkiNoteLinker(object):
         editor.graphPage.set_bridge_command(lambda s: s, editor)
         editor.graphPage.stdHtml(
             f'<script>const ankiLanguage = "{anki.lang.current_lang}"</script>'
+            f'<link rel="stylesheet" href="{getWebFileLink("katex.css")}">'
+            f'<script defer src="{getWebFileLink("js/katex.js")}"></script>'
+            f'<script defer src="{getWebFileLink("js/katex-auto-render.js")}"></script>'
             f'<script src="{getWebFileLink("js/d3.js")}"></script>'
             f'<script src="{getWebFileLink("js/pixi.js")}"></script>'
             f'<script src="{getWebFileLink("js/translation.js")}"></script>' + newGraph_html
@@ -167,6 +173,9 @@ class AnkiNoteLinker(object):
     def switchToOldRenderer(self, e):
         e.graphPage.stdHtml(
             f'<script>const ankiLanguage = "{anki.lang.current_lang}"</script>'
+            f'<link rel="stylesheet" href="{getWebFileLink("katex.css")}">'
+            f'<script defer src="{getWebFileLink("js/katex.js")}"></script>'
+            f'<script defer src="{getWebFileLink("js/katex-auto-render.js")}"></script>'
             f'<script src="{getWebFileLink("js/d3.js")}"></script>'
             f'<script src="{getWebFileLink("js/force-graph.js")}"></script>'
             f'<script src="{getWebFileLink("js/translation.js")}"></script>' + graph_html

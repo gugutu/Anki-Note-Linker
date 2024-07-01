@@ -47,7 +47,10 @@ class GlobalGraph(QWidget):
         restoreGeom(self, "GlobalGraph", default_size=(1000, 600))
         self.web = AnkiWebView(self, title="GlobalGraph")
         self.web.stdHtml(
+            f'<link rel="stylesheet" href="{getWebFileLink("katex.css")}">'
             f'<script>const ankiLanguage = "{anki.lang.current_lang}"</script>'
+            f'<script defer src="{getWebFileLink("js/katex.js")}"></script>'
+            f'<script defer src="{getWebFileLink("js/katex-auto-render.js")}"></script>'
             f'<script src="{getWebFileLink("js/d3.js")}"></script>'
             f'<script src="{getWebFileLink("js/pixi.js")}"></script>'
             f'<script src="{getWebFileLink("js/translation.js")}"></script>' + newGraph_html
@@ -76,7 +79,10 @@ class GlobalGraph(QWidget):
 
     def switchToOldRenderer(self):
         self.web.stdHtml(
+            f'<link rel="stylesheet" href="{getWebFileLink("katex.css")}">'
             f'<script>const ankiLanguage = "{anki.lang.current_lang}"</script>'
+            f'<script defer src="{getWebFileLink("js/katex.js")}"></script>'
+            f'<script defer src="{getWebFileLink("js/katex-auto-render.js")}"></script>'
             f'<script src="{getWebFileLink("js/d3.js")}"></script>'
             f'<script src="{getWebFileLink("js/force-graph.js")}"></script>'
             f'<script src="{getWebFileLink("js/translation.js")}"></script>' + graph_html

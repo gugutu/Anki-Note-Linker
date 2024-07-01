@@ -65,7 +65,7 @@ class GlobalGraph(QWidget):
         self.checkBox = QCheckBox(getTr('Display single notes'))
         self.checkBox.setChecked(config['globalGraph']['defaultShowSingleNode'])
         self.sButton = QPushButton(getTr('Search'))
-        qconnect(self.sButton.clicked, lambda: self.refreshGlobalGraph(reason='Search Button Clicked'))
+        qconnect(self.sButton.clicked, lambda: self.refreshGlobalGraph(resetCenter=True, reason='Search Button Clicked'))
         topBarLayout.addWidget(QLabel(getTr('Search notes:')))
         topBarLayout.addWidget(self.lineEdit)
         topBarLayout.addWidget(QLabel(getTr('Highlight specified notes:')))
@@ -144,7 +144,7 @@ class GlobalGraph(QWidget):
                 # If the node doesn't exist, create a new NoteNode object and insert it into the cache
                 self.noteCache[childId] = NoteNode(childId, [], {noteId}, None)
 
-    def refreshGlobalGraph(self, onlyChangedNote: Note = None, reason: str = '', adaptScale=False):
+    def refreshGlobalGraph(self, onlyChangedNote: Note = None, reason: str = '', adaptScale=False, resetCenter=False):
         if isinstance(onlyChangedNote, Collection):
             onlyChangedNote = None
             reason = 'collection_did_load'
@@ -185,7 +185,7 @@ class GlobalGraph(QWidget):
                 f'''reloadPage(
                             {json.dumps([x.toJsNoteNode('highlight') if x.id in self.hlIds else x.toJsNoteNode('normal') for x in self.noteCacheList], default=lambda o: o.__dict__)},
                             {json.dumps(self.linkCache, default=lambda o: o.__dict__)},
-                            false,
+                            {json.dumps(resetCenter)},
                             {json.dumps(adaptScale)},
                             "{self.qColorToString(QColor.fromRgb(*config["globalGraph"]["nodeColor"]))}",
                             "{self.qColorToString(QColor.fromRgb(*config["globalGraph"]["highlightedNodeColor"]))}"

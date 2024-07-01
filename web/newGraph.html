@@ -672,7 +672,7 @@ Author Wang Rui <https://github.com/gugutu>
         simulation.alphaTarget(0).restart()//重新启动力学仿真
         reloadGraphData()
         needAdaptScale = adaptScale
-        if (adaptScale) simulation.tick(5)
+        simulation.tick(5)
         if (resetCenter) resetCenterAnimation.start()
     }
 </script>

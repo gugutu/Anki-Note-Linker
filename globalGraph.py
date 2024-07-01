@@ -50,6 +50,7 @@ class GlobalGraph(QWidget):
             f'<link rel="stylesheet" href="{getWebFileLink("katex.css")}">'
             f'<script>const ankiLanguage = "{anki.lang.current_lang}"</script>'
             f'<script defer src="{getWebFileLink("js/katex.js")}"></script>'
+            f'<script defer src="{getWebFileLink("js/katex-mhchem.js")}"></script>'
             f'<script defer src="{getWebFileLink("js/katex-auto-render.js")}"></script>'
             f'<script src="{getWebFileLink("js/d3.js")}"></script>'
             f'<script src="{getWebFileLink("js/pixi.js")}"></script>'
@@ -65,7 +66,8 @@ class GlobalGraph(QWidget):
         self.checkBox = QCheckBox(getTr('Display single notes'))
         self.checkBox.setChecked(config['globalGraph']['defaultShowSingleNode'])
         self.sButton = QPushButton(getTr('Search'))
-        qconnect(self.sButton.clicked, lambda: self.refreshGlobalGraph(resetCenter=True, reason='Search Button Clicked'))
+        qconnect(self.sButton.clicked,
+                 lambda: self.refreshGlobalGraph(resetCenter=True, reason='Search Button Clicked'))
         topBarLayout.addWidget(QLabel(getTr('Search notes:')))
         topBarLayout.addWidget(self.lineEdit)
         topBarLayout.addWidget(QLabel(getTr('Highlight specified notes:')))
@@ -82,6 +84,7 @@ class GlobalGraph(QWidget):
             f'<link rel="stylesheet" href="{getWebFileLink("katex.css")}">'
             f'<script>const ankiLanguage = "{anki.lang.current_lang}"</script>'
             f'<script defer src="{getWebFileLink("js/katex.js")}"></script>'
+            f'<script defer src="{getWebFileLink("js/katex-mhchem.js")}"></script>'
             f'<script defer src="{getWebFileLink("js/katex-auto-render.js")}"></script>'
             f'<script src="{getWebFileLink("js/d3.js")}"></script>'
             f'<script src="{getWebFileLink("js/force-graph.js")}"></script>'

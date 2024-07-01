@@ -151,6 +151,7 @@ class AnkiNoteLinker(object):
             f'<script>const ankiLanguage = "{anki.lang.current_lang}"</script>'
             f'<link rel="stylesheet" href="{getWebFileLink("katex.css")}">'
             f'<script defer src="{getWebFileLink("js/katex.js")}"></script>'
+            f'<script defer src="{getWebFileLink("js/katex-mhchem.js")}"></script>'
             f'<script defer src="{getWebFileLink("js/katex-auto-render.js")}"></script>'
             r'<style>.link-button-text{-webkit-line-clamp: ' + str(config['linkMaxLines']) + '; line-clamp: ' + str(
                 config['linkMaxLines']) + ';}</style>' +
@@ -164,6 +165,7 @@ class AnkiNoteLinker(object):
             f'<script>const ankiLanguage = "{anki.lang.current_lang}"</script>'
             f'<link rel="stylesheet" href="{getWebFileLink("katex.css")}">'
             f'<script defer src="{getWebFileLink("js/katex.js")}"></script>'
+            f'<script defer src="{getWebFileLink("js/katex-mhchem.js")}"></script>'
             f'<script defer src="{getWebFileLink("js/katex-auto-render.js")}"></script>'
             f'<script src="{getWebFileLink("js/d3.js")}"></script>'
             f'<script src="{getWebFileLink("js/pixi.js")}"></script>'
@@ -175,6 +177,7 @@ class AnkiNoteLinker(object):
             f'<script>const ankiLanguage = "{anki.lang.current_lang}"</script>'
             f'<link rel="stylesheet" href="{getWebFileLink("katex.css")}">'
             f'<script defer src="{getWebFileLink("js/katex.js")}"></script>'
+            f'<script defer src="{getWebFileLink("js/katex-mhchem.js")}"></script>'
             f'<script defer src="{getWebFileLink("js/katex-auto-render.js")}"></script>'
             f'<script src="{getWebFileLink("js/d3.js")}"></script>'
             f'<script src="{getWebFileLink("js/force-graph.js")}"></script>'

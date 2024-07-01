@@ -21,6 +21,10 @@
         word-break: break-word;
     }
 
+    .links::-webkit-scrollbar {
+        width: 12px !important;
+    }
+
     .link-button-text {
         text-align: center;
         font-family: Arial, sans-serif;
@@ -111,6 +115,15 @@
     window.addEventListener('load', adjustHeights);
 
     function adjustHeights() {
+        let backLinksDivWidth = backLinksDiv.clientWidth
+        let forwardLinksDivWidth = forwardLinksDiv.clientWidth
+        document.querySelectorAll('.backLink-button').forEach(element => {
+            element.style.width = `${backLinksDivWidth - 12}px`
+        });
+        document.querySelectorAll('.forwardLink-button').forEach(element => {
+            element.style.width = `${forwardLinksDivWidth - 12}px`
+        });
+
         const windowHeight = window.innerHeight
         const backLinksDivHeight = backLinksDiv.scrollHeight;
         const forwardLinksDivHeight = forwardLinksDiv.scrollHeight;
@@ -136,6 +149,18 @@
                 forwardLinksDiv.style.maxHeight = `${windowHeight - backLinksDivHeight - 2 * linkTitleHeight}px`
             }
         }
+        if (backLinksDiv.clientWidth < forwardLinksDivWidth) {
+            backLinksDivWidth = forwardLinksDiv.clientWidth
+            document.querySelectorAll('.backLink-button').forEach(element => {
+                element.style.width = `${backLinksDivWidth - 12}px`
+            });
+        }
+        if (forwardLinksDiv.clientWidth < forwardLinksDivWidth) {
+            forwardLinksDivWidth = forwardLinksDiv.clientWidth
+            document.querySelectorAll('.forwardLink-button').forEach(element => {
+                element.style.width = `${forwardLinksDivWidth - 12}px`
+            });
+        }
     }
 
     function reloadPage(parentNodes, childNodes) {
@@ -144,19 +169,21 @@
         backLinksDiv.innerHTML = parentNodes.length === 0 ? getTr('None') : ''
         forwardLinksDiv.innerHTML = childNodes.length === 0 ? getTr('None') : ''
         parentNodes.forEach(it => {
-            createButton(it, backLinksDiv);
+            createButton(it, backLinksDiv, true);
         });
         childNodes.forEach(it => {
-            createButton(it, forwardLinksDiv);
+            createButton(it, forwardLinksDiv, false);
         });
         renderKatex()
         adjustHeights()
     }
 
-    function createButton(node, container) {
+    function createButton(node, container, isBackLink) {
         const button = document.createElement("div");
         const outer = document.createElement("div");
         outer.className = node.mainField !== null ? "link-button" : 'link-button-invalid';
+        if (isBackLink) outer.classList.add('backLink-button')
+        else outer.classList.add('forwardLink-button')
         button.className = 'link-button-text'
         button.innerText = node.mainField !== null ? convertHtmlToPlainText(node.mainField) : getTr('Invalid link') + node.id
         outer.onclick = function () {

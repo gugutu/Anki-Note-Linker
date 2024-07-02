@@ -134,7 +134,7 @@ class AnkiNoteLinker(object):
     def convertLink(self, text: str, card: Card, kind: str):
         """Convert note links to HTML hyperlinks, set add-on active flag"""
         return (
-                '<script>AnkiNoteLinkerIsActive = true;</script>' +
+                '<script>window.AnkiNoteLinkerIsActive = true</script>' +
                 re.sub(
                     r'\[((?:[^\[]|\\\[)*?)\|(nid\d{13})\]',
                     lambda

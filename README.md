@@ -104,36 +104,29 @@ you can use a space to separate the new attribute from the original one -->
 2. Copy the following code to the end of the card template on both sides. Rename the `"linkRender"` attribute in the code if you changed it.
 
 ```html
+
 <script>
-    if (document.documentElement.classList.contains("android")) {
-        const jsApiContract = { version: "0.0.3", developer: "Submit an issue at https://github.com/gugutu/Anki-Note-Linker/issues"};
-        window.api = new AnkiDroidJS(jsApiContract);
-    }
-
-    function renderLinks(_) {
-        for (const element of document.getElementsByClassName("linkRender")) {
-            element.innerHTML = element.innerHTML.replace(
-                /\[((?:[^\[]|\\\[)*)\|nid(\d{13})\]/g,
-                (match, title, nid) => {
-                    title = title.replace(/\\\[/g, '[');
-                    if (document.documentElement.classList.contains("android")) {
-                        return `<a href="javascript:void(0);" onClick="window.api.ankiSearchCard('nid:${nid}')" class="noteLink">${title}</a>`;
-                    } else {
-                        return `<a href="https://ankiuser.net/edit/${nid}" target="_blank" class="noteLink">${title}</a>`;
+    var jumpToAnkiWeb = true //Set the variable to true to open notes in AnkiWeb if the link can't be processed within the app.
+    if (!window.hasOwnProperty('AnkiNoteLinkerIsActive')) {
+        const renderLinks = _ => {
+            for (const element of document.getElementsByClassName('linkRender')) {
+                element.innerHTML = element.innerHTML.replace(
+                    /\[((?:[^\[]|\\\[)*)\|nid(\d{13})\]/g,
+                    (match, title, nid) => {
+                        title = title.replace(/\\\[/g, '[')
+                        try {
+                            if (!window.hasOwnProperty('jsAPI')) window.jsAPI = new AnkiDroidJS({version: "0.0.3",developer: "github.com/gugutu"})
+                            return `<a href="javascript:window.jsAPI.ankiSearchCard('nid:${nid}')" class="noteLink">${title}</a>`
+                        } catch (e) {
+                            if (!jumpToAnkiWeb) return `<a href="javascript:void(0)" class="noteLink">${title}</a>`
+                            return `<a href="https://ankiuser.net/edit/${nid}" target="_blank" class="noteLink">${title}</a>`
+                        }
                     }
-                }
-            );
+                )
+            }
         }
-    }
-
-    try { 
-        AnkiNoteLinkerIsActive 
-    } catch (err) {
-        if (document.readyState !== "loading") {
-            renderLinks(null);
-        } else {
-            document.addEventListener("DOMContentLoaded", renderLinks, { once: true });
-        }
+        if (document.readyState !== 'loading') renderLinks(null)
+        else document.addEventListener('DOMContentLoaded', renderLinks, {once: true})
     }
 </script>
 ```
@@ -150,6 +143,8 @@ The following projects were used in this project:
 - [pixijs](https://github.com/pixijs/pixijs)
 
 - [d3](https://github.com/d3/d3)
+
+- [KaTeX](https://github.com/KaTeX/KaTeX)
 
 - [Force graph](https://github.com/vasturiano/force-graph)
 

@@ -21,6 +21,8 @@ The link title is the content displayed in the card. If the title contains`[`, i
 
 `x` is the ID of the note, consisting of 13 digits
 
+You can customize the style of the links by using the CSS selector: `.noteLink`
+
 ## Usage
 
 ### In the editor:
@@ -104,7 +106,6 @@ you can use a space to separate the new attribute from the original one -->
 2. Copy the following code to the end of the card template on both sides. Rename the `"linkRender"` attribute in the code if you changed it.
 
 ```html
-
 <script>
     var jumpToAnkiWeb = true //Set the variable to true to open note in AnkiWeb if the link can't be processed within the app.
     if (!window.hasOwnProperty('AnkiNoteLinkerIsActive')) {
@@ -133,7 +134,9 @@ you can use a space to separate the new attribute from the original one -->
 
 3. Save the card template and sync your deck to AnkiWeb.
 
-After completing these steps, AnkiWeb clients will display a hyperlink that will take you to the edit page of the linked card, and AnkiDroid clients will display a clickable link that searches for the linked card in the card browser.
+After completing these operations, Anki will automatically display the correct linked content.
+
+If you click on a link in the AnkiDroid client, it will attempt to display the corresponding note's flashcard in the card browser; if you click on a link in other clients, it will open the AnkiWeb page for the corresponding note (this can be disabled in the code).
 
 ---
 This add-on is inspired by [Obsidian](https://obsidian.md/)

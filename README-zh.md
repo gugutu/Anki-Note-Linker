@@ -21,6 +21,8 @@
 
 `x`是笔记的ID，由13位数字组成
 
+您可以使用CSS选择器`.noteLink`来自定义链接的样式
+
 ## 使用方法
 
 ### 在编辑器中:
@@ -86,13 +88,13 @@ _备注: 如果没有选中文本，使用上述操作将生成一个没有标�
 如果使用快捷键时没有响应，则可能是由于快捷键冲突，请尝试更改快捷键
 
 ---
-## 如何在没有此插件的情况下正确显示笔记（例如在AnkiDroid、AnkiMobile中）
+## 如何在没有此插件的情况下正确显示笔记（例如在AnkiDroid、AnkiWeb或AnkiMobile中）
 
-此插件会自动将笔记链接转换为卡片中显示的相应内容。但是，如果没有此插件，链接将不会被转换，例如在移动设备中
+此插件会自动将笔记链接呈现为桌面版Anki上的相应内容。如果没有此插件，链接将无法正确呈现，从而影响在移动设备上的使用。但是，您仍然可以恢复一些功能。
 
 如果您已经生成了笔记链接，并且需要在没有此插件的情况下使用，则可以按以下步骤操作：
 
-1. 在卡片模版中，给每个笔记字段加上`class`属性`"linkRender"`，您也可以自定义它的名称
+1. 在卡片模版中，给正面和背面的每个笔记字段加上`class`属性`"linkRender"`，您也可以自定义它的名称
 
 ```html
 <div class="linkRender">{{问题}}</div>
@@ -100,26 +102,40 @@ _备注: 如果没有选中文本，使用上述操作将生成一个没有标�
 <!-- 如果字段已经拥有了class属性，可以使用空格将新的属性与原来的属性隔开 -->
 <div class="otherClassName linkRender">{{补充}}</div>
 ```
-2. 将以下代码复制到卡片模版末尾
+2. 将以下代码复制到卡片模版中，如果您更改了代码中的`"linkRender"`属性，请同时修改以下代码中对应的文本
 
 ```html
 <script>
-    function renderLinks(_) {
-        for (const element of document.getElementsByClassName("linkRender")) {
-            element.innerHTML = element.innerHTML.replace(
-                /\[((?:[^\[]|\\\[)*)\|nid\d{13}\]/g,
-                (match, title) => title.replace(/\\\[/g, '[')
-            )
+    var jumpToAnkiWeb = true //若设置为true，则在应用内部无法处理链接时，通过AnkiWeb打开对应笔记
+    if (!window.hasOwnProperty('AnkiNoteLinkerIsActive')) {
+        const renderLinks = _ => {
+            for (const element of document.getElementsByClassName('linkRender')) {
+                element.innerHTML = element.innerHTML.replace(
+                    /\[((?:[^\[]|\\\[)*)\|nid(\d{13})\]/g,
+                    (match, title, nid) => {
+                        title = title.replace(/\\\[/g, '[')
+                        try {
+                            if (!window.hasOwnProperty('jsAPI')) window.jsAPI = new AnkiDroidJS({version: "0.0.3", developer: "github.com/gugutu"})
+                            return `<a href="javascript:window.jsAPI.ankiSearchCard('nid:${nid}')" class="noteLink">${title}</a>`
+                        } catch (e) {
+                            if (!jumpToAnkiWeb) return `<a href="javascript:void(0)" class="noteLink">${title}</a>`
+                            return `<a href="https://ankiuser.net/edit/${nid}" target="_blank" class="noteLink">${title}</a>`
+                        }
+                    }
+                )
+            }
         }
-    }
-    try { AnkiNoteLinkerIsActive } catch (err) {
-        if (document.readyState !== "loading") renderLinks(null)
-        else document.addEventListener("DOMContentLoaded", renderLinks, { once: true })
+        if (document.readyState !== 'loading') renderLinks(null)
+        else document.addEventListener('DOMContentLoaded', renderLinks, {once: true})
     }
 </script>
 ```
 
-完成这些操作后，Anki会在没有此插件的情况下自动呈现正确的笔记内容
+3. 保存卡片模板，并将您的卡片组同步到AnkiWeb
+
+完成这些操作后，Anki会自动呈现正确的链接内容
+
+若在AnkiDroid客户端中点击链接，会在尝试在卡片浏览器中显示对应笔记的卡片；若在其他客户端点击链接，会打开AnkiWeb网页并进入对应笔记的编辑页面（可在代码中禁用）
 
 ---
 本插件创作灵感来源于 [Obsidian](https://obsidian.md/)
@@ -129,6 +145,8 @@ _备注: 如果没有选中文本，使用上述操作将生成一个没有标�
 - [pixijs](https://github.com/pixijs/pixijs)
 
 - [d3](https://github.com/d3/d3)
+
+- [KaTeX](https://github.com/KaTeX/KaTeX)
 
 - [Force graph](https://github.com/vasturiano/force-graph)
 

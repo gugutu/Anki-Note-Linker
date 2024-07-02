@@ -106,7 +106,7 @@ you can use a space to separate the new attribute from the original one -->
 ```html
 
 <script>
-    var jumpToAnkiWeb = true //Set the variable to true to open notes in AnkiWeb if the link can't be processed within the app.
+    var jumpToAnkiWeb = true //Set the variable to true to open note in AnkiWeb if the link can't be processed within the app.
     if (!window.hasOwnProperty('AnkiNoteLinkerIsActive')) {
         const renderLinks = _ => {
             for (const element of document.getElementsByClassName('linkRender')) {
@@ -115,7 +115,7 @@ you can use a space to separate the new attribute from the original one -->
                     (match, title, nid) => {
                         title = title.replace(/\\\[/g, '[')
                         try {
-                            if (!window.hasOwnProperty('jsAPI')) window.jsAPI = new AnkiDroidJS({version: "0.0.3",developer: "github.com/gugutu"})
+                            if (!window.hasOwnProperty('jsAPI')) window.jsAPI = new AnkiDroidJS({version: "0.0.3", developer: "github.com/gugutu"})
                             return `<a href="javascript:window.jsAPI.ankiSearchCard('nid:${nid}')" class="noteLink">${title}</a>`
                         } catch (e) {
                             if (!jumpToAnkiWeb) return `<a href="javascript:void(0)" class="noteLink">${title}</a>`

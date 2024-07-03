@@ -103,40 +103,44 @@ If you have already generated note links and need to use them without the add-on
 you can use a space to separate the new attribute from the original one -->
 <div class="otherClassName linkRender">{{Addition}}</div>
 ```
-2. Copy the following code to the end of the card template on both sides. Rename the `"linkRender"` attribute in the code if you changed it.
+2. Copy the following code to the end of the card template on both sides. Rename the `linkRender` attribute in the code if you changed it. Set the `disableLinks` variable to `true` if you only want the text to render (removes the "[nid|]" marker).
 
 ```html
 <script>
-    var jumpToAnkiWeb = true //Set the variable to true to open note in AnkiWeb if the link can't be processed within the app.
-    if (!window.hasOwnProperty('AnkiNoteLinkerIsActive')) {
+    var disableLinks = false; // Change to true if you want to disable all link rendering for clients without add-on
+    if (!window.AnkiNoteLinkerIsActive) {
         const renderLinks = _ => {
-            for (const element of document.getElementsByClassName('linkRender')) {
+            document.querySelectorAll('.linkRender').forEach(element => { // You can rename "linkRender" on this line, but leave the "." in front
                 element.innerHTML = element.innerHTML.replace(
                     /\[((?:[^\[]|\\\[)*)\|nid(\d{13})\]/g,
                     (match, title, nid) => {
-                        title = title.replace(/\\\[/g, '[')
-                        try {
-                            if (!window.hasOwnProperty('jsAPI')) window.jsAPI = new AnkiDroidJS({version: "0.0.3", developer: "github.com/gugutu"})
-                            return `<a href="javascript:window.jsAPI.ankiSearchCard('nid:${nid}')" class="noteLink">${title}</a>`
-                        } catch (e) {
-                            if (!jumpToAnkiWeb) return `<a href="javascript:void(0)" class="noteLink">${title}</a>`
-                            return `<a href="https://ankiuser.net/edit/${nid}" target="_blank" class="noteLink">${title}</a>`
+                        title = title.replace(/\\\[/g, '[');
+                        let link;
+                        if (document.documentElement.classList.contains('iphone') || document.documentElement.classList.contains('ipad')) {
+                            link = `anki://x-callback-url/search?query=nid%3a${nid}`;
+                        } else {
+                            try {
+                                window.jsAPI ||= new AnkiDroidJS({ version: "0.0.3", developer: "github.com/gugutu" });
+                                link = `javascript:window.jsAPI.ankiSearchCard('nid:${nid}')`;
+                            } catch (e) {
+                                link = `https://ankiuser.net/edit/${nid}" target="_blank`;
+                            }
                         }
+                        return disableLinks ? `${title}` : `<a href="${link}" class="noteLink">${title}</a>`;
                     }
-                )
-            }
-        }
-        if (document.readyState !== 'loading') renderLinks(null)
-        else document.addEventListener('DOMContentLoaded', renderLinks, {once: true})
+                );
+            });
+        };
+        document.readyState !== 'loading' ? renderLinks() : document.addEventListener('DOMContentLoaded', renderLinks, { once: true });
     }
 </script>
 ```
 
 3. Save the card template and sync your deck to AnkiWeb.
 
-After completing these operations, Anki will automatically display the correct linked content.
+After completing these operations, Anki will automatically display the correct content.
 
-If you click on a link in the AnkiDroid client, it will attempt to display the corresponding note's flashcard in the card browser; if you click on a link in other clients, it will open the AnkiWeb page for the corresponding note (this can be disabled in the code).
+If you click a link on an AnkiDroid or AnkiMobile client, it will attempt to display the corresponding note's flashcard in the card browser; if you click a link on AnkiWeb, it will open the AnkiWeb edit page for the corresponding note. If you changed the `disableLinks` variable to `true`, then the original content of the card will be displayed without any links.
 
 ---
 This add-on is inspired by [Obsidian](https://obsidian.md/)

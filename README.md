@@ -103,7 +103,7 @@ If you have already generated note links and need to use them without the add-on
 you can use a space to separate the new attribute from the original one -->
 <div class="otherClassName linkRender">{{Addition}}</div>
 ```
-2. Copy the following code to the end of the card template on both sides. Rename the `linkRender` attribute in the code if you changed it. Set the `disableLinks` variable to `true` if you only want the text to render (removes the "[nid|]" marker).
+2. Copy the following code to the end of the card template on both sides. Rename the `linkRender` attribute in the code if you changed it. Set the `disableLinks` variable to `true` if you only want the text to render (removes the "[|nid]" marker).
 
 ```html
 <script>

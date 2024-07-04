@@ -118,13 +118,11 @@ you can use a space to separate the new attribute from the original one -->
                         let link;
                         if (document.documentElement.classList.contains('iphone') || document.documentElement.classList.contains('ipad')) {
                             link = `anki://x-callback-url/search?query=nid%3a${nid}`;
-                        } else {
-                            try {
-                                window.jsAPI ||= new AnkiDroidJS({ version: "0.0.3", developer: "github.com/gugutu" });
-                                link = `javascript:window.jsAPI.ankiSearchCard('nid:${nid}')`;
-                            } catch (e) {
-                                link = `https://ankiuser.net/edit/${nid}" target="_blank`;
-                            }
+                        } else try {
+                            window.jsAPI ||= new AnkiDroidJS({ version: "0.0.3", developer: "github.com/gugutu" });
+                            link = `javascript:window.jsAPI.ankiSearchCard('nid:${nid}')`;
+                        } catch (e) {
+                            link = `https://ankiuser.net/edit/${nid}" target="_blank`;
                         }
                         return disableLinks ? `${title}` : `<a href="${link}" class="noteLink">${title}</a>`;
                     }

@@ -102,31 +102,33 @@ _备注: 如果没有选中文本，使用上述操作将生成一个没有标�
 <!-- 如果字段已经拥有了class属性，可以使用空格将新的属性与原来的属性隔开 -->
 <div class="otherClassName linkRender">{{补充}}</div>
 ```
-2. 将以下代码复制到卡片模版中，如果您更改了代码中的`"linkRender"`属性，请同时修改以下代码中对应的文本
+2. 将以下代码复制到卡片模版中，如果您更改了代码中的`"linkRender"`属性，请同时修改以下代码中对应的文本。如果你想只渲染文本（移除 "[nid|]" 标记）而不需要链接跳转功能，请将`disableLinks`变量设置为true
 
 ```html
 <script>
-    var jumpToAnkiWeb = true //若设置为true，则在应用内部无法处理链接时，通过AnkiWeb打开对应笔记
-    if (!window.hasOwnProperty('AnkiNoteLinkerIsActive')) {
+    var disableLinks = false; // 改为true将禁用链接的跳转功能
+    if (!window.AnkiNoteLinkerIsActive) {
         const renderLinks = _ => {
-            for (const element of document.getElementsByClassName('linkRender')) {
+            document.querySelectorAll('.linkRender').forEach(element => { // You can rename "linkRender" on this line, but leave the "." in front
                 element.innerHTML = element.innerHTML.replace(
                     /\[((?:[^\[]|\\\[)*)\|nid(\d{13})\]/g,
                     (match, title, nid) => {
-                        title = title.replace(/\\\[/g, '[')
-                        try {
-                            if (!window.hasOwnProperty('jsAPI')) window.jsAPI = new AnkiDroidJS({version: "0.0.3", developer: "github.com/gugutu"})
-                            return `<a href="javascript:window.jsAPI.ankiSearchCard('nid:${nid}')" class="noteLink">${title}</a>`
+                        title = title.replace(/\\\[/g, '[');
+                        let link;
+                        if (document.documentElement.classList.contains('iphone') || document.documentElement.classList.contains('ipad')) {
+                            link = `anki://x-callback-url/search?query=nid%3a${nid}`;
+                        } else try {
+                            window.jsAPI ||= new AnkiDroidJS({ version: "0.0.3", developer: "github.com/gugutu" });
+                            link = `javascript:window.jsAPI.ankiSearchCard('nid:${nid}')`;
                         } catch (e) {
-                            if (!jumpToAnkiWeb) return `<a href="javascript:void(0)" class="noteLink">${title}</a>`
-                            return `<a href="https://ankiuser.net/edit/${nid}" target="_blank" class="noteLink">${title}</a>`
+                            link = `https://ankiuser.net/edit/${nid}" target="_blank`;
                         }
+                        return disableLinks ? `${title}` : `<a href="${link}" class="noteLink">${title}</a>`;
                     }
-                )
-            }
-        }
-        if (document.readyState !== 'loading') renderLinks(null)
-        else document.addEventListener('DOMContentLoaded', renderLinks, {once: true})
+                );
+            });
+        };
+        document.readyState !== 'loading' ? renderLinks() : document.addEventListener('DOMContentLoaded', renderLinks, { once: true });
     }
 </script>
 ```
@@ -135,7 +137,7 @@ _备注: 如果没有选中文本，使用上述操作将生成一个没有标�
 
 完成这些操作后，Anki会自动呈现正确的链接内容
 
-若在AnkiDroid客户端中点击链接，会在尝试在卡片浏览器中显示对应笔记的卡片；若在其他客户端点击链接，会打开AnkiWeb网页并进入对应笔记的编辑页面（可在代码中禁用）
+如果您在AnkiDroid或AnkiMobile客户端上点击一个链接，将会尝试在卡片浏览器中显示相应笔记的卡片；如果您在AnkiWeb上点击一个链接，它将打开相应笔记的AnkiWeb编辑页面；如果您将`disableLinks`变量更改为`true`，则仅显示原始卡片内容，没有链接功能
 
 ---
 本插件创作灵感来源于 [Obsidian](https://obsidian.md/)

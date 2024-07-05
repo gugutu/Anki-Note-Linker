@@ -31,7 +31,8 @@ defaultConfig = {
         "defaultHighlightFilter": "is:due",
         "defaultShowSingleNode": False,
         "nodeColor": [57, 125, 237],
-        "highlightedNodeColor": [244, 165, 0]
+        "highlightedNodeColor": [244, 165, 0],
+        "graphBackgroundColor": [16, 16, 32]
     },
     "Use the previewer of hjp-linkmaster if it is installed": True
 }
@@ -47,6 +48,7 @@ configTemp["globalGraph"].setdefault("defaultHighlightFilter", defaultConfig["gl
 configTemp["globalGraph"].setdefault("defaultShowSingleNode", defaultConfig["globalGraph"]["defaultShowSingleNode"])
 configTemp["globalGraph"].setdefault("nodeColor", defaultConfig["globalGraph"]["nodeColor"])
 configTemp["globalGraph"].setdefault("highlightedNodeColor", defaultConfig["globalGraph"]["highlightedNodeColor"])
+configTemp["globalGraph"].setdefault("graphBackgroundColor", defaultConfig["globalGraph"]["graphBackgroundColor"])
 mw.addonManager.writeConfig(__name__, configTemp)
 config = mw.addonManager.getConfig(__name__)
 
@@ -162,6 +164,14 @@ class ConfigView(QWidget):
             'QPushButton{background:' + self.globalGraph_highlightedNodeColor_Button.qColor.name() + ';}')
         layout.addRow(getTr('Highlighted node color') + ':', self.globalGraph_highlightedNodeColor_Button)
 
+        self.globalGraph_graphBackgroundColor_Button = QPushButton()
+        qconnect(self.globalGraph_graphBackgroundColor_Button.clicked, self.changeGraphBackgroundColor)
+        self.globalGraph_graphBackgroundColor_Button.qColor = QColor.fromRgb(
+            *config["globalGraph"]["graphBackgroundColor"])
+        self.globalGraph_graphBackgroundColor_Button.setStyleSheet(
+            'QPushButton{background:' + self.globalGraph_graphBackgroundColor_Button.qColor.name() + ';}')
+        layout.addRow(getTr('Graph background color') + ':', self.globalGraph_graphBackgroundColor_Button)
+
         lab2 = QLabel(getTr('Shortcut keys'))
         lab2.setFont(QFont("Sans-Serif", 15, 75))
         layout.addRow(lab2)
@@ -209,6 +219,10 @@ class ConfigView(QWidget):
             *defaultConfig["globalGraph"]["highlightedNodeColor"])
         self.globalGraph_highlightedNodeColor_Button.setStyleSheet(
             'QPushButton{background:' + self.globalGraph_highlightedNodeColor_Button.qColor.name() + ';}')
+        self.globalGraph_graphBackgroundColor_Button.qColor = QColor.fromRgb(
+            *defaultConfig["globalGraph"]["graphBackgroundColor"])
+        self.globalGraph_graphBackgroundColor_Button.setStyleSheet(
+            'QPushButton{background:' + self.globalGraph_graphBackgroundColor_Button.qColor.name() + ';}')
         self.shortcuts_copyNoteID_LineEdit.setText(defaultConfig["shortcuts"]["copyNoteID"])
         self.shortcuts_copyNoteLink_LineEdit.setText(defaultConfig["shortcuts"]["copyNoteLink"])
         self.shortcuts_openNoteInNewWindow_LineEdit.setText(defaultConfig["shortcuts"]["openNoteInNewWindow"])
@@ -240,6 +254,8 @@ class ConfigView(QWidget):
         config["globalGraph"]["nodeColor"] = [color.red(), color.green(), color.blue()]
         color = self.globalGraph_highlightedNodeColor_Button.qColor
         config["globalGraph"]["highlightedNodeColor"] = [color.red(), color.green(), color.blue()]
+        color = self.globalGraph_graphBackgroundColor_Button.qColor
+        config["globalGraph"]["graphBackgroundColor"] = [color.red(), color.green(), color.blue()]
         config["shortcuts"]["copyNoteID"] = self.shortcuts_copyNoteID_LineEdit.text()
         config["shortcuts"]["copyNoteLink"] = self.shortcuts_copyNoteLink_LineEdit.text()
         config["shortcuts"]["openNoteInNewWindow"] = self.shortcuts_openNoteInNewWindow_LineEdit.text()
@@ -262,6 +278,13 @@ class ConfigView(QWidget):
             return
         self.globalGraph_highlightedNodeColor_Button.qColor = color
         self.globalGraph_highlightedNodeColor_Button.setStyleSheet('QPushButton{background:' + color.name() + ';}')
+
+    def changeGraphBackgroundColor(self):
+        color = QColorDialog.getColor(self.globalGraph_graphBackgroundColor_Button.qColor)
+        if color is None or color.name() == "#000000":
+            return
+        self.globalGraph_graphBackgroundColor_Button.qColor = color
+        self.globalGraph_graphBackgroundColor_Button.setStyleSheet('QPushButton{background:' + color.name() + ';}')
 
     @staticmethod
     def openConfigView():

@@ -19,7 +19,8 @@
     "defaultHighlightFilter": "is:due",
     "defaultShowSingleNode": false,
     "nodeColor": [57, 125, 237],
-    "highlightedNodeColor": [244, 165, 0]
+    "highlightedNodeColor": [244, 165, 0],
+    "graphBackgroundColor": [16, 16, 32]
   },
   "Use the previewer of hjp-linkmaster if it is installed": true
 }

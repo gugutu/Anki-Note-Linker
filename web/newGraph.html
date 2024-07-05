@@ -15,9 +15,12 @@ Author Wang Rui <https://github.com/gugutu>
         font-size: 100%;
     }
 
+    :root {
+        --graph-bg-color: #101020; /* Default background color */
+    }
+
     .circleText {
         font-family: Arial, sans-serif;
-        color: rgb(166, 206, 227);
         word-break: break-word;
         position: absolute !important;
         text-align: center;
@@ -38,6 +41,10 @@ Author Wang Rui <https://github.com/gugutu>
         /* IE/Edge */
         user-select: none;
         /* 标准语法 */
+
+        color: var(--graph-bg-color);
+        filter: invert(1) grayscale(1) contrast(1000);
+        opacity: .87;
     }
 
     .circleText .katex-display {
@@ -630,7 +637,7 @@ Author Wang Rui <https://github.com/gugutu>
     const delay = ms => new Promise(resolve => setTimeout(resolve, ms))
     let webGLSupported = false
 
-    async function reloadPage(newNodes, connections, resetCenter, adaptScale = false, normalColor = null, highlightColor = null) {
+    async function reloadPage(newNodes, connections, resetCenter, adaptScale = false, normalColor = null, highlightColor = null, graphBgColor = null) {
         function isWebGLSupported() {
             try {
                 const canvas = document.createElement('canvas');
@@ -647,6 +654,13 @@ Author Wang Rui <https://github.com/gugutu>
             webGLSupported = true
         }
 
+        if (graphBgColor) {
+            if (app && app.renderer && app.renderer.background) {
+                app.renderer.background.color = graphBgColor;
+            }
+            document.documentElement.style.setProperty('--graph-bg-color', graphBgColor);
+        }
+        
         while (!init || window.innerHeight === 0 || window.innerWidth === 0) await delay(20)
         normalNodeColor = normalColor
         highlightNodeColor = highlightColor

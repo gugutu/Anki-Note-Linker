@@ -87,6 +87,8 @@ def getTr(s: str) -> str:
             return '节点颜色'
         elif s == 'Highlighted node color':
             return '高亮节点颜色'
+        elif s == 'Graph background color':
+            return '图背景颜色'
         elif s == 'Restore Defaults':
             return '恢复默认值'
         elif s == 'Cancel':

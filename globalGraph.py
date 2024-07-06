@@ -191,7 +191,8 @@ class GlobalGraph(QWidget):
                             {json.dumps(resetCenter)},
                             {json.dumps(adaptScale)},
                             "{self.qColorToString(QColor.fromRgb(*config["globalGraph"]["nodeColor"]))}",
-                            "{self.qColorToString(QColor.fromRgb(*config["globalGraph"]["highlightedNodeColor"]))}"
+                            "{self.qColorToString(QColor.fromRgb(*config["globalGraph"]["highlightedNodeColor"]))}",
+                            {config["globalGraph"]["graphBackgroundColor"]}
                         )'''
             )
 

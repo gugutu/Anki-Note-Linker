@@ -1,0 +1,230 @@
+<style>
+    body {
+        margin: 0;
+        padding: 0;
+    }
+
+    #buttons {
+        position: fixed;
+        display: flex;
+        left: 0;
+        right: 0;
+        margin: 0;
+        bottom: 0;
+        padding: 3px 0;
+        width: 100%;
+        background: var(--canvas);
+        box-shadow: 0 0 3px #cccccc;
+    }
+
+    .title {
+        font-size: 1.5em;
+        font-weight: bold;
+    }
+
+    #scroll {
+        overflow: auto !important;
+        padding: 0 15px;
+    }
+
+    #content {
+        margin: auto;
+        width: fit-content;
+        white-space: nowrap;
+    }
+
+    input, select {
+        margin-left: auto;
+        /*margin-right: 15px;*/
+    }
+
+    #content > div {
+        display: flex;
+        height: 34px;
+        margin: 0;
+        align-items: center;
+    }
+</style>
+<div id="scroll">
+    <div id="content">
+        <div class="title" id="title-basic">Basic</div>
+        <div><label class="showLinksPageAutomatically"></label>
+            <input id="showLinksPageAutomatically" type="checkbox">
+        </div>
+        <div><label class="showGraphPageAutomatically"></label>
+            <input id="showGraphPageAutomatically" type="checkbox">
+        </div>
+        <div><label class="collapseClozeInLinksPage"></label>
+            <input id="collapseClozeInLinksPage" type="checkbox">
+        </div>
+        <div><label class="useHjpPreviewer"></label>
+            <input id="useHjpPreviewer" type="checkbox">
+        </div>
+        <div><label class="location"></label>
+            <select id="location">
+                <option id="location-left" value="left">left</option>
+                <option id="location-right" value="right">right</option>
+            </select>
+        </div>
+        <div><label class="splitRatio"></label>
+            <input id="splitRatio" type="text">
+        </div>
+        <div><label class="splitRatioBetweenLinksPageAndGraphPage"></label>
+            <input id="splitRatioBetweenLinksPageAndGraphPage" type="text">
+        </div>
+        <div><label class="linkMaxLines"></label>
+            <input id="linkMaxLines" type="text" oninput="value=value.replace(/\D/g,'')">
+        </div>
+        <div class="title" id="title-globalGraph">globalGraph</div>
+        <div><label class="globalGraph-defaultSearchText"></label>
+            <input id="globalGraph-defaultSearchText" type="text">
+        </div>
+        <div><label class="globalGraph-defaultHighlightFilter"></label>
+            <input id="globalGraph-defaultHighlightFilter" type="text">
+        </div>
+        <div><label class="globalGraph-defaultShowSingleNode"></label>
+            <input id="globalGraph-defaultShowSingleNode" type="checkbox">
+        </div>
+        <div><label class="globalGraph-nodeColor"></label>
+            <input id="globalGraph-nodeColor" type="color">
+        </div>
+        <div><label class="globalGraph-highlightedNodeColor"></label>
+            <input id="globalGraph-highlightedNodeColor" type="color">
+        </div>
+        <div><label class="globalGraph-graphBackgroundColor"></label>
+            <input id="globalGraph-graphBackgroundColor" type="color">
+        </div>
+        <div class="title" id="title-shortcuts">shortcuts</div>
+        <div><label class="shortcuts-copyNoteID"></label>
+            <input id="shortcuts-copyNoteID" type="text">
+        </div>
+        <div><label class="shortcuts-copyNoteLink"></label>
+            <input id="shortcuts-copyNoteLink" type="text">
+        </div>
+        <div><label class="shortcuts-openNoteInNewWindow"></label>
+            <input id="shortcuts-openNoteInNewWindow" type="text">
+        </div>
+        <div><label class="shortcuts-insertLinkWithClipboardID"></label>
+            <input id="shortcuts-insertLinkWithClipboardID" type="text">
+        </div>
+        <div><label class="shortcuts-insertNewLink"></label>
+            <input id="shortcuts-insertNewLink" type="text">
+        </div>
+        <div><label class="shortcuts-insertLinkTemplate"></label>
+            <input id="shortcuts-insertLinkTemplate" type="text">
+        </div>
+    </div>
+</div>
+<div id="buttons">
+    <button class="button" id="button-restoreDefaults" style="margin-left: 5px; margin-right: auto;"
+            onclick="setConfigToHtml(defaultConfig)">
+        Restore Defaults
+    </button>
+    <button class="button" id="button-cancel" style="margin-left: auto;"
+            onclick="pycmd('AnkiNoteLinker-config-cancel')">
+        Cancel
+    </button>
+    <button class="button" id="button-ok" style="margin-left: 5px; margin-right: 5px;" onclick="onOkClick()">
+        OK
+    </button>
+</div>
+
+<script>
+    const hexToRgb = hex => hex.replace(/^#/, '').match(/.{2}/g).map(x => parseInt(x, 16));
+    const rgbToHex = rgb => `#${rgb.map(x => x.toString(16).padStart(2, '0')).join('')}`;
+
+    document.getElementById('scroll').style.height = `${window.innerHeight - document.getElementById('buttons').scrollHeight}px`
+    document.getElementById('scroll').style.maxWidth = `${window.innerWidth}px`
+    window.addEventListener('resize', _ => {
+        document.getElementById('scroll').style.height = `${window.innerHeight - document.getElementById('buttons').scrollHeight}px`
+        document.getElementById('scroll').style.maxWidth = `${window.innerWidth}px`
+    })
+
+    document.getElementsByClassName('showLinksPageAutomatically')[0].innerHTML = getTr('Automatically show links panel when entering editor') + ':&nbsp;'
+    document.getElementsByClassName('showGraphPageAutomatically')[0].innerHTML = getTr('Automatically show graph panel when entering editor') + ':&nbsp;'
+    document.getElementsByClassName('collapseClozeInLinksPage')[0].innerHTML = getTr('Collapse cloze in links panel') + ':&nbsp;'
+    document.getElementsByClassName('useHjpPreviewer')[0].innerHTML = getTr('If the "hjp-linkmaster" add-on is installed, use its previewer') + ':&nbsp;'
+    document.getElementsByClassName('location')[0].innerHTML = getTr('The position of links/graph panel relative to the editor') + ':&nbsp;'
+    document.getElementById('location-left').innerHTML = getTr('left')
+    document.getElementById('location-right').innerHTML = getTr('right')
+    document.getElementsByClassName('splitRatio')[0].innerHTML = getTr('Split ratio between editor and panels') + ':&nbsp;'
+    document.getElementsByClassName('splitRatioBetweenLinksPageAndGraphPage')[0].innerHTML = getTr('Split ratio between links panel and graph panel') + ':&nbsp;'
+    document.getElementsByClassName('linkMaxLines')[0].innerHTML = getTr('Max displayed lines per link in links panel') + ':&nbsp;'
+    document.getElementsByClassName('globalGraph-defaultSearchText')[0].innerHTML = getTr('Default search text') + ':&nbsp;'
+    document.getElementsByClassName('globalGraph-defaultHighlightFilter')[0].innerHTML = getTr('Default filter text for highlighted nodes') + ':&nbsp;'
+    document.getElementsByClassName('globalGraph-defaultShowSingleNode')[0].innerHTML = getTr('Default display of single nodes') + ':&nbsp;'
+    document.getElementsByClassName('globalGraph-nodeColor')[0].innerHTML = getTr('Node color') + ':&nbsp;'
+    document.getElementsByClassName('globalGraph-highlightedNodeColor')[0].innerHTML = getTr('Highlighted node color') + ':&nbsp;'
+    document.getElementsByClassName('globalGraph-graphBackgroundColor')[0].innerHTML = getTr('Graph background color') + ':&nbsp;'
+    document.getElementsByClassName('shortcuts-copyNoteID')[0].innerHTML = getTr('Copy current note ID') + ':&nbsp;'
+    document.getElementsByClassName('shortcuts-copyNoteLink')[0].innerHTML = getTr('Copy current note link') + ':&nbsp;'
+    document.getElementsByClassName('shortcuts-openNoteInNewWindow')[0].innerHTML = getTr('Open current note in new window') + ':&nbsp;'
+    document.getElementsByClassName('shortcuts-insertLinkWithClipboardID')[0].innerHTML = getTr('Insert link with copied note ID') + ':&nbsp;'
+    document.getElementsByClassName('shortcuts-insertNewLink')[0].innerHTML = getTr('Insert new link') + ':&nbsp;'
+    document.getElementsByClassName('shortcuts-insertLinkTemplate')[0].innerHTML = getTr('Insert link template') + ':&nbsp;'
+    document.getElementById('title-basic').innerHTML = getTr('Basic')
+    document.getElementById('title-globalGraph').innerHTML = getTr('Global Relationship Graph')
+    document.getElementById('title-shortcuts').innerHTML = getTr('Shortcut keys')
+    document.getElementById('button-restoreDefaults').innerHTML = getTr('Restore Defaults')
+    document.getElementById('button-cancel').innerHTML = getTr('Cancel')
+    document.getElementById('button-ok').innerHTML = getTr('OK')
+
+    function setConfigToHtml(config) {
+        document.getElementById('showLinksPageAutomatically').checked = config.showLinksPageAutomatically
+        document.getElementById('showGraphPageAutomatically').checked = config.showGraphPageAutomatically
+        document.getElementById('collapseClozeInLinksPage').checked = config.collapseClozeInLinksPage
+        document.getElementById('useHjpPreviewer').checked = config['Use the previewer of hjp-linkmaster if it is installed']
+        document.getElementById('location').selectedIndex = config.location === 'left' ? 0 : 1
+        document.getElementById('splitRatio').value = config.splitRatio
+        document.getElementById('splitRatioBetweenLinksPageAndGraphPage').value = config.splitRatioBetweenLinksPageAndGraphPage
+        document.getElementById('linkMaxLines').value = config.linkMaxLines
+        document.getElementById('globalGraph-defaultSearchText').value = config.globalGraph.defaultSearchText
+        document.getElementById('globalGraph-defaultHighlightFilter').value = config.globalGraph.defaultHighlightFilter
+        document.getElementById('globalGraph-defaultShowSingleNode').checked = config.globalGraph.defaultShowSingleNode
+        document.getElementById('globalGraph-nodeColor').value = rgbToHex(config.globalGraph.nodeColor)
+        document.getElementById('globalGraph-highlightedNodeColor').value = rgbToHex(config.globalGraph.highlightedNodeColor)
+        document.getElementById('globalGraph-graphBackgroundColor').value = rgbToHex(config.globalGraph.graphBackgroundColor)
+        document.getElementById('shortcuts-copyNoteID').value = config.shortcuts.copyNoteID
+        document.getElementById('shortcuts-copyNoteLink').value = config.shortcuts.copyNoteLink
+        document.getElementById('shortcuts-openNoteInNewWindow').value = config.shortcuts.openNoteInNewWindow
+        document.getElementById('shortcuts-insertLinkWithClipboardID').value = config.shortcuts.insertLinkWithClipboardID
+        document.getElementById('shortcuts-insertNewLink').value = config.shortcuts.insertNewLink
+        document.getElementById('shortcuts-insertLinkTemplate').value = config.shortcuts.insertLinkTemplate
+    }
+
+    function onOkClick() {
+        const regex = /^\d+:\d+$/;
+        const splitRatio = document.getElementById('splitRatio').value;
+        const splitRatioBetweenLinksPageAndGraphPage = document.getElementById('splitRatioBetweenLinksPageAndGraphPage').value;
+        const linkMaxLines = document.getElementById('linkMaxLines').value;
+        if (!regex.test(splitRatio) || !regex.test(splitRatioBetweenLinksPageAndGraphPage)) {
+            alert(getTr('The format of "split ratio" is incorrect'))
+            return;
+        }
+        if (linkMaxLines === '' || parseInt(linkMaxLines, 10) === 0) {
+            document.getElementById('linkMaxLines').value = userConfig.linkMaxLines;
+        }
+        userConfig.showLinksPageAutomatically = document.getElementById('showLinksPageAutomatically').checked
+        userConfig.showGraphPageAutomatically = document.getElementById('showGraphPageAutomatically').checked
+        userConfig.collapseClozeInLinksPage = document.getElementById('collapseClozeInLinksPage').checked
+        userConfig['Use the previewer of hjp-linkmaster if it is installed'] = document.getElementById('useHjpPreviewer').checked
+        userConfig.location = document.getElementById('location').value
+        userConfig.splitRatio = document.getElementById('splitRatio').value
+        userConfig.splitRatioBetweenLinksPageAndGraphPage = document.getElementById('splitRatioBetweenLinksPageAndGraphPage').value
+        userConfig.linkMaxLines = document.getElementById('linkMaxLines').value
+        userConfig.globalGraph.defaultSearchText = document.getElementById('globalGraph-defaultSearchText').value
+        userConfig.globalGraph.defaultHighlightFilter = document.getElementById('globalGraph-defaultHighlightFilter').value
+        userConfig.globalGraph.defaultShowSingleNode = document.getElementById('globalGraph-defaultShowSingleNode').checked
+        userConfig.globalGraph.nodeColor = hexToRgb(document.getElementById('globalGraph-nodeColor').value)
+        userConfig.globalGraph.highlightedNodeColor = hexToRgb(document.getElementById('globalGraph-highlightedNodeColor').value)
+        userConfig.globalGraph.graphBackgroundColor = hexToRgb(document.getElementById('globalGraph-graphBackgroundColor').value)
+        userConfig.shortcuts.copyNoteID = document.getElementById('shortcuts-copyNoteID').value
+        userConfig.shortcuts.copyNoteLink = document.getElementById('shortcuts-copyNoteLink').value
+        userConfig.shortcuts.openNoteInNewWindow = document.getElementById('shortcuts-openNoteInNewWindow').value
+        userConfig.shortcuts.insertLinkWithClipboardID = document.getElementById('shortcuts-insertLinkWithClipboardID').value
+        userConfig.shortcuts.insertNewLink = document.getElementById('shortcuts-insertNewLink').value
+        userConfig.shortcuts.insertLinkTemplate = document.getElementById('shortcuts-insertLinkTemplate').value
+        pycmd('AnkiNoteLinker-config-ok'+ JSON.stringify(userConfig))
+    }
+    setConfigToHtml(userConfig)
+</script>

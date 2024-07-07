@@ -25,6 +25,7 @@ addon_folder = os.path.basename(addon_path)
 links_html = open(os.path.join(addon_path, 'web', 'links.html'), 'r', encoding='utf-8').read()
 graph_html = open(os.path.join(addon_path, 'web', 'graph.html'), 'r', encoding='utf-8').read()
 newGraph_html = open(os.path.join(addon_path, 'web', 'newGraph.html'), 'r', encoding='utf-8').read()
+config_html = open(os.path.join(addon_path, 'web', 'config.html'), 'r', encoding='utf-8').read()
 
 
 def getWebFileLink(fileName: str):

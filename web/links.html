@@ -192,23 +192,29 @@
                 event.preventDefault();
                 return false;
             }
-            pycmd('lnid' + node.id)
+            if (ankiContext === 'BROWSER')
+                pycmd('AnkiNoteLinker-openNoteInBrowser' + node.id)
+            else
+                pycmd('AnkiNoteLinker-setNoteToEditor' + node.id)
         };
         outer.ondblclick = function () {
             event.preventDefault();
-            pycmd('lnid' + node.id)
+            if (ankiContext === 'BROWSER')
+                pycmd('AnkiNoteLinker-openNoteInBrowser' + node.id)
+            else
+                pycmd('AnkiNoteLinker-setNoteToEditor' + node.id)
         };
         outer.oncontextmenu = function (event) {
             const selection = window.getSelection();
             if (selection.toString().length > 0) return true;
             event.preventDefault();
-            pycmd('rnid' + node.id)
+            pycmd('AnkiNoteLinker-openNoteInNewEditor' + node.id)
         };
         outer.addEventListener("mousedown", function (event) {
             // 检查鼠标按下的按钮是否是中键
             if (event.button === 1) {
                 event.preventDefault();
-                pycmd('mnid' + node.id)
+                pycmd('AnkiNoteLinker-openNoteInBrowser' + node.id)
             }
         });
         outer.appendChild(button)

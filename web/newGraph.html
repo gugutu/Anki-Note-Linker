@@ -377,7 +377,18 @@ Author Wang Rui <https://github.com/gugutu>
                     pycmd('AnkiNoteLinker-tagSearch' + node.id)
                     return
                 }
-                if (node.type !== 'me') pycmd('lnid' + node.id)
+                if (node.type !== 'me') {
+                    if (node.type === 'tag') {
+                        pycmd('AnkiNoteLinker-tagSearch' + node.id)
+                        return
+                    }
+                    if (ankiContext === 'BROWSER')
+                        pycmd('AnkiNoteLinker-openNoteInBrowser' + node.id)
+                    else if (ankiContext === 'EDIT_CURRENT')
+                        pycmd('AnkiNoteLinker-setNoteToEditor' + node.id)
+                    else if (ankiContext === 'GLOBAL_GRAPH')
+                        pycmd('AnkiNoteLinker-openNoteInNewEditor' + node.id)
+                }
             })
 
             circle.on('rightclick', event => {
@@ -385,7 +396,12 @@ Author Wang Rui <https://github.com/gugutu>
                     pycmd('AnkiNoteLinker-tagSearch' + node.id)
                     return
                 }
-                pycmd('rnid' + node.id)
+                if (ankiContext === 'BROWSER')
+                    pycmd('AnkiNoteLinker-openNoteInNewEditor' + node.id)
+                else if (ankiContext === 'EDIT_CURRENT')
+                    pycmd('AnkiNoteLinker-openNoteInNewEditor' + node.id)
+                else if (ankiContext === 'GLOBAL_GRAPH')
+                    pycmd('AnkiNoteLinker-openNoteInPreviewer' + node.id)
             })
 
             circle.on('pointerdown', (event) => {//当鼠标按下时
@@ -663,7 +679,7 @@ Author Wang Rui <https://github.com/gugutu>
         }
 
         if (!webGLSupported && !isWebGLSupported()) {
-            pycmd('switchToOldRenderer')
+            pycmd('AnkiNoteLinker-switchToOldRenderer')
             return
         } else {
             webGLSupported = true

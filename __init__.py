@@ -115,7 +115,7 @@ class AnkiNoteLinker(object):
         openNoteInNewWindowAction = QAction(context)
         openNoteInNewWindowAction.setText(getTr("Open current note in new window"))
         openNoteInNewWindowAction.setShortcut(config['shortcuts-openNoteInNewWindow'])
-        qconnect(openNoteInNewWindowAction.triggered, lambda _, c=context: self.openNoteInNewWindow(c))
+        qconnect(openNoteInNewWindowAction.triggered, lambda _, c=context: self.openNoteInNewEditor(c))
         menu.addAction(openNoteInNewWindowAction)
         menu.addSeparator()
 
@@ -129,24 +129,27 @@ class AnkiNoteLinker(object):
             QShortcut(QKeySequence(config['shortcuts-copyNoteID']), web, lambda: self.copyNoteID(web))
             QShortcut(QKeySequence(config['shortcuts-copyNoteLink']), web, lambda: self.copyNoteLink(web))
             QShortcut(QKeySequence(config['shortcuts-openNoteInNewWindow']), web,
-                      lambda: self.openNoteInNewWindow(web))
+                      lambda: self.openNoteInNewEditor(web))
 
     def convertLink(self, text: str, card: Card, kind: str):
         """Convert note links to HTML hyperlinks, set add-on active flag"""
         return (
                 '<script>window.AnkiNoteLinkerIsActive = true</script>' +
                 re.sub(
-                    r'\[((?:[^\[]|\\\[)*?)\|(nid\d{13})\]',
-                    lambda
-                        match: f'<a class="noteLink" href="javascript:pycmd(`r`+`{match.group(2)}`)" oncontextmenu="event.preventDefault();pycmd(`p`+`{match.group(2)}`)">' +
-                               match.group(1).replace('\\[', '[') + '</a>', text
+                    r'\[((?:[^\[]|\\\[)*?)\|nid(\d{13})\]',
+                    lambda match:
+                    f'<a class="noteLink" href="javascript:pycmd(`AnkiNoteLinker-openNoteInNewEditor`+`{match.group(2)}`)" '
+                    f'oncontextmenu="event.preventDefault();pycmd(`AnkiNoteLinker-openNoteInPreviewer`+`{match.group(2)}`)">' +
+                    match.group(1).replace('\\[', '[') + '</a>', text
                 )
         )
 
     def injectLinksPage(self, editor: Editor):
         editor.linksPage = AnkiWebView(parent=editor.innerSplitter, title="links_page")
         editor.linksPage.set_bridge_command(lambda s: s, editor)
+        context = 'BROWSER' if editor.editorMode == EditorMode.BROWSER else 'EDIT_CURRENT' if editor.editorMode == EditorMode.EDIT_CURRENT else 'ADD_CARDS'
         editor.linksPage.stdHtml(
+            f'<script>const ankiContext = "{context}"</script>'
             f'<script src="{getWebFileLink("js/translation.js")}"></script>'
             f'<script>const ankiLanguage = "{anki.lang.current_lang}"</script>'
             f'<link rel="stylesheet" href="{getWebFileLink("katex.css")}">'
@@ -161,7 +164,9 @@ class AnkiNoteLinker(object):
     def injectGraphPage(self, editor: Editor):
         editor.graphPage = AnkiWebView(parent=editor.innerSplitter, title="graph_page")
         editor.graphPage.set_bridge_command(lambda s: s, editor)
+        context = 'BROWSER' if editor.editorMode == EditorMode.BROWSER else 'EDIT_CURRENT' if editor.editorMode == EditorMode.EDIT_CURRENT else 'ADD_CARDS'
         editor.graphPage.stdHtml(
+            f'<script>const ankiContext = "{context}"</script>'
             f'<script>const ankiLanguage = "{anki.lang.current_lang}"</script>'
             f'<link rel="stylesheet" href="{getWebFileLink("katex.css")}">'
             f'<script defer src="{getWebFileLink("js/katex.js")}"></script>'
@@ -173,7 +178,9 @@ class AnkiNoteLinker(object):
         )
 
     def switchToOldRenderer(self, e):
+        context = 'BROWSER' if e.editorMode == EditorMode.BROWSER else 'EDIT_CURRENT' if e.editorMode == EditorMode.EDIT_CURRENT else 'ADD_CARDS'
         e.graphPage.stdHtml(
+            f'<script>const ankiContext = "{context}"</script>'
             f'<script>const ankiLanguage = "{anki.lang.current_lang}"</script>'
             f'<link rel="stylesheet" href="{getWebFileLink("katex.css")}">'
             f'<script defer src="{getWebFileLink("js/katex.js")}"></script>'
@@ -417,9 +424,11 @@ class AnkiNoteLinker(object):
                 const st = window.getSelection().toString();
                 if (st != ''){
                     if (nidreg.test(st)){
-                        pycmd('r'+st);
+                        const nid = st.slice(3)
+                        pycmd('AnkiNoteLinker-openNoteInNewEditor' + nid);
                     }else if (newreg.test(st)){
-                        pycmd(st)
+                        const placeholder = st.slice(3)
+                        pycmd('AnkiNoteLinker-openAddNoteWindow' + placeholder)
                     }
                 }
             });
@@ -470,49 +479,46 @@ class AnkiNoteLinker(object):
 
     def handlePycmd(self, handled: tuple[bool, Any], message: str, context: Any):
         """Handling web js events"""
-        if re.match(r'lnid\d{13}', message):
-            nid = int(message[4:])
+
+        def validateNid(nid):
             if len(aqt.mw.col.find_notes(f'nid:{nid}')) == 0:
                 tooltip(getTr('The corresponding note does not exist'))
-                return True, None
-            if isinstance(context, GlobalGraph):
-                self.openNoteInNewWindow(context, nid)
+                return False
+            return True
+
+        if re.match(r'AnkiNoteLinker-setNoteToEditor\d{13}', message):
+            nid = int(message[30:])
+            if not validateNid(nid):
                 return True, None
             editor: Editor = context
-            if editor.editorMode == EditorMode.BROWSER:
-                self.openNoteInBrowser(context, nid)
-            elif editor.editorMode == EditorMode.EDIT_CURRENT:
-                editor.set_note(aqt.mw.col.get_note(NoteId(nid)), focusTo=0)
-            elif editor.editorMode == EditorMode.ADD_CARDS:
-                ed = MyEditCurrent(NoteId(nid))
-                ed.activateWindow()
+            editor.set_note(aqt.mw.col.get_note(NoteId(nid)), focusTo=0)
             return True, None
-        elif re.match(r'rnid\d{13}', message):
-            nid = int(message[4:])
-            if len(aqt.mw.col.find_notes(f'nid:{nid}')) == 0:
-                tooltip(getTr('The corresponding note does not exist'))
-                return True, None
-            if isinstance(context, GlobalGraph):
-                self.openNoteInPreviewer(context, nid)
-                return True, None
-            self.openNoteInNewWindow(context, nid)
-            return True, None
-        elif re.match(r'mnid\d{13}', message):
-            nid = int(message[4:])
-            if len(aqt.mw.col.find_notes(f'nid:{nid}')) == 0:
-                tooltip(getTr('The corresponding note does not exist'))
+        elif re.match(r'AnkiNoteLinker-openNoteInBrowser\d{13}', message):
+            nid = int(message[32:])
+            if not validateNid(nid):
                 return True, None
             self.openNoteInBrowser(context, nid)
             return True, None
-        elif re.match(r'pnid\d{13}', message):
-            nid = int(message[4:])
-            if len(aqt.mw.col.find_notes(f'nid:{nid}')) == 0:
-                tooltip(getTr('The corresponding note does not exist'))
+        elif re.match(r'AnkiNoteLinker-openNoteInNewEditor\d{13}', message):
+            nid = int(message[34:])
+            if not validateNid(nid):
+                return True, None
+            self.openNoteInNewEditor(context, nid)
+            return True, None
+        elif re.match(r'AnkiNoteLinker-openNoteInPreviewer\d{13}', message):
+            nid = int(message[34:])
+            if not validateNid(nid):
                 return True, None
             self.openNoteInPreviewer(context, nid)
             return True, None
-        elif re.match(r'new\d{8}', message):
-            placeholder = message[3:]
+        elif re.match(r'AnkiNoteLinker-openNoteInBrowser\d{13}', message):
+            nid = int(message[32:])
+            if not validateNid(nid):
+                return True, None
+            self.openNoteInBrowser(context, nid)
+            return True, None
+        elif re.match(r'AnkiNoteLinker-openAddNoteWindow\d{8}', message):
+            placeholder = message[32:]
             editor: Editor = context
             if editor.addMode:
                 tooltip(getTr('Please add the current note first'))
@@ -539,19 +545,7 @@ class AnkiNoteLinker(object):
             browser.activateWindow()
             browser.search_for('tag:' + tag)
             return True, None
-        elif message == 'insertLinkWithPlaceholder':
-            editor: Editor = context
-            self.insertNewLink(editor)
-            return True, None
-        elif message == 'insertLinkWithClipboardID':
-            editor: Editor = context
-            self.insertLinkWithClipboardID(editor)
-            return True, None
-        elif message == 'insertLink':
-            editor: Editor = context
-            self.insertLinkTemplate(editor)
-            return True, None
-        elif message == 'switchToOldRenderer':
+        elif message == 'AnkiNoteLinker-switchToOldRenderer':
             if isinstance(context, Editor):
                 self.switchToOldRenderer(context)
             else:
@@ -586,7 +580,7 @@ class AnkiNoteLinker(object):
             QApplication.clipboard().setText('[|nid' + str(nid) + ']')
             tooltip(getTr('Copied note link'))
 
-    def openNoteInNewWindow(self, context, nid=None):
+    def openNoteInNewEditor(self, context, nid=None):
         if nid is None:
             nid = self._getNoteIDFromContext(context)
         if nid is not None:

@@ -32,6 +32,7 @@
 
     let normalNodeColor = "rgb(57, 125, 237)"
     let highlightNodeColor = "rgb(244, 165, 0)"
+    let tagNodeColor = "rgb(127, 199, 132)"
     let init = false
     const largeSize = false//gData.links.length + gData.nodes.length > 10000
     const elem = document.getElementById('graph');
@@ -62,6 +63,9 @@
                     break;
                 case 'highlight':
                     ctx.fillStyle = highlightNodeColor
+                    break;
+                case 'tag':
+                    ctx.fillStyle = tagNodeColor
                     break;
                 case 'me':
                     ctx.fillStyle = "rgb(31, 115, 205)"
@@ -116,9 +120,31 @@
         //.d3Force("collide", d3.forceCollide().radius(n => n.size + 1).iterations(3))
         .d3Force("charge", d3.forceManyBody().strength(-300))
         .onNodeClick(node => {
-            if (node.type !== 'me') pycmd('lnid' + node.id)
+            if (node.type !== 'me') {
+                if (node.type === 'tag') {
+                    pycmd('AnkiNoteLinker-tagSearch' + node.id)
+                    return
+                }
+                if (ankiContext === 'BROWSER')
+                    pycmd('AnkiNoteLinker-openNoteInBrowser' + node.id)
+                else if (ankiContext === 'EDIT_CURRENT')
+                    pycmd('AnkiNoteLinker-setNoteToEditor' + node.id)
+                else if (ankiContext === 'GLOBAL_GRAPH')
+                    pycmd('AnkiNoteLinker-openNoteInNewEditor' + node.id)
+            }
         })
-        .onNodeRightClick(node => pycmd('rnid' + node.id))
+        .onNodeRightClick(node => {
+            if (node.type === 'tag') {
+                pycmd('AnkiNoteLinker-tagSearch' + node.id)
+                return
+            }
+            if (ankiContext === 'BROWSER')
+                pycmd('AnkiNoteLinker-openNoteInNewEditor' + node.id)
+            else if (ankiContext === 'EDIT_CURRENT')
+                pycmd('AnkiNoteLinker-openNoteInNewEditor' + node.id)
+            else if (ankiContext === 'GLOBAL_GRAPH')
+                pycmd('AnkiNoteLinker-openNoteInPreviewer' + node.id)
+        })
         .linkWidth(2)
         .enablePointerInteraction(!largeSize)
 
@@ -159,10 +185,11 @@
 
     const delay = ms => new Promise(resolve => setTimeout(resolve, ms))
 
-    async function reloadPage(nodes, connections, resetCenter, adaptScale = false, normalColor = null, highlightColor = null, graphBgColor = null) {
+    async function reloadPage(nodes, connections, resetCenter, adaptScale = false, normalColor = null, highlightColor = null, tagColor = null, graphBgColor = null) {
         while (!init || window.innerHeight === 0 || window.innerWidth === 0) await delay(20)
         normalNodeColor = normalColor
         highlightNodeColor = highlightColor
+        tagNodeColor = tagColor
         let oldNodes = graph.graphData().nodes
         let oldNodeMap = new Map(oldNodes.map(it => [it.id, it]))
 

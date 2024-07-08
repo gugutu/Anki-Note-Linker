@@ -80,20 +80,20 @@ class AnkiNoteLinker(object):
                 menu.addSeparator()
                 insertLinkWithClipboardIDAction = QAction(context)
                 insertLinkWithClipboardIDAction.setText(getTr("Insert link with copied note ID"))
-                insertLinkWithClipboardIDAction.setShortcut(config['shortcuts']['insertLinkWithClipboardID'])
+                insertLinkWithClipboardIDAction.setShortcut(config['shortcuts-insertLinkWithClipboardID'])
                 qconnect(insertLinkWithClipboardIDAction.triggered,
                          lambda _, c=context: self.insertLinkWithClipboardID(c.editor))
                 menu.addAction(insertLinkWithClipboardIDAction)
 
                 insertNewLinkAction = QAction(context)
                 insertNewLinkAction.setText(getTr("Insert new link"))
-                insertNewLinkAction.setShortcut(config['shortcuts']['insertNewLink'])
+                insertNewLinkAction.setShortcut(config['shortcuts-insertNewLink'])
                 qconnect(insertNewLinkAction.triggered, lambda _, c=context: self.insertNewLink(c.editor))
                 menu.addAction(insertNewLinkAction)
 
                 insertLinkTemplateAction = QAction(context)
                 insertLinkTemplateAction.setText(getTr("Insert link template"))
-                insertLinkTemplateAction.setShortcut(config['shortcuts']['insertLinkTemplate'])
+                insertLinkTemplateAction.setShortcut(config['shortcuts-insertLinkTemplate'])
                 qconnect(insertLinkTemplateAction.triggered, lambda _, c=context: self.insertLinkTemplate(c.editor))
                 menu.addAction(insertLinkTemplateAction)
                 menu.addSeparator()
@@ -102,33 +102,33 @@ class AnkiNoteLinker(object):
         menu.addSeparator()
         copyNoteIdAction = QAction(context)
         copyNoteIdAction.setText(getTr("Copy current note ID"))
-        copyNoteIdAction.setShortcut(config['shortcuts']['copyNoteID'])
+        copyNoteIdAction.setShortcut(config['shortcuts-copyNoteID'])
         qconnect(copyNoteIdAction.triggered, lambda _, c=context: self.copyNoteID(c))
         menu.addAction(copyNoteIdAction)
 
         copyNoteLinkAction = QAction(context)
         copyNoteLinkAction.setText(getTr("Copy current note link"))
-        copyNoteLinkAction.setShortcut(config['shortcuts']['copyNoteLink'])
+        copyNoteLinkAction.setShortcut(config['shortcuts-copyNoteLink'])
         qconnect(copyNoteLinkAction.triggered, lambda _, c=context: self.copyNoteLink(c))
         menu.addAction(copyNoteLinkAction)
 
         openNoteInNewWindowAction = QAction(context)
         openNoteInNewWindowAction.setText(getTr("Open current note in new window"))
-        openNoteInNewWindowAction.setShortcut(config['shortcuts']['openNoteInNewWindow'])
+        openNoteInNewWindowAction.setShortcut(config['shortcuts-openNoteInNewWindow'])
         qconnect(openNoteInNewWindowAction.triggered, lambda _, c=context: self.openNoteInNewWindow(c))
         menu.addAction(openNoteInNewWindowAction)
         menu.addSeparator()
 
     def injectShortcuts(self, web: EditorWebView):
-        QShortcut(QKeySequence(config['shortcuts']['insertLinkWithClipboardID']), web,
+        QShortcut(QKeySequence(config['shortcuts-insertLinkWithClipboardID']), web,
                   lambda: self.insertLinkWithClipboardID(web.editor))
-        QShortcut(QKeySequence(config['shortcuts']['insertNewLink']), web, lambda: self.insertNewLink(web.editor))
-        QShortcut(QKeySequence(config['shortcuts']['insertLinkTemplate']), web,
+        QShortcut(QKeySequence(config['shortcuts-insertNewLink']), web, lambda: self.insertNewLink(web.editor))
+        QShortcut(QKeySequence(config['shortcuts-insertLinkTemplate']), web,
                   lambda: self.insertLinkTemplate(web.editor))
         if not web.editor.addMode:
-            QShortcut(QKeySequence(config['shortcuts']['copyNoteID']), web, lambda: self.copyNoteID(web))
-            QShortcut(QKeySequence(config['shortcuts']['copyNoteLink']), web, lambda: self.copyNoteLink(web))
-            QShortcut(QKeySequence(config['shortcuts']['openNoteInNewWindow']), web,
+            QShortcut(QKeySequence(config['shortcuts-copyNoteID']), web, lambda: self.copyNoteID(web))
+            QShortcut(QKeySequence(config['shortcuts-copyNoteLink']), web, lambda: self.copyNoteLink(web))
+            QShortcut(QKeySequence(config['shortcuts-openNoteInNewWindow']), web,
                       lambda: self.openNoteInNewWindow(web))
 
     def convertLink(self, text: str, card: Card, kind: str):
@@ -595,7 +595,7 @@ class AnkiNoteLinker(object):
             previewState = PreviewState(cards)
             # Attempt to support the review button for the hjp-linkmaster addon
             try:
-                if not config["Use the previewer of hjp-linkmaster if it is installed"]:
+                if not config["useHjpPreviewer"]:
                     raise Exception
                 hjp = importlib.import_module('1420819673')
                 previewer = hjp.lib.common_tools.funcs.MonkeyPatch.BrowserPreviewer(previewState, mw, lambda: None)

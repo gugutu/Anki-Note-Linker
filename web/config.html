@@ -91,8 +91,8 @@
         <div><label class="globalGraph-highlightedNodeColor"></label>
             <input id="globalGraph-highlightedNodeColor" type="color">
         </div>
-        <div><label class="globalGraph-graphBackgroundColor"></label>
-            <input id="globalGraph-graphBackgroundColor" type="color">
+        <div><label class="globalGraph-backgroundColor"></label>
+            <input id="globalGraph-backgroundColor" type="color">
         </div>
         <div class="title" id="title-shortcuts">shortcuts</div>
         <div><label class="shortcuts-copyNoteID"></label>
@@ -155,7 +155,7 @@
     document.getElementsByClassName('globalGraph-defaultShowSingleNode')[0].innerHTML = getTr('Default display of single nodes') + ':&nbsp;'
     document.getElementsByClassName('globalGraph-nodeColor')[0].innerHTML = getTr('Node color') + ':&nbsp;'
     document.getElementsByClassName('globalGraph-highlightedNodeColor')[0].innerHTML = getTr('Highlighted node color') + ':&nbsp;'
-    document.getElementsByClassName('globalGraph-graphBackgroundColor')[0].innerHTML = getTr('Graph background color') + ':&nbsp;'
+    document.getElementsByClassName('globalGraph-backgroundColor')[0].innerHTML = getTr('Graph background color') + ':&nbsp;'
     document.getElementsByClassName('shortcuts-copyNoteID')[0].innerHTML = getTr('Copy current note ID') + ':&nbsp;'
     document.getElementsByClassName('shortcuts-copyNoteLink')[0].innerHTML = getTr('Copy current note link') + ':&nbsp;'
     document.getElementsByClassName('shortcuts-openNoteInNewWindow')[0].innerHTML = getTr('Open current note in new window') + ':&nbsp;'
@@ -170,26 +170,26 @@
     document.getElementById('button-ok').innerHTML = getTr('OK')
 
     function setConfigToHtml(config) {
-        document.getElementById('showLinksPageAutomatically').checked = config.showLinksPageAutomatically
-        document.getElementById('showGraphPageAutomatically').checked = config.showGraphPageAutomatically
-        document.getElementById('collapseClozeInLinksPage').checked = config.collapseClozeInLinksPage
-        document.getElementById('useHjpPreviewer').checked = config['Use the previewer of hjp-linkmaster if it is installed']
-        document.getElementById('location').selectedIndex = config.location === 'left' ? 0 : 1
-        document.getElementById('splitRatio').value = config.splitRatio
-        document.getElementById('splitRatioBetweenLinksPageAndGraphPage').value = config.splitRatioBetweenLinksPageAndGraphPage
-        document.getElementById('linkMaxLines').value = config.linkMaxLines
-        document.getElementById('globalGraph-defaultSearchText').value = config.globalGraph.defaultSearchText
-        document.getElementById('globalGraph-defaultHighlightFilter').value = config.globalGraph.defaultHighlightFilter
-        document.getElementById('globalGraph-defaultShowSingleNode').checked = config.globalGraph.defaultShowSingleNode
-        document.getElementById('globalGraph-nodeColor').value = rgbToHex(config.globalGraph.nodeColor)
-        document.getElementById('globalGraph-highlightedNodeColor').value = rgbToHex(config.globalGraph.highlightedNodeColor)
-        document.getElementById('globalGraph-graphBackgroundColor').value = rgbToHex(config.globalGraph.graphBackgroundColor)
-        document.getElementById('shortcuts-copyNoteID').value = config.shortcuts.copyNoteID
-        document.getElementById('shortcuts-copyNoteLink').value = config.shortcuts.copyNoteLink
-        document.getElementById('shortcuts-openNoteInNewWindow').value = config.shortcuts.openNoteInNewWindow
-        document.getElementById('shortcuts-insertLinkWithClipboardID').value = config.shortcuts.insertLinkWithClipboardID
-        document.getElementById('shortcuts-insertNewLink').value = config.shortcuts.insertNewLink
-        document.getElementById('shortcuts-insertLinkTemplate').value = config.shortcuts.insertLinkTemplate
+        document.getElementById('showLinksPageAutomatically').checked = config['showLinksPageAutomatically']
+        document.getElementById('showGraphPageAutomatically').checked = config['showGraphPageAutomatically']
+        document.getElementById('collapseClozeInLinksPage').checked = config['collapseClozeInLinksPage']
+        document.getElementById('useHjpPreviewer').checked = config['useHjpPreviewer']
+        document.getElementById('location').selectedIndex = config['location'] === 'left' ? 0 : 1
+        document.getElementById('splitRatio').value = config['splitRatio']
+        document.getElementById('splitRatioBetweenLinksPageAndGraphPage').value = config['splitRatioBetweenLinksPageAndGraphPage']
+        document.getElementById('linkMaxLines').value = config['linkMaxLines']
+        document.getElementById('globalGraph-defaultSearchText').value = config['globalGraph-defaultSearchText']
+        document.getElementById('globalGraph-defaultHighlightFilter').value = config['globalGraph-defaultHighlightFilter']
+        document.getElementById('globalGraph-defaultShowSingleNode').checked = config['globalGraph-defaultShowSingleNode']
+        document.getElementById('globalGraph-nodeColor').value = rgbToHex(config['globalGraph-nodeColor'])
+        document.getElementById('globalGraph-highlightedNodeColor').value = rgbToHex(config['globalGraph-highlightedNodeColor'])
+        document.getElementById('globalGraph-backgroundColor').value = rgbToHex(config['globalGraph-backgroundColor'])
+        document.getElementById('shortcuts-copyNoteID').value = config['shortcuts-copyNoteID']
+        document.getElementById('shortcuts-copyNoteLink').value = config['shortcuts-copyNoteLink']
+        document.getElementById('shortcuts-openNoteInNewWindow').value = config['shortcuts-openNoteInNewWindow']
+        document.getElementById('shortcuts-insertLinkWithClipboardID').value = config['shortcuts-insertLinkWithClipboardID']
+        document.getElementById('shortcuts-insertNewLink').value = config['shortcuts-insertNewLink']
+        document.getElementById('shortcuts-insertLinkTemplate').value = config['shortcuts-insertLinkTemplate']
     }
 
     function onOkClick() {
@@ -204,26 +204,26 @@
         if (linkMaxLines === '' || parseInt(linkMaxLines, 10) === 0) {
             document.getElementById('linkMaxLines').value = userConfig.linkMaxLines;
         }
-        userConfig.showLinksPageAutomatically = document.getElementById('showLinksPageAutomatically').checked
-        userConfig.showGraphPageAutomatically = document.getElementById('showGraphPageAutomatically').checked
-        userConfig.collapseClozeInLinksPage = document.getElementById('collapseClozeInLinksPage').checked
-        userConfig['Use the previewer of hjp-linkmaster if it is installed'] = document.getElementById('useHjpPreviewer').checked
-        userConfig.location = document.getElementById('location').value
-        userConfig.splitRatio = document.getElementById('splitRatio').value
-        userConfig.splitRatioBetweenLinksPageAndGraphPage = document.getElementById('splitRatioBetweenLinksPageAndGraphPage').value
-        userConfig.linkMaxLines = document.getElementById('linkMaxLines').value
-        userConfig.globalGraph.defaultSearchText = document.getElementById('globalGraph-defaultSearchText').value
-        userConfig.globalGraph.defaultHighlightFilter = document.getElementById('globalGraph-defaultHighlightFilter').value
-        userConfig.globalGraph.defaultShowSingleNode = document.getElementById('globalGraph-defaultShowSingleNode').checked
-        userConfig.globalGraph.nodeColor = hexToRgb(document.getElementById('globalGraph-nodeColor').value)
-        userConfig.globalGraph.highlightedNodeColor = hexToRgb(document.getElementById('globalGraph-highlightedNodeColor').value)
-        userConfig.globalGraph.graphBackgroundColor = hexToRgb(document.getElementById('globalGraph-graphBackgroundColor').value)
-        userConfig.shortcuts.copyNoteID = document.getElementById('shortcuts-copyNoteID').value
-        userConfig.shortcuts.copyNoteLink = document.getElementById('shortcuts-copyNoteLink').value
-        userConfig.shortcuts.openNoteInNewWindow = document.getElementById('shortcuts-openNoteInNewWindow').value
-        userConfig.shortcuts.insertLinkWithClipboardID = document.getElementById('shortcuts-insertLinkWithClipboardID').value
-        userConfig.shortcuts.insertNewLink = document.getElementById('shortcuts-insertNewLink').value
-        userConfig.shortcuts.insertLinkTemplate = document.getElementById('shortcuts-insertLinkTemplate').value
+        userConfig['showLinksPageAutomatically'] = document.getElementById('showLinksPageAutomatically').checked
+        userConfig['showGraphPageAutomatically'] = document.getElementById('showGraphPageAutomatically').checked
+        userConfig['collapseClozeInLinksPage'] = document.getElementById('collapseClozeInLinksPage').checked
+        userConfig['useHjpPreviewer'] = document.getElementById('useHjpPreviewer').checked
+        userConfig['location'] = document.getElementById('location').value
+        userConfig['splitRatio'] = document.getElementById('splitRatio').value
+        userConfig['splitRatioBetweenLinksPageAndGraphPage'] = document.getElementById('splitRatioBetweenLinksPageAndGraphPage').value
+        userConfig['linkMaxLines'] = document.getElementById('linkMaxLines').value
+        userConfig['globalGraph-defaultSearchText'] = document.getElementById('globalGraph-defaultSearchText').value
+        userConfig['globalGraph-defaultHighlightFilter'] = document.getElementById('globalGraph-defaultHighlightFilter').value
+        userConfig['globalGraph-defaultShowSingleNode'] = document.getElementById('globalGraph-defaultShowSingleNode').checked
+        userConfig['globalGraph-nodeColor'] = hexToRgb(document.getElementById('globalGraph-nodeColor').value)
+        userConfig['globalGraph-highlightedNodeColor'] = hexToRgb(document.getElementById('globalGraph-highlightedNodeColor').value)
+        userConfig['globalGraph-backgroundColor'] = hexToRgb(document.getElementById('globalGraph-backgroundColor').value)
+        userConfig['shortcuts-copyNoteID'] = document.getElementById('shortcuts-copyNoteID').value
+        userConfig['shortcuts-copyNoteLink'] = document.getElementById('shortcuts-copyNoteLink').value
+        userConfig['shortcuts-openNoteInNewWindow'] = document.getElementById('shortcuts-openNoteInNewWindow').value
+        userConfig['shortcuts-insertLinkWithClipboardID'] = document.getElementById('shortcuts-insertLinkWithClipboardID').value
+        userConfig['shortcuts-insertNewLink'] = document.getElementById('shortcuts-insertNewLink').value
+        userConfig['shortcuts-insertLinkTemplate'] = document.getElementById('shortcuts-insertLinkTemplate').value
         pycmd('AnkiNoteLinker-config-ok'+ JSON.stringify(userConfig))
     }
     setConfigToHtml(userConfig)

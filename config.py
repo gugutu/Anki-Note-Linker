@@ -23,37 +23,65 @@ defaultConfig = {
     "location": "right",
     "linkMaxLines": 5,
     "collapseClozeInLinksPage": True,
-    "shortcuts": {
-        "copyNoteID": "Alt+Shift+C",
-        "copyNoteLink": "Alt+Shift+L",
-        "openNoteInNewWindow": "Alt+Shift+W",
-        "insertLinkWithClipboardID": "Alt+Shift+V",
-        "insertNewLink": "Alt+Shift+N",
-        "insertLinkTemplate": "Alt+Shift+T"
-    },
-    "globalGraph": {
-        "defaultSearchText": "deck:current",
-        "defaultHighlightFilter": "is:due",
-        "defaultShowSingleNode": False,
-        "nodeColor": [57, 125, 237],
-        "highlightedNodeColor": [244, 165, 0],
-        "graphBackgroundColor": [16, 16, 32]
-    },
-    "Use the previewer of hjp-linkmaster if it is installed": True
+    "useHjpPreviewer": True,
+
+    "shortcuts-copyNoteID": "Alt+Shift+C",
+    "shortcuts-copyNoteLink": "Alt+Shift+L",
+    "shortcuts-openNoteInNewWindow": "Alt+Shift+W",
+    "shortcuts-insertLinkWithClipboardID": "Alt+Shift+V",
+    "shortcuts-insertNewLink": "Alt+Shift+N",
+    "shortcuts-insertLinkTemplate": "Alt+Shift+T",
+
+    "globalGraph-defaultSearchText": "deck:current",
+    "globalGraph-defaultHighlightFilter": "is:due",
+    "globalGraph-defaultShowSingleNode": False,
+    "globalGraph-nodeColor": [57, 125, 237],
+    "globalGraph-highlightedNodeColor": [244, 165, 0],
+    "globalGraph-backgroundColor": [16, 16, 32]
 }
+# Check if there is an old version of the configuration;
+# if it exists, convert it to the new version and delete the old version.
 configTemp = mw.addonManager.getConfig(__name__)
-configTemp["shortcuts"].setdefault("copyNoteID", defaultConfig["shortcuts"]["copyNoteID"])
-configTemp["shortcuts"].setdefault("copyNoteLink", defaultConfig["shortcuts"]["copyNoteLink"])
-configTemp["shortcuts"].setdefault("openNoteInNewWindow", defaultConfig["shortcuts"]["openNoteInNewWindow"])
-configTemp["shortcuts"].setdefault("insertLinkWithClipboardID", defaultConfig["shortcuts"]["insertLinkWithClipboardID"])
-configTemp["shortcuts"].setdefault("insertNewLink", defaultConfig["shortcuts"]["insertNewLink"])
-configTemp["shortcuts"].setdefault("insertLinkTemplate", defaultConfig["shortcuts"]["insertLinkTemplate"])
-configTemp["globalGraph"].setdefault("defaultSearchText", defaultConfig["globalGraph"]["defaultSearchText"])
-configTemp["globalGraph"].setdefault("defaultHighlightFilter", defaultConfig["globalGraph"]["defaultHighlightFilter"])
-configTemp["globalGraph"].setdefault("defaultShowSingleNode", defaultConfig["globalGraph"]["defaultShowSingleNode"])
-configTemp["globalGraph"].setdefault("nodeColor", defaultConfig["globalGraph"]["nodeColor"])
-configTemp["globalGraph"].setdefault("highlightedNodeColor", defaultConfig["globalGraph"]["highlightedNodeColor"])
-configTemp["globalGraph"].setdefault("graphBackgroundColor", defaultConfig["globalGraph"]["graphBackgroundColor"])
+if "shortcuts" in configTemp:
+    configTemp["shortcuts-copyNoteID"] = (
+        configTemp["shortcuts"].get("copyNoteID", defaultConfig["shortcuts-copyNoteID"]))
+    configTemp["shortcuts-copyNoteLink"] = (
+        configTemp["shortcuts"].get("copyNoteLink", defaultConfig["shortcuts-copyNoteLink"]))
+    configTemp["shortcuts-openNoteInNewWindow"] = (
+        configTemp["shortcuts"].get("openNoteInNewWindow", defaultConfig["shortcuts-openNoteInNewWindow"]))
+    configTemp["shortcuts-insertLinkWithClipboardID"] = (
+        configTemp["shortcuts"].get("insertLinkWithClipboardID", defaultConfig["shortcuts-insertLinkWithClipboardID"]))
+    configTemp["shortcuts-insertNewLink"] = (
+        configTemp["shortcuts"].get("insertNewLink", defaultConfig["shortcuts-insertNewLink"]))
+    configTemp["shortcuts-insertLinkTemplate"] = (
+        configTemp["shortcuts"].get("insertLinkTemplate", defaultConfig["shortcuts-insertLinkTemplate"]))
+    del configTemp["shortcuts"]
+
+if "globalGraph" in configTemp:
+    configTemp["globalGraph-defaultSearchText"] = (
+        configTemp["globalGraph"].get("defaultSearchText", defaultConfig["globalGraph-defaultSearchText"]))
+
+    configTemp["globalGraph-defaultHighlightFilter"] = (
+        configTemp["globalGraph"].get("defaultHighlightFilter", defaultConfig["globalGraph-defaultHighlightFilter"]))
+
+    configTemp["globalGraph-defaultShowSingleNode"] = (
+        configTemp["globalGraph"].get("defaultShowSingleNode", defaultConfig["globalGraph-defaultShowSingleNode"]))
+
+    configTemp["globalGraph-nodeColor"] = (
+        configTemp["globalGraph"].get("nodeColor", defaultConfig["globalGraph-nodeColor"]))
+
+    configTemp["globalGraph-highlightedNodeColor"] = (
+        configTemp["globalGraph"].get("highlightedNodeColor", defaultConfig["globalGraph-highlightedNodeColor"]))
+
+    configTemp["globalGraph-backgroundColor"] = (
+        configTemp["globalGraph"].get("graphBackgroundColor", defaultConfig["globalGraph-backgroundColor"]))
+
+    del configTemp["globalGraph"]
+
+if "Use the previewer of hjp-linkmaster if it is installed" in configTemp:
+    configTemp["useHjpPreviewer"] = configTemp["Use the previewer of hjp-linkmaster if it is installed"]
+    del configTemp["Use the previewer of hjp-linkmaster if it is installed"]
+
 mw.addonManager.writeConfig(__name__, configTemp)
 config = mw.addonManager.getConfig(__name__)
 

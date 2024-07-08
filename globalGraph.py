@@ -60,11 +60,11 @@ class GlobalGraph(QWidget):
         outerLayout.addWidget(self.topBar)
         outerLayout.addWidget(self.web)
         self.lineEdit = QLineEdit()
-        self.lineEdit.setText(config['globalGraph']['defaultSearchText'])
+        self.lineEdit.setText(config['globalGraph-defaultSearchText'])
         self.lineEdit2 = QLineEdit()
-        self.lineEdit2.setText(config['globalGraph']['defaultHighlightFilter'])
+        self.lineEdit2.setText(config['globalGraph-defaultHighlightFilter'])
         self.checkBox = QCheckBox(getTr('Display single notes'))
-        self.checkBox.setChecked(config['globalGraph']['defaultShowSingleNode'])
+        self.checkBox.setChecked(config['globalGraph-defaultShowSingleNode'])
         self.sButton = QPushButton(getTr('Search'))
         qconnect(self.sButton.clicked,
                  lambda: self.refreshGlobalGraph(resetCenter=True, reason='Search Button Clicked'))
@@ -190,9 +190,9 @@ class GlobalGraph(QWidget):
                             {json.dumps(self.linkCache, default=lambda o: o.__dict__)},
                             {json.dumps(resetCenter)},
                             {json.dumps(adaptScale)},
-                            "{self.qColorToString(QColor.fromRgb(*config["globalGraph"]["nodeColor"]))}",
-                            "{self.qColorToString(QColor.fromRgb(*config["globalGraph"]["highlightedNodeColor"]))}",
-                            {config["globalGraph"]["graphBackgroundColor"]}
+                            "{self.qColorToString(QColor.fromRgb(*config["globalGraph-nodeColor"]))}",
+                            "{self.qColorToString(QColor.fromRgb(*config["globalGraph-highlightedNodeColor"]))}",
+                            {config["globalGraph-backgroundColor"]}
                         )'''
             )
 

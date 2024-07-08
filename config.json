@@ -6,21 +6,17 @@
   "location": "right",
   "linkMaxLines": 5,
   "collapseClozeInLinksPage": true,
-  "shortcuts": {
-    "copyNoteID": "Alt+Shift+C",
-    "copyNoteLink": "Alt+Shift+L",
-    "openNoteInNewWindow": "Alt+Shift+W",
-    "insertLinkWithClipboardID": "Alt+Shift+V",
-    "insertNewLink": "Alt+Shift+N",
-    "insertLinkTemplate": "Alt+Shift+T"
-  },
-  "globalGraph": {
-    "defaultSearchText": "deck:current",
-    "defaultHighlightFilter": "is:due",
-    "defaultShowSingleNode": false,
-    "nodeColor": [57, 125, 237],
-    "highlightedNodeColor": [244, 165, 0],
-    "graphBackgroundColor": [16, 16, 32]
-  },
-  "Use the previewer of hjp-linkmaster if it is installed": true
+  "useHjpPreviewer": true,
+  "shortcuts-copyNoteID": "Alt+Shift+C",
+  "shortcuts-copyNoteLink": "Alt+Shift+L",
+  "shortcuts-openNoteInNewWindow": "Alt+Shift+W",
+  "shortcuts-insertLinkWithClipboardID": "Alt+Shift+V",
+  "shortcuts-insertNewLink": "Alt+Shift+N",
+  "shortcuts-insertLinkTemplate": "Alt+Shift+T",
+  "globalGraph-defaultSearchText": "deck:current",
+  "globalGraph-defaultHighlightFilter": "is:due",
+  "globalGraph-defaultShowSingleNode": false,
+  "globalGraph-nodeColor": [57, 125, 237],
+  "globalGraph-highlightedNodeColor": [244, 165, 0],
+  "globalGraph-backgroundColor": [16, 16, 32]
 }

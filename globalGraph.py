@@ -144,7 +144,7 @@ class GlobalGraph(QWidget):
         else:
             # If the node doesn't exist, create a new NoteNode object and insert it into the cache
             # 如果当前节点不存在缓存中，创建一个新的NoteNode对象并将其插入缓存
-            self.noteCache[noteId] = NoteNode(noteId, childIds, set(), mainField)
+            node = self.noteCache[noteId] = NoteNode(noteId, childIds, set(), mainField)
 
         if self.checkBox2.isChecked():
             for tag in keepTagNote.tags if keepTagNote is not None and keepTagNote.id == note.id else note.tags:
@@ -155,6 +155,8 @@ class GlobalGraph(QWidget):
                     self.noteCache[tag].childIds.append(noteId)
                 else:
                     self.noteCache[tag] = NoteNode(tag, [noteId], set(), tag, isTag=True)
+                # 设置当前node指向tag的反向链接
+                node.parentIds.add(tag)
 
         # Set the back link of child nodes 为当前节点的子节点设置反向链接
         for childId in childIds:

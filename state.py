@@ -43,14 +43,16 @@ class Connection:
 
 
 class NoteNode:
-    def __init__(self, nid: NoteId, childIds: list[NoteId], parentIds: set[NoteId], mainField: str):
+    def __init__(self, nid: NoteId, childIds: list[NoteId], parentIds: set[NoteId], mainField: str,
+                 isTag: bool = False):
         self.id = nid
         self.childIds: list[NoteId] = childIds
         self.parentIds: set[NoteId] = parentIds
         self.mainField: str = mainField
+        self.isTag: bool = isTag
 
     def toJsNoteNode(self, type):
-        return JsNoteNode(self.id, self.mainField, type)
+        return JsNoteNode(self.id, self.mainField, 'tag' if self.isTag else type)
 
 
 class JsNoteNode:

@@ -85,11 +85,17 @@
         <div><label class="globalGraph-defaultShowSingleNode"></label>
             <input id="globalGraph-defaultShowSingleNode" type="checkbox">
         </div>
+        <div><label class="globalGraph-defaultShowTags"></label>
+            <input id="globalGraph-defaultShowTags" type="checkbox">
+        </div>
         <div><label class="globalGraph-nodeColor"></label>
             <input id="globalGraph-nodeColor" type="color">
         </div>
         <div><label class="globalGraph-highlightedNodeColor"></label>
             <input id="globalGraph-highlightedNodeColor" type="color">
+        </div>
+        <div><label class="globalGraph-tagNodeColor"></label>
+            <input id="globalGraph-tagNodeColor" type="color">
         </div>
         <div><label class="globalGraph-backgroundColor"></label>
             <input id="globalGraph-backgroundColor" type="color">
@@ -153,8 +159,10 @@
     document.getElementsByClassName('globalGraph-defaultSearchText')[0].innerHTML = getTr('Default search text') + ':&nbsp;'
     document.getElementsByClassName('globalGraph-defaultHighlightFilter')[0].innerHTML = getTr('Default filter text for highlighted nodes') + ':&nbsp;'
     document.getElementsByClassName('globalGraph-defaultShowSingleNode')[0].innerHTML = getTr('Default display of single nodes') + ':&nbsp;'
+    document.getElementsByClassName('globalGraph-defaultShowTags')[0].innerHTML = getTr('Default display of tag nodes') + ':&nbsp;'
     document.getElementsByClassName('globalGraph-nodeColor')[0].innerHTML = getTr('Node color') + ':&nbsp;'
     document.getElementsByClassName('globalGraph-highlightedNodeColor')[0].innerHTML = getTr('Highlighted node color') + ':&nbsp;'
+    document.getElementsByClassName('globalGraph-tagNodeColor')[0].innerHTML = getTr('Tag node color') + ':&nbsp;'
     document.getElementsByClassName('globalGraph-backgroundColor')[0].innerHTML = getTr('Graph background color') + ':&nbsp;'
     document.getElementsByClassName('shortcuts-copyNoteID')[0].innerHTML = getTr('Copy current note ID') + ':&nbsp;'
     document.getElementsByClassName('shortcuts-copyNoteLink')[0].innerHTML = getTr('Copy current note link') + ':&nbsp;'
@@ -181,8 +189,10 @@
         document.getElementById('globalGraph-defaultSearchText').value = config['globalGraph-defaultSearchText']
         document.getElementById('globalGraph-defaultHighlightFilter').value = config['globalGraph-defaultHighlightFilter']
         document.getElementById('globalGraph-defaultShowSingleNode').checked = config['globalGraph-defaultShowSingleNode']
+        document.getElementById('globalGraph-defaultShowTags').checked = config['globalGraph-defaultShowTags']
         document.getElementById('globalGraph-nodeColor').value = rgbToHex(config['globalGraph-nodeColor'])
         document.getElementById('globalGraph-highlightedNodeColor').value = rgbToHex(config['globalGraph-highlightedNodeColor'])
+        document.getElementById('globalGraph-tagNodeColor').value = rgbToHex(config['globalGraph-tagNodeColor'])
         document.getElementById('globalGraph-backgroundColor').value = rgbToHex(config['globalGraph-backgroundColor'])
         document.getElementById('shortcuts-copyNoteID').value = config['shortcuts-copyNoteID']
         document.getElementById('shortcuts-copyNoteLink').value = config['shortcuts-copyNoteLink']
@@ -215,8 +225,10 @@
         userConfig['globalGraph-defaultSearchText'] = document.getElementById('globalGraph-defaultSearchText').value
         userConfig['globalGraph-defaultHighlightFilter'] = document.getElementById('globalGraph-defaultHighlightFilter').value
         userConfig['globalGraph-defaultShowSingleNode'] = document.getElementById('globalGraph-defaultShowSingleNode').checked
+        userConfig['globalGraph-defaultShowTags'] = document.getElementById('globalGraph-defaultShowTags').checked
         userConfig['globalGraph-nodeColor'] = hexToRgb(document.getElementById('globalGraph-nodeColor').value)
         userConfig['globalGraph-highlightedNodeColor'] = hexToRgb(document.getElementById('globalGraph-highlightedNodeColor').value)
+        userConfig['globalGraph-tagNodeColor'] = hexToRgb(document.getElementById('globalGraph-tagNodeColor').value)
         userConfig['globalGraph-backgroundColor'] = hexToRgb(document.getElementById('globalGraph-backgroundColor').value)
         userConfig['shortcuts-copyNoteID'] = document.getElementById('shortcuts-copyNoteID').value
         userConfig['shortcuts-copyNoteLink'] = document.getElementById('shortcuts-copyNoteLink').value

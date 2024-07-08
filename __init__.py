@@ -533,6 +533,12 @@ class AnkiNoteLinker(object):
             add = MyAddCards(editor.note, placeholder)
             add.set_note(note, editor.note.cards()[0].did)
             return True, None
+        elif re.match(r'AnkiNoteLinker-tagSearch.*', message):
+            tag = message[24:]
+            browser: Browser = aqt.dialogs.open('Browser', aqt.mw)
+            browser.activateWindow()
+            browser.search_for('tag:' + tag)
+            return True, None
         elif message == 'insertLinkWithPlaceholder':
             editor: Editor = context
             self.insertNewLink(editor)

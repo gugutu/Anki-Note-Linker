@@ -35,8 +35,10 @@ defaultConfig = {
     "globalGraph-defaultSearchText": "deck:current",
     "globalGraph-defaultHighlightFilter": "is:due",
     "globalGraph-defaultShowSingleNode": False,
+    "globalGraph-defaultShowTags": False,
     "globalGraph-nodeColor": [57, 125, 237],
     "globalGraph-highlightedNodeColor": [244, 165, 0],
+    "globalGraph-tagNodeColor": [127, 199, 132],
     "globalGraph-backgroundColor": [16, 16, 32]
 }
 # Check if there is an old version of the configuration;

@@ -41,10 +41,14 @@ function getTr(s) {
             return '高亮节点的默认筛选文本'
         case 'Default display of single nodes':
             return '默认显示单独的节点'
+        case 'Default display of tag nodes':
+            return '默认显示标签节点'
         case 'Node color':
             return '节点颜色'
         case 'Highlighted node color':
             return '高亮节点颜色'
+        case 'Tag node color':
+            return '标签节点颜色'
         case 'Graph background color':
             return '图背景颜色'
         case 'Restore Defaults':

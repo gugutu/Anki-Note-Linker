@@ -134,6 +134,7 @@ Author Wang Rui <https://github.com/gugutu>
     const particleNum = 3
     let normalNodeColor = "rgb(57, 125, 237)"
     let highlightNodeColor = "rgb(244, 165, 0)"
+    let tagNodeColor = "rgb(127, 199, 132)"
     let draggingNode = null
     let inDragCanvas = false
     let dragGapX = 0
@@ -269,6 +270,7 @@ Author Wang Rui <https://github.com/gugutu>
 
     let normalNodeContext
     let highlightNodeContext
+    let tagNodeContext
     const meNodeContext = new PIXI.GraphicsContext()
         .circle(0, 0, 25)
         .fill('rgb(31, 115, 205)')
@@ -331,6 +333,9 @@ Author Wang Rui <https://github.com/gugutu>
         highlightNodeContext = new PIXI.GraphicsContext()
             .circle(0, 0, 20)
             .fill(highlightNodeColor)
+        tagNodeContext = new PIXI.GraphicsContext()
+            .circle(0, 0, 20)
+            .fill(tagNodeColor)
 
         circleList = nodes.map(node => {//将nodes列表转换为对应的图形列表
             if (node.mainField === null) {
@@ -357,6 +362,9 @@ Author Wang Rui <https://github.com/gugutu>
                 case 'child':
                     circle = new PIXI.Graphics(childNodeContext)
                     break
+                case 'tag':
+                    circle = new PIXI.Graphics(tagNodeContext)
+                    break
                 case 'invalid':
                     circle = new PIXI.Graphics(invalidNodeContext)
                     break
@@ -365,10 +373,18 @@ Author Wang Rui <https://github.com/gugutu>
             }
 
             circle.on('click', event => {
+                if (node.type === 'tag') {
+                    pycmd('AnkiNoteLinker-tagSearch' + node.id)
+                    return
+                }
                 if (node.type !== 'me') pycmd('lnid' + node.id)
             })
 
             circle.on('rightclick', event => {
+                if (node.type === 'tag') {
+                    pycmd('AnkiNoteLinker-tagSearch' + node.id)
+                    return
+                }
                 pycmd('rnid' + node.id)
             })
 
@@ -636,7 +652,7 @@ Author Wang Rui <https://github.com/gugutu>
     const delay = ms => new Promise(resolve => setTimeout(resolve, ms))
     let webGLSupported = false
 
-    async function reloadPage(newNodes, connections, resetCenter, adaptScale = false, normalColor = null, highlightColor = null, graphBgColor = [16, 16, 32]) {
+    async function reloadPage(newNodes, connections, resetCenter, adaptScale = false, normalColor = null, highlightColor = null, tagColor = null, graphBgColor = [16, 16, 32]) {
         function isWebGLSupported() {
             try {
                 const canvas = document.createElement('canvas');
@@ -658,13 +674,14 @@ Author Wang Rui <https://github.com/gugutu>
                 app.renderer.background.color = `rgb(${graphBgColor[0]}, ${graphBgColor[1]}, ${graphBgColor[2]})`;
 
                 /*Automatically calculates and sets text color either black or white text to contrast against background*/
-                document.documentElement.style.setProperty('--circleText-color', Math.pow(Math.pow((graphBgColor[0])/255,2.2) * 0.2126 + Math.pow((graphBgColor[1])/255,2.2) * 0.7152 + Math.pow((graphBgColor[2])/255,2.2) * 0.0722, 0.678) < 0.5 ? '#fff' : '#000');
+                document.documentElement.style.setProperty('--circleText-color', Math.pow(Math.pow((graphBgColor[0]) / 255, 2.2) * 0.2126 + Math.pow((graphBgColor[1]) / 255, 2.2) * 0.7152 + Math.pow((graphBgColor[2]) / 255, 2.2) * 0.0722, 0.678) < 0.5 ? '#fff' : '#000');
             }
         }
-        
+
         while (!init || window.innerHeight === 0 || window.innerWidth === 0) await delay(20)
         normalNodeColor = normalColor
         highlightNodeColor = highlightColor
+        tagNodeColor = tagColor
         let oldNodes = nodes
         let oldNodeMap = new Map(oldNodes.map(it => [it.id, it]))
 

@@ -29,6 +29,8 @@ def getTr(s: str) -> str:
             return '显示/隐藏关系图面板'
         elif s == 'Global Relationship Graph (Experimental)':
             return '全局关系图（实验性）'
+        elif s == 'Display tag nodes':
+            return '显示标签节点'
         elif s == 'The corresponding note does not exist':
             return '对应笔记不存在'
         elif s == 'Please add the current note first':
@@ -39,8 +41,8 @@ def getTr(s: str) -> str:
             return '剪贴板中的内容不是笔记ID'
         elif s == 'Current note has been deleted':
             return '当前笔记已被删除'
-        elif s == 'Display single notes':
-            return '显示单独的笔记'
+        elif s == 'Display single nodes':
+            return '显示单独的节点'
         elif s == 'Search':
             return '搜索'
         elif s == 'Search notes:':

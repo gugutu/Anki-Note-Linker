@@ -265,8 +265,8 @@ class AnkiNoteLinker(object):
                 re.sub(
                     r'\[((?:[^\[]|\\\[)*?)\|nid(\d{13})\]',
                     lambda match:
-                    f'<a class="noteLink" href="javascript:pycmd(`AnkiNoteLinker-openNoteInNewEditor`+`{match.group(2)}`)" '
-                    f'oncontextmenu="event.preventDefault();pycmd(`AnkiNoteLinker-openNoteInPreviewer`+`{match.group(2)}`)">' +
+                    f'<a class="noteLink" href="javascript:pycmd(`AnkiNoteLinker-openNoteInPreviewer`+`{match.group(2)}`)" '
+                    f'oncontextmenu="event.preventDefault();pycmd(`AnkiNoteLinker-openNoteInNewEditor`+`{match.group(2)}`)">' +
                     match.group(1).replace('\\[', '[') + '</a>', text
                 )
         )

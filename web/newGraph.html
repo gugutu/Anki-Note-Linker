@@ -387,7 +387,7 @@ Author Wang Rui <https://github.com/gugutu>
                     else if (ankiContext === 'EDIT_CURRENT')
                         pycmd('AnkiNoteLinker-setNoteToEditor' + node.id)
                     else if (ankiContext === 'GLOBAL_GRAPH')
-                        pycmd('AnkiNoteLinker-openNoteInNewEditor' + node.id)
+                        pycmd('AnkiNoteLinker-openNoteInPreviewer' + node.id)
                 }
             })
 
@@ -396,12 +396,7 @@ Author Wang Rui <https://github.com/gugutu>
                     pycmd('AnkiNoteLinker-tagSearch' + node.id)
                     return
                 }
-                if (ankiContext === 'BROWSER')
-                    pycmd('AnkiNoteLinker-openNoteInNewEditor' + node.id)
-                else if (ankiContext === 'EDIT_CURRENT')
-                    pycmd('AnkiNoteLinker-openNoteInNewEditor' + node.id)
-                else if (ankiContext === 'GLOBAL_GRAPH')
-                    pycmd('AnkiNoteLinker-openNoteInPreviewer' + node.id)
+                pycmd('AnkiNoteLinker-openNoteInNewEditor' + node.id)
             })
 
             circle.on('pointerdown', (event) => {//当鼠标按下时

@@ -43,7 +43,7 @@ Generate a link from the note ID in the clipboard and the currently selected tex
 
 Generate a new link from the currently selected text by either using the right-click menu or pressing `Alt+Shift+N`
 
-Double-clicking the generated link allows adding a corresponding new note
+Double-clicking the generated link text allows adding a corresponding new note
 
 #### Insert link template
 
@@ -59,21 +59,21 @@ Open current note in new window by using the right-click menu or pressing `Alt+S
 
 #### Open the note corresponding to the link
 
-`Double click link` to open the corresponding note in a new window
+`Double click link text` to open the corresponding note in a new window
 
-### In the links panel / graph panel:
+### In the "link panel / graph panel" attached to the editor:
 
-`Left click link` to open the corresponding note in the current window
+`Left click link` to open the corresponding note in the current editor window
 
-`Right click link` to open the corresponding note in a new window
+`Right click link` to open the corresponding note in a new editor window
 
-`Middle click link` to open the corresponding note in the browser (unsupported in graph view)
+`Middle click link` to open the corresponding note in the browser (unsupported in graph panel)
 
-### In the previewer / reviewer / global graph:
+### In the reviewer / previewer / global graph:
 
-`Left click link` to open the corresponding note in an editor window
+`Left click link` to open the corresponding note in a previewer window
 
-`Right click link` to open the corresponding note in a previewer window
+`Right click link` to open the corresponding note in an editor window
 
 ### Global relationship graph (Experimental)
 

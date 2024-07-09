@@ -163,9 +163,14 @@
         }
     }
 
-    function reloadPage(parentNodes, childNodes) {
+    function reloadPage(parentNodes = [], childNodes = [], waitingForShowAnswer = false) {
         const backLinksDiv = document.getElementById("backLinks");
         const forwardLinksDiv = document.getElementById("forwardLinks");
+        if (waitingForShowAnswer) {
+            backLinksDiv.innerHTML = forwardLinksDiv.innerHTML = getTr('Show answer to reveal the contents.')
+            adjustHeights()
+            return
+        }
         backLinksDiv.innerHTML = parentNodes.length === 0 ? getTr('None') : ''
         forwardLinksDiv.innerHTML = childNodes.length === 0 ? getTr('None') : ''
         parentNodes.forEach(it => {
@@ -194,6 +199,8 @@
             }
             if (ankiContext === 'BROWSER')
                 pycmd('AnkiNoteLinker-openNoteInBrowser' + node.id)
+            else if(ankiContext === 'REVIEWER')
+                pycmd('AnkiNoteLinker-openNoteInPreviewer' + node.id)
             else
                 pycmd('AnkiNoteLinker-setNoteToEditor' + node.id)
         };
@@ -201,6 +208,8 @@
             event.preventDefault();
             if (ankiContext === 'BROWSER')
                 pycmd('AnkiNoteLinker-openNoteInBrowser' + node.id)
+            else if(ankiContext === 'REVIEWER')
+                pycmd('AnkiNoteLinker-openNoteInPreviewer' + node.id)
             else
                 pycmd('AnkiNoteLinker-setNoteToEditor' + node.id)
         };

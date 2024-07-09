@@ -1,9 +1,12 @@
 {
   "showLinksPageAutomatically": true,
   "showGraphPageAutomatically": true,
+  "showLinksPageInReviewerAutomatically": true,
   "splitRatio": "2:1",
   "splitRatioBetweenLinksPageAndGraphPage": "1:1",
+  "splitRatioBetweenReviewerAndPanel": "4:1",
   "location": "right",
+  "positionRelativeToReviewer": "right",
   "linkMaxLines": 5,
   "collapseClozeInLinksPage": true,
   "useHjpPreviewer": true,

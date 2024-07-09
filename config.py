@@ -18,9 +18,12 @@ from .state import config_html, getWebFileLink
 defaultConfig = {
     "showLinksPageAutomatically": True,
     "showGraphPageAutomatically": True,
+    "showLinksPageInReviewerAutomatically": True,
     "splitRatio": "2:1",
+    "splitRatioBetweenReviewerAndPanel": "4:1",
     "splitRatioBetweenLinksPageAndGraphPage": "1:1",
     "location": "right",
+    "positionRelativeToReviewer": "right",
     "linkMaxLines": 5,
     "collapseClozeInLinksPage": True,
     "useHjpPreviewer": True,

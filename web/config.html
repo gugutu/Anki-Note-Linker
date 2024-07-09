@@ -54,6 +54,9 @@
         <div><label class="showGraphPageAutomatically"></label>
             <input id="showGraphPageAutomatically" type="checkbox">
         </div>
+        <div><label class="showLinksPageInReviewerAutomatically"></label>
+            <input id="showLinksPageInReviewerAutomatically" type="checkbox">
+        </div>
         <div><label class="collapseClozeInLinksPage"></label>
             <input id="collapseClozeInLinksPage" type="checkbox">
         </div>
@@ -66,11 +69,20 @@
                 <option id="location-right" value="right">right</option>
             </select>
         </div>
+        <div><label class="positionRelativeToReviewer"></label>
+            <select id="positionRelativeToReviewer">
+                <option id="positionRelativeToReviewer-left" value="left">left</option>
+                <option id="positionRelativeToReviewer-right" value="right">right</option>
+            </select>
+        </div>
         <div><label class="splitRatio"></label>
             <input id="splitRatio" type="text">
         </div>
         <div><label class="splitRatioBetweenLinksPageAndGraphPage"></label>
             <input id="splitRatioBetweenLinksPageAndGraphPage" type="text">
+        </div>
+        <div><label class="splitRatioBetweenReviewerAndPanel"></label>
+            <input id="splitRatioBetweenReviewerAndPanel" type="text">
         </div>
         <div><label class="linkMaxLines"></label>
             <input id="linkMaxLines" type="text" oninput="value=value.replace(/\D/g,'')">
@@ -123,14 +135,14 @@
 </div>
 <div id="buttons">
     <button class="button" id="button-restoreDefaults" style="margin-left: 5px; margin-right: auto;"
-            onclick="setConfigToHtml(defaultConfig)">
+            onclick="readConfig(defaultConfig)">
         Restore Defaults
     </button>
     <button class="button" id="button-cancel" style="margin-left: auto;"
             onclick="pycmd('AnkiNoteLinker-config-cancel')">
         Cancel
     </button>
-    <button class="button" id="button-ok" style="margin-left: 5px; margin-right: 5px;" onclick="onOkClick()">
+    <button class="button" id="button-ok" style="margin-left: 5px; margin-right: 5px;" onclick="setConfig()">
         OK
     </button>
 </div>
@@ -148,13 +160,18 @@
 
     document.getElementsByClassName('showLinksPageAutomatically')[0].innerHTML = getTr('Automatically show links panel when entering editor') + ':&nbsp;'
     document.getElementsByClassName('showGraphPageAutomatically')[0].innerHTML = getTr('Automatically show graph panel when entering editor') + ':&nbsp;'
+    document.getElementsByClassName('showLinksPageInReviewerAutomatically')[0].innerHTML = getTr('Automatically show links panel when entering reviewer') + ':&nbsp;'
     document.getElementsByClassName('collapseClozeInLinksPage')[0].innerHTML = getTr('Collapse cloze in links panel') + ':&nbsp;'
     document.getElementsByClassName('useHjpPreviewer')[0].innerHTML = getTr('If the "hjp-linkmaster" add-on is installed, use its previewer') + ':&nbsp;'
     document.getElementsByClassName('location')[0].innerHTML = getTr('The position of links/graph panel relative to the editor') + ':&nbsp;'
     document.getElementById('location-left').innerHTML = getTr('left')
     document.getElementById('location-right').innerHTML = getTr('right')
+    document.getElementsByClassName('positionRelativeToReviewer')[0].innerHTML = getTr('The position of links panel relative to the reviewer') + ':&nbsp;'
+    document.getElementById('positionRelativeToReviewer-left').innerHTML = getTr('left')
+    document.getElementById('positionRelativeToReviewer-right').innerHTML = getTr('right')
     document.getElementsByClassName('splitRatio')[0].innerHTML = getTr('Split ratio between editor and panels') + ':&nbsp;'
     document.getElementsByClassName('splitRatioBetweenLinksPageAndGraphPage')[0].innerHTML = getTr('Split ratio between links panel and graph panel') + ':&nbsp;'
+    document.getElementsByClassName('splitRatioBetweenReviewerAndPanel')[0].innerHTML = getTr('Split ratio between reviewer and links panel') + ':&nbsp;'
     document.getElementsByClassName('linkMaxLines')[0].innerHTML = getTr('Max displayed lines per link in links panel') + ':&nbsp;'
     document.getElementsByClassName('globalGraph-defaultSearchText')[0].innerHTML = getTr('Default search text') + ':&nbsp;'
     document.getElementsByClassName('globalGraph-defaultHighlightFilter')[0].innerHTML = getTr('Default filter text for highlighted nodes') + ':&nbsp;'
@@ -177,14 +194,17 @@
     document.getElementById('button-cancel').innerHTML = getTr('Cancel')
     document.getElementById('button-ok').innerHTML = getTr('OK')
 
-    function setConfigToHtml(config) {
+    function readConfig(config) {
         document.getElementById('showLinksPageAutomatically').checked = config['showLinksPageAutomatically']
         document.getElementById('showGraphPageAutomatically').checked = config['showGraphPageAutomatically']
+        document.getElementById('showLinksPageInReviewerAutomatically').checked = config['showLinksPageInReviewerAutomatically']
         document.getElementById('collapseClozeInLinksPage').checked = config['collapseClozeInLinksPage']
         document.getElementById('useHjpPreviewer').checked = config['useHjpPreviewer']
         document.getElementById('location').selectedIndex = config['location'] === 'left' ? 0 : 1
+        document.getElementById('positionRelativeToReviewer').selectedIndex = config['positionRelativeToReviewer'] === 'left' ? 0 : 1
         document.getElementById('splitRatio').value = config['splitRatio']
         document.getElementById('splitRatioBetweenLinksPageAndGraphPage').value = config['splitRatioBetweenLinksPageAndGraphPage']
+        document.getElementById('splitRatioBetweenReviewerAndPanel').value = config['splitRatioBetweenReviewerAndPanel']
         document.getElementById('linkMaxLines').value = config['linkMaxLines']
         document.getElementById('globalGraph-defaultSearchText').value = config['globalGraph-defaultSearchText']
         document.getElementById('globalGraph-defaultHighlightFilter').value = config['globalGraph-defaultHighlightFilter']
@@ -202,12 +222,13 @@
         document.getElementById('shortcuts-insertLinkTemplate').value = config['shortcuts-insertLinkTemplate']
     }
 
-    function onOkClick() {
+    function setConfig() {
         const regex = /^\d+:\d+$/;
         const splitRatio = document.getElementById('splitRatio').value;
         const splitRatioBetweenLinksPageAndGraphPage = document.getElementById('splitRatioBetweenLinksPageAndGraphPage').value;
+        const splitRatioBetweenReviewerAndPanel = document.getElementById('splitRatioBetweenReviewerAndPanel').value;
         const linkMaxLines = document.getElementById('linkMaxLines').value;
-        if (!regex.test(splitRatio) || !regex.test(splitRatioBetweenLinksPageAndGraphPage)) {
+        if (!regex.test(splitRatio) || !regex.test(splitRatioBetweenLinksPageAndGraphPage) || !regex.test(splitRatioBetweenReviewerAndPanel)) {
             alert(getTr('The format of "split ratio" is incorrect'))
             return;
         }
@@ -216,11 +237,14 @@
         }
         userConfig['showLinksPageAutomatically'] = document.getElementById('showLinksPageAutomatically').checked
         userConfig['showGraphPageAutomatically'] = document.getElementById('showGraphPageAutomatically').checked
+        userConfig['showLinksPageInReviewerAutomatically'] = document.getElementById('showLinksPageInReviewerAutomatically').checked
         userConfig['collapseClozeInLinksPage'] = document.getElementById('collapseClozeInLinksPage').checked
         userConfig['useHjpPreviewer'] = document.getElementById('useHjpPreviewer').checked
         userConfig['location'] = document.getElementById('location').value
+        userConfig['positionRelativeToReviewer'] = document.getElementById('positionRelativeToReviewer').value
         userConfig['splitRatio'] = document.getElementById('splitRatio').value
         userConfig['splitRatioBetweenLinksPageAndGraphPage'] = document.getElementById('splitRatioBetweenLinksPageAndGraphPage').value
+        userConfig['splitRatioBetweenReviewerAndPanel'] = document.getElementById('splitRatioBetweenReviewerAndPanel').value
         userConfig['linkMaxLines'] = document.getElementById('linkMaxLines').value
         userConfig['globalGraph-defaultSearchText'] = document.getElementById('globalGraph-defaultSearchText').value
         userConfig['globalGraph-defaultHighlightFilter'] = document.getElementById('globalGraph-defaultHighlightFilter').value
@@ -236,7 +260,8 @@
         userConfig['shortcuts-insertLinkWithClipboardID'] = document.getElementById('shortcuts-insertLinkWithClipboardID').value
         userConfig['shortcuts-insertNewLink'] = document.getElementById('shortcuts-insertNewLink').value
         userConfig['shortcuts-insertLinkTemplate'] = document.getElementById('shortcuts-insertLinkTemplate').value
-        pycmd('AnkiNoteLinker-config-ok'+ JSON.stringify(userConfig))
+        pycmd('AnkiNoteLinker-config-ok' + JSON.stringify(userConfig))
     }
-    setConfigToHtml(userConfig)
+
+    readConfig(userConfig)
 </script>

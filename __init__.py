@@ -16,6 +16,8 @@ from aqt import gui_hooks, mw
 from aqt.browser import Browser
 from aqt.browser.previewer import BrowserPreviewer
 from aqt.editor import Editor, EditorWebView, EditorMode
+from aqt.main import MainWindowState
+from aqt.reviewer import Reviewer
 from aqt.utils import *
 from aqt.webview import AnkiWebView
 
@@ -51,6 +53,11 @@ class AnkiNoteLinker(object):
         gui_hooks.webview_will_set_content.append(self.appendJsToEditor)
         gui_hooks.browser_will_show_context_menu.append(self.injectRightClickMenu)
         gui_hooks.editor_will_show_context_menu.append(self.injectRightClickMenu)
+        gui_hooks.reviewer_will_show_context_menu.append(self.injectContextMenuToReviewer)
+        gui_hooks.state_did_change.append(self.onStateChange)
+        gui_hooks.reviewer_will_end.append(self.onReviewerEnd)
+        gui_hooks.reviewer_did_show_answer.append(self.refreshReviewerPanel)
+        gui_hooks.reviewer_did_show_question.append(lambda card: self.refreshReviewerPanel(card, True))
 
         def cleanUpEditor(editor):
             self.editors.discard(editor)
@@ -73,6 +80,126 @@ class AnkiNoteLinker(object):
         qconnect(openConfigAction.triggered, lambda _: ConfigView.openConfigView())
         menu.addAction(openConfigAction)
         mw.form.menubar.addMenu(menu)
+
+    def onStateChange(self, newState: MainWindowState, oldState: MainWindowState):
+        if newState == "review":
+            self.onToggleReviewerPanel(config['showLinksPageInReviewerAutomatically'])
+
+    def onReviewerEnd(self):
+        self.onToggleReviewerPanel(False)
+        mw.setCentralWidget(mw.mwWidget)
+        mw.mwWidget.setParent(mw)
+        del mw.reviewer.linksPageSplitter
+        mw.reviewer.linksPage.cleanup()
+        mw.reviewer.linksPage.close()
+        del mw.reviewer.linksPage
+
+    def onToggleReviewerPanel(self, checked: bool):
+        mw.reviewer.showLinksPage = checked
+        if checked:
+            if hasattr(mw.reviewer, 'linksPage'):
+                mw.reviewer.linksPage.show()
+            else:
+                self.injectLinksPageToMainWindow()
+            self.refreshReviewerPanel(mw.reviewer.card, waitingForShowAnswer=mw.reviewer.state != 'answer')
+        else:
+            if hasattr(mw.reviewer, 'linksPage'):
+                mw.reviewer.linksPage.hide()
+
+    def injectContextMenuToReviewer(self, reviewer: Reviewer, menu: QMenu):
+        togglePanelAction = QAction(menu)
+        togglePanelAction.setText(getTr('Show Links Panel'))
+        togglePanelAction.setCheckable(True)
+        togglePanelAction.setChecked(reviewer.showLinksPage)
+
+        qconnect(togglePanelAction.triggered, self.onToggleReviewerPanel)
+        menu.addSeparator()
+        menu.addAction(togglePanelAction)
+        menu.addSeparator()
+
+    def refreshReviewerPanel(self, card: Card, waitingForShowAnswer=False):
+        # print(f'{datetime.now()}:{waitingForShowAnswer}')
+        if not hasattr(mw.reviewer, 'linksPage'):
+            return
+        if mw.reviewer.showLinksPage:
+            log(f'-----refresh reviewer panel')
+            if waitingForShowAnswer:
+                mw.reviewer.linksPage.eval(f'reloadPage([], [], waitingForShowAnswer = true)')
+                return
+
+            currentNode = self.noteToNoteNode(card.note())
+            parentNodes: set[NoteNode] = set()
+            parentNodeIds: set[NoteId] = set()
+            childNodes: list[NoteNode] = []
+            parentJsNodes: list[JsNoteNode] = []
+            childJsNodes: list[JsNoteNode] = []
+
+            for parentId in currentNode.parentIds:
+                parentNode = self.idToNoteNode(parentId)
+                parentNodes.add(parentNode)
+                parentNodeIds.add(parentId)
+                parentJsNodes.append(parentNode.toJsNoteNode('parent'))
+
+            for childId in currentNode.childIds:
+                childNode = self.idToNoteNode(childId)
+                childNodes.append(childNode)
+                jsNode = childNode.toJsNoteNode('child')
+                childJsNodes.append(jsNode)
+                if childNode.id in parentNodeIds:  # When a node is both a parent node and a child node
+                    jsNode.type = 'parent child'
+
+            mw.reviewer.linksPage.eval(
+                f'''reloadPage(
+                            {json.dumps(parentJsNodes, default=lambda o: o.__dict__)},
+                            {json.dumps(childJsNodes, default=lambda o: o.__dict__)}
+                        )'''
+            )
+
+    def injectLinksPageToMainWindow(self):
+        mw.reviewer.linksPageSplitter = QSplitter()
+        mw.reviewer.linksPage = AnkiWebView(parent=mw.reviewer.linksPageSplitter, title="links_page")
+        mw.reviewer.linksPage.set_bridge_command(lambda s: s, mw.reviewer.linksPage)
+        mw.reviewer.linksPage.stdHtml(
+            f'<script>const ankiContext = "REVIEWER"</script>'
+            f'<script src="{getWebFileLink("js/translation.js")}"></script>'
+            f'<script>const ankiLanguage = "{anki.lang.current_lang}"</script>'
+            f'<link rel="stylesheet" href="{getWebFileLink("katex.css")}">'
+            f'<script defer src="{getWebFileLink("js/katex.js")}"></script>'
+            f'<script defer src="{getWebFileLink("js/katex-mhchem.js")}"></script>'
+            f'<script defer src="{getWebFileLink("js/katex-auto-render.js")}"></script>'
+            r'<style>.link-button-text{-webkit-line-clamp: ' + str(config['linkMaxLines']) + '; line-clamp: ' + str(
+                config['linkMaxLines']) + ';}</style>' +
+            links_html
+        )
+        mw.mwWidget = mw.centralWidget()
+        wrappedMwWidget = QWidget()
+        wrappedMwLayout = QVBoxLayout(wrappedMwWidget)
+        wrappedMwLayout.setContentsMargins(0, 0, 0, 0)
+        wrappedMwLayout.setSpacing(0)
+        wrappedMwWidget.setLayout(wrappedMwLayout)
+        wrappedMwLayout.addWidget(mw.mwWidget)
+        mw.mwWidget.setParent(wrappedMwWidget)
+
+        mwR, panelR = [int(r) * 10000 for r in config["splitRatioBetweenReviewerAndPanel"].split(":")]
+        location = config["positionRelativeToReviewer"]
+
+        if location == "left":
+            mw.reviewer.linksPage.setContentsMargins(10, 0, 0, 0)
+            mw.reviewer.linksPageSplitter.setOrientation(Qt.Orientation.Horizontal)
+            mw.reviewer.linksPageSplitter.addWidget(mw.reviewer.linksPage)
+            mw.reviewer.linksPageSplitter.addWidget(wrappedMwWidget)
+            sizes = [panelR, mwR]
+        elif location == "right":
+            mw.reviewer.linksPage.setContentsMargins(0, 0, 10, 0)
+            mw.reviewer.linksPageSplitter.setOrientation(Qt.Orientation.Horizontal)
+            mw.reviewer.linksPageSplitter.addWidget(wrappedMwWidget)
+            mw.reviewer.linksPageSplitter.addWidget(mw.reviewer.linksPage)
+            sizes = [mwR, panelR]
+        else:
+            raise ValueError("Invalid value for config key location")
+
+        mw.reviewer.linksPageSplitter.setSizes(sizes)
+        mw.setCentralWidget(mw.reviewer.linksPageSplitter)
 
     def injectRightClickMenu(self, context, menu: QMenu):
         if isinstance(context, EditorWebView):
@@ -222,6 +349,8 @@ class AnkiNoteLinker(object):
 
         wrappedWeb = QWidget()
         wrapLayout = QHBoxLayout()
+        wrapLayout.setContentsMargins(0, 0, 0, 0)
+        wrapLayout.setSpacing(0)
         wrappedWeb.setLayout(wrapLayout)
         wrapLayout.addWidget(editor.web)  # Wrap the web view layer by layer to improve compatibility with other plugins
 

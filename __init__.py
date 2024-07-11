@@ -661,7 +661,7 @@ class AnkiNoteLinker(object):
             if editor.addMode:
                 tooltip(getTr('Please add the current note first'))
                 return True, None
-            match = re.search(r'\[((?:[^\[]|\\\[)*?)\|' + message + ']', editor.note.joined_fields())
+            match = re.search(r'\[((?:[^\[]|\\\[)*?)\|new' + placeholder + ']', editor.note.joined_fields())
             text = ''
             if match:
                 text = match.group(1).replace('\\[', '[')

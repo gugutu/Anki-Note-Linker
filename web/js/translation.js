@@ -7,8 +7,6 @@ function getTr(s) {
             return '正向链接'
         case 'None':
             return '无'
-        case 'Show answer to reveal the contents.':
-            return '显示答案后展示'
         case 'Invalid note':
             return '无效笔记'
         case 'Invalid link':

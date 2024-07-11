@@ -167,7 +167,7 @@
         const backLinksDiv = document.getElementById("backLinks");
         const forwardLinksDiv = document.getElementById("forwardLinks");
         if (waitingForShowAnswer) {
-            backLinksDiv.innerHTML = forwardLinksDiv.innerHTML = getTr('Show answer to reveal the contents.')
+            backLinksDiv.innerHTML = forwardLinksDiv.innerHTML = '[...]'
             adjustHeights()
             return
         }

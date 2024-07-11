@@ -41,8 +41,6 @@ def getTr(s: str) -> str:
             return '请选中单条笔记/卡片'
         elif s == 'The content in the clipboard is not a note ID':
             return '剪贴板中的内容不是笔记ID'
-        elif s == 'Current note has been deleted':
-            return '当前笔记已被删除'
         elif s == 'Display single nodes':
             return '显示单独的节点'
         elif s == 'Search':

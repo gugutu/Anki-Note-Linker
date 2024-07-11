@@ -6,7 +6,7 @@ import os
 
 import anki
 from anki.notes import NoteId
-from aqt import mw
+from aqt import mw, gui_hooks
 from aqt.browser.previewer import BrowserPreviewer
 from aqt.utils import tooltip
 
@@ -69,28 +69,39 @@ class PreviewState:
         self.index = 0
         self.card = cards[self.index]
         self.singleCard = True
+        gui_hooks.operation_did_execute.append(self.onOp)
+
+    def onOp(self, changes: anki.collection.OpChanges, handler):
+        if changes.note_text or changes.card:
+            if self.previewer:
+                try:
+                    self.previewer.render_card()
+                except anki.errors.NotFoundError:
+                    self.previewer.close()
 
     def onNextCard(self):
         if self.has_next_card() and self.previewer is not None:
             self.index += 1
-            self.card = self.cards[self.index]
             try:
+                self.card = self.cards[self.index]
                 self.previewer.render_card()
             except anki.errors.NotFoundError:
                 self.index -= 1
                 self.card = self.cards[self.index]
-                tooltip(getTr('Current note has been deleted'))
+            except IndexError:
+                self.index -= 1
 
     def onPreviousCard(self):
         if self.has_previous_card() and self.previewer is not None:
             self.index -= 1
-            self.card = self.cards[self.index]
             try:
+                self.card = self.cards[self.index]
                 self.previewer.render_card()
             except anki.errors.NotFoundError:
                 self.index += 1
                 self.card = self.cards[self.index]
-                tooltip(getTr('Current note has been deleted'))
+            except IndexError:
+                self.index += 1
 
     def has_previous_card(self):
         return self.index > 0
@@ -100,3 +111,7 @@ class PreviewState:
 
     def setPreviewer(self, previewer):
         self.previewer = previewer
+
+    def cleanUpState(self):
+        gui_hooks.operation_did_execute.remove(self.onOp)
+        self.previewer = None

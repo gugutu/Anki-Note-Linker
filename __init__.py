@@ -14,7 +14,7 @@ from anki.errors import NotFoundError
 from anki.notes import Note, NoteId
 from aqt import gui_hooks, mw
 from aqt.browser import Browser
-from aqt.browser.previewer import BrowserPreviewer
+from aqt.browser.previewer import BrowserPreviewer, Previewer
 from aqt.editor import Editor, EditorWebView, EditorMode
 from aqt.main import MainWindowState
 from aqt.reviewer import Reviewer
@@ -58,6 +58,15 @@ class AnkiNoteLinker(object):
         gui_hooks.reviewer_will_end.append(self.onReviewerEnd)
         gui_hooks.reviewer_did_show_answer.append(self.refreshReviewerPanel)
         gui_hooks.reviewer_did_show_question.append(lambda card: self.refreshReviewerPanel(card, True))
+        # gui_hooks.previewer_did_init.append(lambda p: print('init', p))
+
+        def cleanUpPreviewerState(previewer: Previewer):
+            previewerState = previewer._parent
+            print(previewerState)
+            if hasattr(previewerState, 'cleanUpState'):
+                previewerState.cleanUpState()
+
+        Previewer._on_close = anki.hooks.wrap(Previewer._on_close, cleanUpPreviewerState)
 
         def cleanUpEditor(editor):
             self.editors.discard(editor)

@@ -120,7 +120,7 @@ you can use a space to separate the new attribute from the original one -->
                             link = `anki://x-callback-url/search?query=nid%3a${nid}`;
                         } else try {
                             window.jsAPI ||= new AnkiDroidJS({ version: "0.0.3", developer: "github.com/gugutu" });
-                            link = `javascript:window.jsAPI.ankiSearchCard('nid:${nid}')`;
+                            link = `javascript:window.jsAPI.ankiSearchCard(\`nid:${nid}\`)`;
                         } catch (e) {
                             link = `https://ankiuser.net/edit/${nid}' target='_blank`;
                         }

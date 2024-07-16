@@ -122,9 +122,9 @@ you can use a space to separate the new attribute from the original one -->
                             window.jsAPI ||= new AnkiDroidJS({ version: "0.0.3", developer: "github.com/gugutu" });
                             link = `javascript:window.jsAPI.ankiSearchCard('nid:${nid}')`;
                         } catch (e) {
-                            link = `https://ankiuser.net/edit/${nid}" target="_blank`;
+                            link = `https://ankiuser.net/edit/${nid}' target='_blank`;
                         }
-                        return disableLinks ? `${title}` : `<a href="${link}" class="noteLink">${title}</a>`;
+                        return disableLinks ? `${title}` : `<a href='${link}' class='noteLink'>${title}</a>`;
                     }
                 );
             });

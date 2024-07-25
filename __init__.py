@@ -752,7 +752,7 @@ class AnkiNoteLinker(object):
             card = aqt.mw.col.get_note(NoteId(nid)).cards()[0]
             browser.table.select_single_card(card.id)
             if not browser.table.has_current():
-                browser.search_for('deck:' + aqt.mw.col.decks.get(card.did)['name'])
+                browser.search_for('\"deck:' + aqt.mw.col.decks.get(card.did)['name'] + "\"")
                 browser.table.select_single_card(card.id)
 
     def insertLinkTemplate(self, editor: Editor):

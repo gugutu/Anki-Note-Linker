@@ -75,9 +75,9 @@ Open current note in new window by using the right-click menu or pressing `Alt+S
 
 `Right click link` to open the corresponding note in an editor window
 
-### Global relationship graph (Experimental)
+### Global relationship graph
 
-Entrance: `Menu -> Anki Note Linker -> Global Relationship Graph (Experimental)`
+Entrance: `Menu -> Anki Note Linker -> Global Relationship Graph`
 
 Please set the video driver in Anki preference to an option other than `Software`, as it can significantly decrease graphic performance
 

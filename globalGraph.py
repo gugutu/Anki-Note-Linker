@@ -36,7 +36,7 @@ class GlobalGraph(QWidget):
         self.linkCache: list[Connection] = []
         self.noteCacheList = []
         self.hlIds = set()
-        self.setWindowTitle(getTr("Global Relationship Graph (Experimental)"))
+        self.setWindowTitle(getTr("Global Relationship Graph"))
         outerLayout = QVBoxLayout()
         topBarLayout = QHBoxLayout()
         topBarLayout.setContentsMargins(10, 7, 10, 0)

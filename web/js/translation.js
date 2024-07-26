@@ -41,6 +41,8 @@ function getTr(s) {
             return '链接面板和图形面板之间的显示比例'
         case 'Split ratio between reviewer and links panel':
             return '复习界面和链接面板之间的显示比例'
+        case 'Note fields displayed in the note summary':
+            return '笔记摘要中显示的笔记字段'
         case 'Default search text':
             return '默认搜索文本'
         case 'Default filter text for highlighted nodes':
@@ -79,6 +81,10 @@ function getTr(s) {
             return '插入新链接'
         case 'Insert link template':
             return '插入链接模版'
+        case 'The note fields displayed in the note summary (content shown in the link panel or graphic). \n' +
+        'The add-on will find the first matching field to display as the note summary. \n' +
+        'If no field is set or there is no matching field, the first field of the note will be used by default.':
+            return '在笔记摘要（链接面板或图形中显示的内容）中显示的笔记字段。\n插件将找到第一个匹配的字段将其显示为笔记摘要。\n如果没有设定或没有匹配的字段，则默认使用笔记的第一个字段。'
         default:
             return s
     }

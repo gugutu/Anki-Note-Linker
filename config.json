@@ -10,6 +10,7 @@
   "linkMaxLines": 5,
   "collapseClozeInLinksPage": true,
   "useHjpPreviewer": true,
+  "noteFieldsDisplayedInTheNoteSummary": [],
   "shortcuts-copyNoteID": "Alt+Shift+C",
   "shortcuts-copyNoteLink": "Alt+Shift+L",
   "shortcuts-openNoteInNewWindow": "Alt+Shift+W",

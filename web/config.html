@@ -87,6 +87,16 @@
         <div><label class="linkMaxLines"></label>
             <input id="linkMaxLines" type="text" oninput="value=value.replace(/\D/g,'')">
         </div>
+        <div><label class="noteFieldsDisplayedInTheNoteSummary"></label>
+            <button onclick="alert(getTr('The note fields displayed in the note summary (content shown in the link panel or graphic). \n' +
+        'The add-on will find the first matching field to display as the note summary. \n' +
+        'If no field is set or there is no matching field, the first field of the note will be used by default.'))">❔
+            </button>
+        </div>
+        <div id="noteFieldsDisplayedInTheNoteSummary" style="height: auto; display: block"></div>
+        <button onclick="noteFieldsDisplayedInTheNoteSummaryConfigTemp.push('');loadNoteFields(null,false);">
+            ➕
+        </button>
         <div class="title" id="title-globalGraph">globalGraph</div>
         <div><label class="globalGraph-defaultSearchText"></label>
             <input id="globalGraph-defaultSearchText" type="text">
@@ -173,6 +183,7 @@
     document.getElementsByClassName('splitRatioBetweenLinksPageAndGraphPage')[0].innerHTML = getTr('Split ratio between links panel and graph panel') + ':&nbsp;'
     document.getElementsByClassName('splitRatioBetweenReviewerAndPanel')[0].innerHTML = getTr('Split ratio between reviewer and links panel') + ':&nbsp;'
     document.getElementsByClassName('linkMaxLines')[0].innerHTML = getTr('Max displayed lines per link in links panel') + ':&nbsp;'
+    document.getElementsByClassName('noteFieldsDisplayedInTheNoteSummary')[0].innerHTML = getTr('Note fields displayed in the note summary') + ':&nbsp;'
     document.getElementsByClassName('globalGraph-defaultSearchText')[0].innerHTML = getTr('Default search text') + ':&nbsp;'
     document.getElementsByClassName('globalGraph-defaultHighlightFilter')[0].innerHTML = getTr('Default filter text for highlighted nodes') + ':&nbsp;'
     document.getElementsByClassName('globalGraph-defaultShowSingleNode')[0].innerHTML = getTr('Default display of single nodes') + ':&nbsp;'
@@ -194,6 +205,32 @@
     document.getElementById('button-cancel').innerHTML = getTr('Cancel')
     document.getElementById('button-ok').innerHTML = getTr('OK')
 
+    let noteFieldsDisplayedInTheNoteSummaryConfigTemp
+
+    function loadNoteFields(config, useConfig = true) {
+        const container = document.getElementById('noteFieldsDisplayedInTheNoteSummary')
+        while (container.firstChild) container.removeChild(container.firstChild);
+        if (useConfig) noteFieldsDisplayedInTheNoteSummaryConfigTemp = config['noteFieldsDisplayedInTheNoteSummary']
+        noteFieldsDisplayedInTheNoteSummaryConfigTemp.forEach((it, i) => {
+            const divElement = document.createElement('div');
+            divElement.id = 'fieldDiv' + i;
+            const inputElement = document.createElement('input');
+            inputElement.id = 'field' + i;
+            inputElement.type = 'text';
+            inputElement.value = it;
+            inputElement.oninput = () => noteFieldsDisplayedInTheNoteSummaryConfigTemp[i] = inputElement.value
+            const buttonElement = document.createElement('button');
+            buttonElement.textContent = '❌';
+            buttonElement.onclick = () => {
+                noteFieldsDisplayedInTheNoteSummaryConfigTemp.splice(i, 1)
+                loadNoteFields(null, false)
+            }
+            divElement.appendChild(inputElement);
+            divElement.appendChild(buttonElement);
+            container.appendChild(divElement);
+        })
+    }
+
     function readConfig(config) {
         document.getElementById('showLinksPageAutomatically').checked = config['showLinksPageAutomatically']
         document.getElementById('showGraphPageAutomatically').checked = config['showGraphPageAutomatically']
@@ -206,6 +243,7 @@
         document.getElementById('splitRatioBetweenLinksPageAndGraphPage').value = config['splitRatioBetweenLinksPageAndGraphPage']
         document.getElementById('splitRatioBetweenReviewerAndPanel').value = config['splitRatioBetweenReviewerAndPanel']
         document.getElementById('linkMaxLines').value = config['linkMaxLines']
+        loadNoteFields(config)
         document.getElementById('globalGraph-defaultSearchText').value = config['globalGraph-defaultSearchText']
         document.getElementById('globalGraph-defaultHighlightFilter').value = config['globalGraph-defaultHighlightFilter']
         document.getElementById('globalGraph-defaultShowSingleNode').checked = config['globalGraph-defaultShowSingleNode']
@@ -246,6 +284,7 @@
         userConfig['splitRatioBetweenLinksPageAndGraphPage'] = document.getElementById('splitRatioBetweenLinksPageAndGraphPage').value
         userConfig['splitRatioBetweenReviewerAndPanel'] = document.getElementById('splitRatioBetweenReviewerAndPanel').value
         userConfig['linkMaxLines'] = document.getElementById('linkMaxLines').value
+        userConfig['noteFieldsDisplayedInTheNoteSummary'] = noteFieldsDisplayedInTheNoteSummaryConfigTemp
         userConfig['globalGraph-defaultSearchText'] = document.getElementById('globalGraph-defaultSearchText').value
         userConfig['globalGraph-defaultHighlightFilter'] = document.getElementById('globalGraph-defaultHighlightFilter').value
         userConfig['globalGraph-defaultShowSingleNode'] = document.getElementById('globalGraph-defaultShowSingleNode').checked

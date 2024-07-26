@@ -27,6 +27,7 @@ defaultConfig = {
     "linkMaxLines": 5,
     "collapseClozeInLinksPage": True,
     "useHjpPreviewer": True,
+    "noteFieldsDisplayedInTheNoteSummary": [],
 
     "shortcuts-copyNoteID": "Alt+Shift+C",
     "shortcuts-copyNoteLink": "Alt+Shift+L",

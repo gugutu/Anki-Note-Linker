@@ -58,6 +58,7 @@ class AnkiNoteLinker(object):
         gui_hooks.reviewer_will_end.append(self.onReviewerEnd)
         gui_hooks.reviewer_did_show_answer.append(self.refreshReviewerPanel)
         gui_hooks.reviewer_did_show_question.append(lambda card: self.refreshReviewerPanel(card, True))
+
         # gui_hooks.previewer_did_init.append(lambda p: print('init', p))
 
         def cleanUpPreviewerState(previewer: Previewer):
@@ -593,19 +594,21 @@ class AnkiNoteLinker(object):
         return parentIds
 
     def getMainField(self, note: Note) -> str:
-        """If it is an image occlusion type, return its "Title" field; otherwise, return the first field"""
-        mainField: str = ''
-        if not oldVersion and note.note_type().get("originalStockKind",
-                                                   None) == StockNotetype.OriginalStockKind.ORIGINAL_STOCK_KIND_IMAGE_OCCLUSION:
-            for flds in note.note_type()['flds']:
-                if flds['tag'] == notetypes_pb2.IMAGE_OCCLUSION_FIELD_HEADER:
-                    mainField = note.fields[flds['ord']]
-                    break
-        else:
-            try:
-                mainField = note.fields[0] if note.fields[0] != '' else note.fields[1]
-            except IndexError:
-                mainField = 'Empty note'
+        mainField: str = None
+        fmap = mw.col.models.field_map(note.note_type())
+        for fieldName in config['noteFieldsDisplayedInTheNoteSummary']:
+            if fieldName in fmap:
+                mainField = note.fields[fmap[fieldName][0]]
+                break
+        if mainField is None:
+            if not oldVersion and note.note_type().get("originalStockKind",
+                                                       None) == StockNotetype.OriginalStockKind.ORIGINAL_STOCK_KIND_IMAGE_OCCLUSION:
+                for flds in note.note_type()['flds']:
+                    if flds['tag'] == notetypes_pb2.IMAGE_OCCLUSION_FIELD_HEADER:
+                        mainField = note.fields[flds['ord']]
+                        break
+            else:
+                mainField = note.fields[0]
 
         # Clear Link Format
         mainField = re.sub(r'\[((?:[^\[]|\\\[)*?)\|(nid\d{13})\]', lambda m: m[1].replace('\\[', '['), mainField)

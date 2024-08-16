@@ -13,6 +13,9 @@
 You can easily connect your Anki notes together by this add-on, forming a web of interconnected information. 
 By establishing links between relevant notes, you can create a comprehensive and organized knowledge base that reflects the relationships between various concepts, ideas, and topics.
 
+## Announcement 📢
+Due to limited personal capacity, I am unable to continuously develop new features for this add-on. Future updates will primarily focus on bug fixes. If anyone is interested in contributing new features, feel free to submit a pull request or independently listed on Anki add-on market after development.
+
 ## Link Format
 
 `[Link Title|nidxxxxxxxxxxxxx]`

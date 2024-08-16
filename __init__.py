@@ -97,12 +97,13 @@ class AnkiNoteLinker(object):
 
     def onReviewerEnd(self):
         self.onToggleReviewerPanel(False)
-        mw.setCentralWidget(mw.mwWidget)
-        mw.mwWidget.setParent(mw)
-        del mw.reviewer.linksPageSplitter
-        mw.reviewer.linksPage.cleanup()
-        mw.reviewer.linksPage.close()
-        del mw.reviewer.linksPage
+        if hasattr(mw.reviewer, 'linksPage'):
+            mw.setCentralWidget(mw.mwWidget)
+            mw.mwWidget.setParent(mw)
+            del mw.reviewer.linksPageSplitter
+            mw.reviewer.linksPage.cleanup()
+            mw.reviewer.linksPage.close()
+            del mw.reviewer.linksPage
 
     def onToggleReviewerPanel(self, checked: bool):
         mw.reviewer.showLinksPage = checked

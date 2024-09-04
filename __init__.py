@@ -455,7 +455,7 @@ class AnkiNoteLinker(object):
         if note.id == 0:
             return
         for editor in self.editors:
-            if editor.note.id == note.id:
+            if editor.note and (editor.note.id == note.id):
                 if hasattr(editor, "noteNode") and \
                         editor.noteNode.mainField == self.getMainField(note) and \
                         operator.eq(editor.noteNode.childIds, self.findChildIds(note.id, ' '.join(note.fields))):

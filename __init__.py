@@ -82,10 +82,12 @@ class AnkiNoteLinker(object):
 
         menu = QMenu("Anki Note Linker", mw.form.menubar)
         openGlobalGraphAction = QAction(menu)
+        openGlobalGraphAction.setMenuRole(QAction.MenuRole.NoRole)
         openGlobalGraphAction.setText(getTr("Global Relationship Graph"))
         qconnect(openGlobalGraphAction.triggered, lambda _: self.openGlobalGraph())
         menu.addAction(openGlobalGraphAction)
         openConfigAction = QAction(menu)
+        openConfigAction.setMenuRole(QAction.MenuRole.NoRole)
         openConfigAction.setText(getTr("Config"))
         qconnect(openConfigAction.triggered, lambda _: ConfigView.openConfigView())
         menu.addAction(openConfigAction)

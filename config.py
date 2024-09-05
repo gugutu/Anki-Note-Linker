@@ -145,3 +145,6 @@ class ConfigView(QWidget):
             return True, None
         else:
             return handled
+
+
+mw.addonManager.setConfigAction(__name__, ConfigView.openConfigView)

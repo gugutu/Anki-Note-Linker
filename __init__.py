@@ -27,10 +27,6 @@ import importlib
 from pathlib import Path
 
 sys.path.append(str(Path(__file__).resolve().parents[1]))
-try:
-    from anki.models import StockNotetype
-except ImportError:
-    oldVersion = True
 
 from .config import ConfigView, config
 from .editors import MyAddCards, MyEditCurrent
@@ -597,22 +593,12 @@ class AnkiNoteLinker(object):
         return parentIds
 
     def getMainField(self, note: Note) -> str:
-        mainField: str = None
+        mainField: str = note.fields[0]
         fmap = mw.col.models.field_map(note.note_type())
         for fieldName in config['noteFieldsDisplayedInTheNoteSummary']:
             if fieldName in fmap:
                 mainField = note.fields[fmap[fieldName][0]]
                 break
-        if mainField is None:
-            if not oldVersion and note.note_type().get("originalStockKind",
-                                                       None) == StockNotetype.OriginalStockKind.ORIGINAL_STOCK_KIND_IMAGE_OCCLUSION:
-                for flds in note.note_type()['flds']:
-                    if flds['tag'] == notetypes_pb2.IMAGE_OCCLUSION_FIELD_HEADER:
-                        mainField = note.fields[flds['ord']]
-                        break
-            else:
-                mainField = note.fields[0]
-
         # Clear Link Format
         mainField = re.sub(r'\[((?:[^\[]|\\\[)*?)\|(nid\d{13})\]', lambda m: m[1].replace('\\[', '['), mainField)
         # Clear Cloze Format

@@ -28,6 +28,11 @@ from pathlib import Path
 
 sys.path.append(str(Path(__file__).resolve().parents[1]))
 
+try:
+    from anki.models import StockNotetype
+except ImportError:
+    oldVersion = True
+
 from .config import ConfigView, config
 from .editors import MyAddCards, MyEditCurrent
 from .state import Connection, JsNoteNode, NoteNode, addon_path, log, links_html, \

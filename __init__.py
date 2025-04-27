@@ -559,25 +559,7 @@ class AnkiNoteLinker(object):
         """Enable the editor to support shortcut keys and double-click nid trigger operations"""
         if not isinstance(context, Editor):
             return
-        script_str = """
-            <script>
-            window.addEventListener('dblclick', function (e) {
-                var nidreg = /^nid\d{13}$/;
-                var newreg = /^new\d{8}$/;
-                const st = window.getSelection().toString();
-                if (st != ''){
-                    if (nidreg.test(st)){
-                        const nid = st.slice(3)
-                        pycmd('AnkiNoteLinker-openNoteInNewEditor' + nid);
-                    }else if (newreg.test(st)){
-                        const placeholder = st.slice(3)
-                        pycmd('AnkiNoteLinker-openAddNoteWindow' + placeholder)
-                    }
-                }
-            });
-            </script>
-            """
-        web_content.head += script_str
+        web_content.head += f'<script src="{getWebFileLink("js/detectClick.js")}"></script>'
 
     def findChildIds(self, myId: NoteId, joinedFields: str, rangeIdSet=None):
         duplicateIdSet = set()  # Used to remove duplicates

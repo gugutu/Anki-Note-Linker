@@ -248,6 +248,44 @@ class GlobalGraph(QWidget):
     def qColorToString(self, qColor: QColor):
         return f"rgb({qColor.red()},{qColor.green()},{qColor.blue()})"
 
+    def centerOnNote(self, nid: int):
+        """Animate the global graph view to center on the node with id `nid`.
+
+        This executes a small JS snippet in the webview that will wait for the
+        node to have layout coordinates (x/y) and then animate the stage so
+        the node appears in the center of the view. It retries a few times if
+        the layout isn't ready yet.
+        """
+        try:
+            if not hasattr(self, 'web') or self.web is None:
+                return
+            js = f"""
+(function(nid){{
+    let attempts = 0;
+    const tryFocus = function(){{
+        const node = (typeof nodes !== 'undefined') ? nodes.find(n=>n.id===nid) : null;
+        if(node && typeof node.x === 'number' && typeof node.y === 'number' && app && app.stage){{
+            const scale = app.stage.scale.x;
+            const targetX = window.innerWidth/2 - node.x * scale;
+            const targetY = window.innerHeight/2 - node.y * scale;
+            resetCenterAnimation.bx = app.stage.x;
+            resetCenterAnimation.by = app.stage.y;
+            resetCenterAnimation.cx = targetX - resetCenterAnimation.bx;
+            resetCenterAnimation.cy = targetY - resetCenterAnimation.by;
+            resetCenterAnimation.time = 0;
+            resetCenterAnimation.running = true;
+            return;
+        }}
+        attempts++;
+        if(attempts < 20) setTimeout(tryFocus, 100);
+    }};
+    tryFocus();
+}})({nid});
+"""
+            self.web.eval(js)
+        except Exception as e:
+            log('centerOnNote error', e)
+
     def printChanges(self, changes):
         """Used for debugging and developing new features"""
         if changes.card:

@@ -168,6 +168,12 @@ class AnkiNoteLinker(object):
                             {json.dumps(childJsNodes, default=lambda o: o.__dict__)}
                         )'''
             )
+            # If the global graph window is open, center it on the current note.
+            try:
+                if state.globalGraph is not None:
+                    state.globalGraph.centerOnNote(card.note().id)
+            except Exception:
+                pass
 
     def injectLinksPageToMainWindow(self):
         mw.reviewer.linksPageSplitter = QSplitter()
@@ -554,6 +560,12 @@ class AnkiNoteLinker(object):
                 {json.dumps(adaptScale)}
                 )'''
             )
+            # Also tell the global graph (if open) to focus this note.
+            try:
+                if state.globalGraph is not None:
+                    state.globalGraph.centerOnNote(currentId)
+            except Exception:
+                pass
 
     def appendJsToEditor(self, web_content, context):
         """Enable the editor to support shortcut keys and double-click nid trigger operations"""

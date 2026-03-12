@@ -19,6 +19,7 @@ defaultConfig = {
     "showLinksPageAutomatically": True,
     "showGraphPageAutomatically": True,
     "showLinksPageInReviewerAutomatically": True,
+    "showGraphPageInReviewerAutomatically": False,
     "splitRatio": "2:1",
     "splitRatioBetweenReviewerAndPanel": "4:1",
     "splitRatioBetweenLinksPageAndGraphPage": "1:1",
@@ -48,6 +49,9 @@ defaultConfig = {
 # Check if there is an old version of the configuration;
 # if it exists, convert it to the new version and delete the old version.
 configTemp = mw.addonManager.getConfig(__name__)
+for key, value in defaultConfig.items():
+    if key not in configTemp:
+        configTemp[key] = value
 if "shortcuts" in configTemp:
     configTemp["shortcuts-copyNoteID"] = (
         configTemp["shortcuts"].get("copyNoteID", defaultConfig["shortcuts-copyNoteID"]))

@@ -2,6 +2,7 @@
   "showLinksPageAutomatically": true,
   "showGraphPageAutomatically": true,
   "showLinksPageInReviewerAutomatically": true,
+  "showGraphPageInReviewerAutomatically": false,
   "splitRatio": "2:1",
   "splitRatioBetweenLinksPageAndGraphPage": "1:1",
   "splitRatioBetweenReviewerAndPanel": "4:1",

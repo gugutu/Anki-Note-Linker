@@ -27,20 +27,22 @@ function getTr(s) {
             return '进入编辑器时自动显示关系图面板'
         case 'Automatically show links panel when entering reviewer':
             return '进入复习界面时自动显示链接面板'
+        case 'Automatically show graph panel when entering reviewer':
+            return '进入复习界面时自动显示关系图面板'
         case 'Collapse cloze in links panel':
             return '折叠链接面板中的完形填空'
         case 'If the "hjp-linkmaster" add-on is installed, use its previewer':
             return '如果安装了“hjp-linkmaster”插件，则使用它的预览器'
         case 'The position of links/graph panel relative to the editor':
             return '链接/图形面板相对于编辑器的位置'
-        case 'The position of links panel relative to the reviewer':
-            return '链接面板相对于复习界面的位置'
+        case 'The position of links/graph panel relative to the reviewer':
+            return '链接/图形面板相对于复习界面的位置'
         case 'Split ratio between editor and panels':
             return '编辑器和面板之间的显示比例'
         case 'Split ratio between links panel and graph panel':
             return '链接面板和图形面板之间的显示比例'
-        case 'Split ratio between reviewer and links panel':
-            return '复习界面和链接面板之间的显示比例'
+        case 'Split ratio between reviewer and panel':
+            return '复习界面和侧边面板之间的显示比例'
         case 'Note fields displayed in the note summary':
             return '笔记摘要中显示的笔记字段'
         case 'Default search text':

@@ -131,6 +131,8 @@
                     pycmd('AnkiNoteLinker-setNoteToEditor' + node.id)
                 else if (ankiContext === 'GLOBAL_GRAPH')
                     pycmd('AnkiNoteLinker-openNoteInPreviewer' + node.id)
+                else if (ankiContext === 'REVIEWER')
+                    pycmd('AnkiNoteLinker-openNoteInPreviewer' + node.id)
             }
         })
         .onNodeRightClick(node => {

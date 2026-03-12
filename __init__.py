@@ -96,49 +96,76 @@ class AnkiNoteLinker(object):
 
     def onStateChange(self, newState: MainWindowState, oldState: MainWindowState):
         if newState == "review":
-            self.onToggleReviewerPanel(config['showLinksPageInReviewerAutomatically'])
+            self.onToggleReviewerLinksPanel(config['showLinksPageInReviewerAutomatically'])
+            self.onToggleReviewerGraphPanel(config['showGraphPageInReviewerAutomatically'])
 
     def onReviewerEnd(self):
-        self.onToggleReviewerPanel(False)
-        if hasattr(mw.reviewer, 'linksPage'):
+        self.onToggleReviewerLinksPanel(False)
+        self.onToggleReviewerGraphPanel(False)
+        if hasattr(mw.reviewer, 'linksPageSplitter'):
             mw.setCentralWidget(mw.mwWidget)
             mw.mwWidget.setParent(mw)
             del mw.reviewer.linksPageSplitter
+        if hasattr(mw.reviewer, 'linksPage'):
             mw.reviewer.linksPage.cleanup()
             mw.reviewer.linksPage.close()
             del mw.reviewer.linksPage
+        if hasattr(mw.reviewer, 'graphPage'):
+            mw.reviewer.graphPage.cleanup()
+            mw.reviewer.graphPage.close()
+            del mw.reviewer.graphPage
+        if hasattr(mw.reviewer, 'panelSplitter'):
+            del mw.reviewer.panelSplitter
 
-    def onToggleReviewerPanel(self, checked: bool):
+    def onToggleReviewerLinksPanel(self, checked: bool):
         mw.reviewer.showLinksPage = checked
+        if checked or (hasattr(mw.reviewer, 'showGraphPage') and mw.reviewer.showGraphPage):
+            self.injectReviewerPanelsToMainWindow()
+            self.ensureReviewerLinksPage()
+        self.updateReviewerPanelVisibility()
         if checked:
-            if hasattr(mw.reviewer, 'linksPage'):
-                mw.reviewer.linksPage.show()
-            else:
-                self.injectLinksPageToMainWindow()
             self.refreshReviewerPanel(mw.reviewer.card, waitingForShowAnswer=mw.reviewer.state != 'answer')
-        else:
-            if hasattr(mw.reviewer, 'linksPage'):
-                mw.reviewer.linksPage.hide()
+
+    def onToggleReviewerGraphPanel(self, checked: bool):
+        mw.reviewer.showGraphPage = checked
+        if checked or (hasattr(mw.reviewer, 'showLinksPage') and mw.reviewer.showLinksPage):
+            self.injectReviewerPanelsToMainWindow()
+            self.ensureReviewerGraphPage()
+        self.updateReviewerPanelVisibility()
+        if checked:
+            self.refreshReviewerPanel(mw.reviewer.card, waitingForShowAnswer=mw.reviewer.state != 'answer')
 
     def injectContextMenuToReviewer(self, reviewer: Reviewer, menu: QMenu):
-        togglePanelAction = QAction(menu)
-        togglePanelAction.setText(getTr('Show Links Panel'))
-        togglePanelAction.setCheckable(True)
-        togglePanelAction.setChecked(reviewer.showLinksPage)
+        toggleLinksAction = QAction(menu)
+        toggleLinksAction.setText(getTr('Show Links Panel'))
+        toggleLinksAction.setCheckable(True)
+        toggleLinksAction.setChecked(getattr(reviewer, 'showLinksPage', False))
 
-        qconnect(togglePanelAction.triggered, self.onToggleReviewerPanel)
+        toggleGraphAction = QAction(menu)
+        toggleGraphAction.setText(getTr('Show Graph Panel'))
+        toggleGraphAction.setCheckable(True)
+        toggleGraphAction.setChecked(getattr(reviewer, 'showGraphPage', False))
+
+        qconnect(toggleLinksAction.triggered, self.onToggleReviewerLinksPanel)
+        qconnect(toggleGraphAction.triggered, self.onToggleReviewerGraphPanel)
         menu.addSeparator()
-        menu.addAction(togglePanelAction)
+        menu.addAction(toggleLinksAction)
+        menu.addAction(toggleGraphAction)
         menu.addSeparator()
 
     def refreshReviewerPanel(self, card: Card, waitingForShowAnswer=False):
         # print(f'{datetime.now()}:{waitingForShowAnswer}')
-        if not hasattr(mw.reviewer, 'linksPage'):
+        if not hasattr(mw.reviewer, 'linksPage') and not hasattr(mw.reviewer, 'graphPage'):
             return
-        if mw.reviewer.showLinksPage:
+        links_show = getattr(mw.reviewer, 'showLinksPage', False)
+        graph_show = getattr(mw.reviewer, 'showGraphPage', False)
+        if links_show or graph_show:
             log(f'-----refresh reviewer panel')
             if waitingForShowAnswer:
-                mw.reviewer.linksPage.eval(f'reloadPage([], [], waitingForShowAnswer = true)')
+                if links_show and hasattr(mw.reviewer, 'linksPage'):
+                    mw.reviewer.linksPage.eval(f'reloadPage([], [], waitingForShowAnswer = true)')
+                if graph_show and hasattr(mw.reviewer, 'graphPage'):
+                    mw.reviewer.graphPage.eval(f'reloadPage([], [], false, false)')
                 return
 
             currentNode = self.noteToNoteNode(card.note())
@@ -147,6 +174,7 @@ class AnkiNoteLinker(object):
             childNodes: list[NoteNode] = []
             parentJsNodes: list[JsNoteNode] = []
             childJsNodes: list[JsNoteNode] = []
+            duplicatedJsNodeIds: set[int] = set()
 
             for parentId in currentNode.parentIds:
                 parentNode = self.idToNoteNode(parentId)
@@ -161,13 +189,34 @@ class AnkiNoteLinker(object):
                 childJsNodes.append(jsNode)
                 if childNode.id in parentNodeIds:  # When a node is both a parent node and a child node
                     jsNode.type = 'parent child'
+                    duplicatedJsNodeIds.add(jsNode.id)
 
-            mw.reviewer.linksPage.eval(
-                f'''reloadPage(
-                            {json.dumps(parentJsNodes, default=lambda o: o.__dict__)},
-                            {json.dumps(childJsNodes, default=lambda o: o.__dict__)}
-                        )'''
-            )
+            if links_show and hasattr(mw.reviewer, 'linksPage'):
+                mw.reviewer.linksPage.eval(
+                    f'''reloadPage(
+                                {json.dumps(parentJsNodes, default=lambda o: o.__dict__)},
+                                {json.dumps(childJsNodes, default=lambda o: o.__dict__)}
+                            )'''
+                )
+
+            if graph_show and hasattr(mw.reviewer, 'graphPage'):
+                allNodes = parentNodes | set(childNodes) | {currentNode}
+                allJsNodes = childJsNodes + [x for x in parentJsNodes if x.id not in duplicatedJsNodeIds] + [
+                    currentNode.toJsNoteNode('me')]
+                allIds = currentNode.parentIds | set(currentNode.childIds) | {currentNode.id}
+                allConnections: list[Connection] = []
+                for parentNode in allNodes:
+                    for childId in parentNode.childIds:
+                        if childId in allIds:
+                            allConnections.append(Connection(parentNode.id, childId))
+                mw.reviewer.graphPage.eval(
+                    f'''reloadPage(
+                    {json.dumps(allJsNodes, default=lambda o: o.__dict__)},
+                    {json.dumps(allConnections, default=lambda o: o.__dict__)},
+                    {json.dumps(True)},
+                    {json.dumps(True)}
+                    )'''
+                )
             # If the global graph window is open, center it on the current note.
             try:
                 if state.globalGraph is not None:
@@ -175,22 +224,12 @@ class AnkiNoteLinker(object):
             except Exception:
                 pass
 
-    def injectLinksPageToMainWindow(self):
+    def injectReviewerPanelsToMainWindow(self):
+        if hasattr(mw.reviewer, 'linksPageSplitter'):
+            return
         mw.reviewer.linksPageSplitter = QSplitter()
-        mw.reviewer.linksPage = AnkiWebView(parent=mw.reviewer.linksPageSplitter, title="links_page")
-        mw.reviewer.linksPage.set_bridge_command(lambda s: s, mw.reviewer.linksPage)
-        mw.reviewer.linksPage.stdHtml(
-            f'<script>const ankiContext = "REVIEWER"</script>'
-            f'<script src="{getWebFileLink("js/translation.js")}"></script>'
-            f'<script>const ankiLanguage = "{anki.lang.current_lang}"</script>'
-            f'<link rel="stylesheet" href="{getWebFileLink("katex.css")}">'
-            f'<script defer src="{getWebFileLink("js/katex.js")}"></script>'
-            f'<script defer src="{getWebFileLink("js/katex-mhchem.js")}"></script>'
-            f'<script defer src="{getWebFileLink("js/katex-auto-render.js")}"></script>'
-            r'<style>.link-button-text{-webkit-line-clamp: ' + str(config['linkMaxLines']) + '; line-clamp: ' + str(
-                config['linkMaxLines']) + ';}</style>' +
-            links_html
-        )
+        mw.reviewer.panelSplitter = QSplitter()
+        mw.reviewer.panelSplitter.setOrientation(Qt.Orientation.Vertical)
         mw.mwWidget = mw.centralWidget()
         wrappedMwWidget = QWidget()
         wrappedMwLayout = QVBoxLayout(wrappedMwWidget)
@@ -204,22 +243,82 @@ class AnkiNoteLinker(object):
         location = config["positionRelativeToReviewer"]
 
         if location == "left":
-            mw.reviewer.linksPage.setContentsMargins(10, 0, 0, 0)
+            mw.reviewer.panelSplitter.setContentsMargins(10, 0, 0, 0)
             mw.reviewer.linksPageSplitter.setOrientation(Qt.Orientation.Horizontal)
-            mw.reviewer.linksPageSplitter.addWidget(mw.reviewer.linksPage)
+            mw.reviewer.linksPageSplitter.addWidget(mw.reviewer.panelSplitter)
             mw.reviewer.linksPageSplitter.addWidget(wrappedMwWidget)
             sizes = [panelR, mwR]
         elif location == "right":
-            mw.reviewer.linksPage.setContentsMargins(0, 0, 10, 0)
+            mw.reviewer.panelSplitter.setContentsMargins(0, 0, 10, 0)
             mw.reviewer.linksPageSplitter.setOrientation(Qt.Orientation.Horizontal)
             mw.reviewer.linksPageSplitter.addWidget(wrappedMwWidget)
-            mw.reviewer.linksPageSplitter.addWidget(mw.reviewer.linksPage)
+            mw.reviewer.linksPageSplitter.addWidget(mw.reviewer.panelSplitter)
             sizes = [mwR, panelR]
         else:
             raise ValueError("Invalid value for config key location")
 
         mw.reviewer.linksPageSplitter.setSizes(sizes)
         mw.setCentralWidget(mw.reviewer.linksPageSplitter)
+
+    def ensureReviewerLinksPage(self):
+        if hasattr(mw.reviewer, 'linksPage'):
+            return
+        mw.reviewer.linksPage = AnkiWebView(parent=mw.reviewer.panelSplitter, title="links_page")
+        mw.reviewer.linksPage.set_bridge_command(lambda s: s, mw.reviewer.linksPage)
+        mw.reviewer.linksPage.stdHtml(
+            f'<script>const ankiContext = "REVIEWER"</script>'
+            f'<script src="{getWebFileLink("js/translation.js")}"></script>'
+            f'<script>const ankiLanguage = "{anki.lang.current_lang}"</script>'
+            f'<link rel="stylesheet" href="{getWebFileLink("katex.css")}">'
+            f'<script defer src="{getWebFileLink("js/katex.js")}"></script>'
+            f'<script defer src="{getWebFileLink("js/katex-mhchem.js")}"></script>'
+            f'<script defer src="{getWebFileLink("js/katex-auto-render.js")}"></script>'
+            r'<style>.link-button-text{-webkit-line-clamp: ' + str(config['linkMaxLines']) + '; line-clamp: ' + str(
+                config['linkMaxLines']) + ';}</style>' +
+            links_html
+        )
+        mw.reviewer.panelSplitter.addWidget(mw.reviewer.linksPage)
+
+    def ensureReviewerGraphPage(self):
+        if hasattr(mw.reviewer, 'graphPage'):
+            return
+        mw.reviewer.graphPage = AnkiWebView(parent=mw.reviewer.panelSplitter, title="graph_page")
+        mw.reviewer.graphPage.set_bridge_command(lambda s: s, mw.reviewer.graphPage)
+        mw.reviewer.graphPage.stdHtml(
+            f'<script>const ankiContext = "REVIEWER"</script>'
+            f'<script>const ankiLanguage = "{anki.lang.current_lang}"</script>'
+            f'<link rel="stylesheet" href="{getWebFileLink("katex.css")}">'
+            f'<script defer src="{getWebFileLink("js/katex.js")}"></script>'
+            f'<script defer src="{getWebFileLink("js/katex-mhchem.js")}"></script>'
+            f'<script defer src="{getWebFileLink("js/katex-auto-render.js")}"></script>'
+            f'<script src="{getWebFileLink("js/d3.js")}"></script>'
+            f'<script src="{getWebFileLink("js/pixi.js")}"></script>'
+            f'<script src="{getWebFileLink("js/translation.js")}"></script>' + newGraph_html
+        )
+        mw.reviewer.panelSplitter.addWidget(mw.reviewer.graphPage)
+
+    def updateReviewerPanelVisibility(self):
+        if not hasattr(mw.reviewer, 'panelSplitter'):
+            return
+        linksShow = getattr(mw.reviewer, 'showLinksPage', False)
+        graphShow = getattr(mw.reviewer, 'showGraphPage', False)
+        if linksShow and hasattr(mw.reviewer, 'linksPage'):
+            mw.reviewer.linksPage.show()
+        elif hasattr(mw.reviewer, 'linksPage'):
+            mw.reviewer.linksPage.hide()
+        if graphShow and hasattr(mw.reviewer, 'graphPage'):
+            mw.reviewer.graphPage.show()
+        elif hasattr(mw.reviewer, 'graphPage'):
+            mw.reviewer.graphPage.hide()
+
+        if linksShow and graphShow and hasattr(mw.reviewer, 'linksPage') and hasattr(mw.reviewer, 'graphPage'):
+            topR, bottomR = [int(r) * 10000 for r in config["splitRatioBetweenLinksPageAndGraphPage"].split(":")]
+            mw.reviewer.panelSplitter.setSizes([topR, bottomR])
+
+        if linksShow or graphShow:
+            mw.reviewer.panelSplitter.show()
+        else:
+            mw.reviewer.panelSplitter.hide()
 
     def injectRightClickMenu(self, context, menu: QMenu):
         if isinstance(context, EditorWebView):
@@ -338,6 +437,25 @@ class AnkiNoteLinker(object):
             f'<script src="{getWebFileLink("js/translation.js")}"></script>' + graph_html
         )
         self.refreshPage(e, resetCenter=True, reason='Switch To Old Renderer')
+
+    def switchReviewerGraphToOldRenderer(self):
+        if not hasattr(mw.reviewer, 'graphPage'):
+            return
+        mw.reviewer.graphPage.stdHtml(
+            f'<script>const ankiContext = "REVIEWER"</script>'
+            f'<script>const ankiLanguage = "{anki.lang.current_lang}"</script>'
+            f'<link rel="stylesheet" href="{getWebFileLink("katex.css")}">'
+            f'<script defer src="{getWebFileLink("js/katex.js")}"></script>'
+            f'<script defer src="{getWebFileLink("js/katex-mhchem.js")}"></script>'
+            f'<script defer src="{getWebFileLink("js/katex-auto-render.js")}"></script>'
+            f'<script src="{getWebFileLink("js/d3.js")}"></script>'
+            f'<script src="{getWebFileLink("js/force-graph.js")}"></script>'
+            f'<script src="{getWebFileLink("js/translation.js")}"></script>' + graph_html
+        )
+        self.refreshReviewerPanel(mw.reviewer.card, waitingForShowAnswer=mw.reviewer.state != 'answer')
+        tooltip(getTr(
+            'For better performance, select a display driver other than "Software" to enable the new renderer. The old renderer is no longer maintained.'),
+            10000)
 
     def injectPage(self, editor: Editor):
         self.injectShortcuts(editor.web)
@@ -677,8 +795,12 @@ class AnkiNoteLinker(object):
         elif message == 'AnkiNoteLinker-switchToOldRenderer':
             if isinstance(context, Editor):
                 self.switchToOldRenderer(context)
-            else:
+            elif hasattr(mw.reviewer, 'graphPage') and context == mw.reviewer.graphPage:
+                self.switchReviewerGraphToOldRenderer()
+            elif hasattr(context, 'switchToOldRenderer'):
                 context.switchToOldRenderer()
+            else:
+                pass
             return True, None
         else:
             return handled

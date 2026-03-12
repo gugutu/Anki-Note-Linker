@@ -29,6 +29,8 @@ def getTr(s: str) -> str:
             return '显示/隐藏关系图面板'
         elif s == 'Show Links Panel':
             return '显示链接面板'
+        elif s == 'Show Graph Panel':
+            return '显示关系图面板'
         elif s == 'Global Relationship Graph':
             return '全局关系图'
         elif s == 'Display tag nodes':

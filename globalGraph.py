@@ -218,7 +218,8 @@ class GlobalGraph(QWidget):
                             "{self.qColorToString(QColor.fromRgb(*config["globalGraph-nodeColor"]))}",
                             "{self.qColorToString(QColor.fromRgb(*config["globalGraph-highlightedNodeColor"]))}",
                             "{self.qColorToString(QColor.fromRgb(*config["globalGraph-tagNodeColor"]))}",
-                            {config["globalGraph-backgroundColor"]}
+                            {config["globalGraph-backgroundColor"]},
+                            {json.dumps(config["globalGraph-nodeDegreeSizing"])}
                         )'''
             )
 

@@ -31,6 +31,14 @@ function getTr(s) {
             return '进入复习界面时自动显示关系图面板'
         case 'Collapse cloze in links panel':
             return '折叠链接面板中的完形填空'
+        case 'Node size scaling by link count':
+            return '根据链接数量调整节点大小'
+        case 'Do not scale':
+            return '不根据链接数量调整'
+        case 'Outgoing links only':
+            return '只算连出的链接'
+        case 'Total links':
+            return '连入和连出的链接都算'
         case 'If the "hjp-linkmaster" add-on is installed, use its previewer':
             return '如果安装了“hjp-linkmaster”插件，则使用它的预览器'
         case 'The position of links/graph panel relative to the editor':

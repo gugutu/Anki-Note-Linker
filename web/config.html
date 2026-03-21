@@ -52,6 +52,12 @@
         align-items: center;
     }
 
+    .radio-group.vertical {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 4px;
+    }
+
     .radio-group > label {
         display: inline-flex;
         align-items: center;
@@ -138,6 +144,22 @@
         <div><label class="globalGraph-defaultShowTags"></label>
             <input id="globalGraph-defaultShowTags" type="checkbox">
         </div>
+        <div style="height: auto; align-items: flex-start; padding: 4px 0;"><label class="globalGraph-nodeDegreeSizing" style="padding-top: 2px;"></label>
+            <div class="radio-group vertical" id="globalGraph-nodeDegreeSizing">
+                <label>
+                    <input id="globalGraph-nodeDegreeSizing-none-radio" type="radio" name="globalGraph-nodeDegreeSizing" value="none">
+                    <span id="globalGraph-nodeDegreeSizing-none">none</span>
+                </label>
+                <label>
+                    <input id="globalGraph-nodeDegreeSizing-out-radio" type="radio" name="globalGraph-nodeDegreeSizing" value="out">
+                    <span id="globalGraph-nodeDegreeSizing-out">out</span>
+                </label>
+                <label>
+                    <input id="globalGraph-nodeDegreeSizing-all-radio" type="radio" name="globalGraph-nodeDegreeSizing" value="all">
+                    <span id="globalGraph-nodeDegreeSizing-all">all</span>
+                </label>
+            </div>
+        </div>
         <div><label class="globalGraph-nodeColor"></label>
             <input id="globalGraph-nodeColor" type="color">
         </div>
@@ -217,6 +239,10 @@
     document.getElementsByClassName('globalGraph-defaultHighlightFilter')[0].innerHTML = getTr('Default filter text for highlighted nodes') + ':&nbsp;'
     document.getElementsByClassName('globalGraph-defaultShowSingleNode')[0].innerHTML = getTr('Default display of single nodes') + ':&nbsp;'
     document.getElementsByClassName('globalGraph-defaultShowTags')[0].innerHTML = getTr('Default display of tag nodes') + ':&nbsp;'
+    document.getElementsByClassName('globalGraph-nodeDegreeSizing')[0].innerHTML = getTr('Node size scaling by link count') + ':&nbsp;'
+    document.getElementById('globalGraph-nodeDegreeSizing-none').innerHTML = getTr('Do not scale')
+    document.getElementById('globalGraph-nodeDegreeSizing-out').innerHTML = getTr('Outgoing links only')
+    document.getElementById('globalGraph-nodeDegreeSizing-all').innerHTML = getTr('Total links')
     document.getElementsByClassName('globalGraph-nodeColor')[0].innerHTML = getTr('Node color') + ':&nbsp;'
     document.getElementsByClassName('globalGraph-highlightedNodeColor')[0].innerHTML = getTr('Highlighted node color') + ':&nbsp;'
     document.getElementsByClassName('globalGraph-tagNodeColor')[0].innerHTML = getTr('Tag node color') + ':&nbsp;'
@@ -280,6 +306,9 @@
         document.getElementById('globalGraph-defaultHighlightFilter').value = config['globalGraph-defaultHighlightFilter']
         document.getElementById('globalGraph-defaultShowSingleNode').checked = config['globalGraph-defaultShowSingleNode']
         document.getElementById('globalGraph-defaultShowTags').checked = config['globalGraph-defaultShowTags']
+        document.getElementById('globalGraph-nodeDegreeSizing-none-radio').checked = config['globalGraph-nodeDegreeSizing'] === 'none'
+        document.getElementById('globalGraph-nodeDegreeSizing-out-radio').checked = config['globalGraph-nodeDegreeSizing'] === 'out'
+        document.getElementById('globalGraph-nodeDegreeSizing-all-radio').checked = config['globalGraph-nodeDegreeSizing'] === 'all'
         document.getElementById('globalGraph-nodeColor').value = rgbToHex(config['globalGraph-nodeColor'])
         document.getElementById('globalGraph-highlightedNodeColor').value = rgbToHex(config['globalGraph-highlightedNodeColor'])
         document.getElementById('globalGraph-tagNodeColor').value = rgbToHex(config['globalGraph-tagNodeColor'])
@@ -322,6 +351,9 @@
         userConfig['globalGraph-defaultHighlightFilter'] = document.getElementById('globalGraph-defaultHighlightFilter').value
         userConfig['globalGraph-defaultShowSingleNode'] = document.getElementById('globalGraph-defaultShowSingleNode').checked
         userConfig['globalGraph-defaultShowTags'] = document.getElementById('globalGraph-defaultShowTags').checked
+        userConfig['globalGraph-nodeDegreeSizing'] = document.getElementById('globalGraph-nodeDegreeSizing-none-radio').checked ? 'none'
+            : document.getElementById('globalGraph-nodeDegreeSizing-out-radio').checked ? 'out'
+                : 'all'
         userConfig['globalGraph-nodeColor'] = hexToRgb(document.getElementById('globalGraph-nodeColor').value)
         userConfig['globalGraph-highlightedNodeColor'] = hexToRgb(document.getElementById('globalGraph-highlightedNodeColor').value)
         userConfig['globalGraph-tagNodeColor'] = hexToRgb(document.getElementById('globalGraph-tagNodeColor').value)

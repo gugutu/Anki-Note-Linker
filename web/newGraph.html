@@ -103,11 +103,7 @@ Author Wang Rui <https://github.com/gugutu>
     //     })
     // }
 
-
     let simulation = d3.forceSimulation(nodes)
-        .force("link", d3.forceLink(links).id(d => d.id).distance(100))
-        .force("charge", d3.forceManyBody().strength(-700))
-        //.force("collide", d3.forceCollide().radius(d => 200 + 1))
         .force("x", d3.forceX(0).strength(0.06))
         .force("y", d3.forceY(0).strength(0.06))
         .force('center', null)
@@ -132,6 +128,18 @@ Author Wang Rui <https://github.com/gugutu>
     const lineClamp = 4
     const fontSize = 12
     const particleNum = 3
+    const degreeSizing = {
+        mode: 'none',
+        defaultRadius: 20,
+        meRadius: 25,
+        maxExtraRadius: 36,
+        radiusPerDegree: 6,
+        maxForceDegree: 26,
+        chargePerDegree: 72,
+        chargePerExtraRadius: 24,
+        collidePadding: 18,
+        maxLinkDistanceBonus: 52
+    }
     let normalNodeColor = "rgb(57, 125, 237)"
     let highlightNodeColor = "rgb(244, 165, 0)"
     let tagNodeColor = "rgb(127, 199, 132)"
@@ -164,10 +172,68 @@ Author Wang Rui <https://github.com/gugutu>
     const toClientY = canvasY => canvasY * app.stage.scale.x + app.stage.y
     const toClientLength = canvasLength => canvasLength * app.stage.scale.x
     const linkTools = {
-        shouldRenderLink: (link, radius) => boundary.contains(link.source.x, link.source.y, radius) || boundary.contains(link.target.x, link.target.y, radius),
+        shouldRenderLink: link => {
+            const radius = Math.max(getNodeRadius(link.source), getNodeRadius(link.target), degreeSizing.defaultRadius)
+            return boundary.contains(link.source.x, link.source.y, radius) || boundary.contains(link.target.x, link.target.y, radius)
+        },
         calculateDistance: (x1, y1, x2, y2) => Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2)),
         calculateAngleWithXAxis: (x1, y1, x2, y2) => Math.atan2(y2 - y1, x2 - x1),
         particleStep: 0 //线段粒子步进程度
+    }
+    const getEndpointId = endpoint => typeof endpoint === 'object' ? endpoint.id : endpoint
+    const getBaseRadiusForType = type => type === 'me' ? degreeSizing.meRadius : degreeSizing.defaultRadius
+    const isDegreeSizingEnabled = () => degreeSizing.mode !== 'none'
+    const getNodeRadius = node => node?.renderRadius ?? getBaseRadiusForType(node?.type)
+    const getNodeTextWidth = node => Math.max(100, getNodeRadius(node) * 5)
+    const getNodeTextOffset = node => getNodeRadius(node) + 2
+    const getLinkScreenWidth = () => app.stage.scale.x >= 0.08 ? 3 : Math.max(1, 37.5 * app.stage.scale.x)
+    const getNodeCollisionRadius = node => getNodeRadius(node) + degreeSizing.collidePadding
+    const getLinkDistance = link => {
+        let distance = 100
+        if (!isDegreeSizingEnabled()) return distance
+        const radiusBonus = Math.max(0, getNodeRadius(link.source) + getNodeRadius(link.target) - degreeSizing.defaultRadius * 2)
+        const averageDegree = ((link.source.degree || 0) + (link.target.degree || 0)) / 2
+        const degreeBonus = Math.min(24, Math.sqrt(averageDegree) * 8)
+        return distance + Math.min(degreeSizing.maxLinkDistanceBonus, radiusBonus * 0.85 + degreeBonus)
+    }
+    const getNodeChargeStrength = node => {
+        let strength = -700
+        if (!isDegreeSizingEnabled()) return strength
+        const extraRadius = Math.max(0, getNodeRadius(node) - getBaseRadiusForType(node.type))
+        strength -= Math.min(node.degree || 0, degreeSizing.maxForceDegree) * degreeSizing.chargePerDegree
+        strength -= extraRadius * degreeSizing.chargePerExtraRadius
+        return strength
+    }
+    function updateNodeDegreeSizing(nodeList, linkList) {
+        const outDegreeMap = new Map()
+        const inDegreeMap = new Map()
+        for (const link of linkList) {
+            const sourceId = getEndpointId(link.source)
+            const targetId = getEndpointId(link.target)
+            outDegreeMap.set(sourceId, (outDegreeMap.get(sourceId) || 0) + 1)
+            inDegreeMap.set(targetId, (inDegreeMap.get(targetId) || 0) + 1)
+        }
+        for (const node of nodeList) {
+            node.outDegree = outDegreeMap.get(node.id) || 0
+            node.inDegree = inDegreeMap.get(node.id) || 0
+            node.degree = degreeSizing.mode === 'all' ? node.outDegree + node.inDegree : node.outDegree
+            const baseRadius = getBaseRadiusForType(node.type)
+            if (!isDegreeSizingEnabled()) {
+                node.renderRadius = baseRadius
+                continue
+            }
+            const extraRadius = Math.min(
+                degreeSizing.maxExtraRadius,
+                (node.degree || 0) * degreeSizing.radiusPerDegree
+            )
+            node.renderRadius = baseRadius + extraRadius
+        }
+    }
+    function applySimulationForces() {
+        simulation
+            .force("link", d3.forceLink(links).id(d => d.id).distance(link => getLinkDistance(link)))
+            .force("charge", d3.forceManyBody().strength(node => getNodeChargeStrength(node)))
+            .force("collide", isDegreeSizingEnabled() ? d3.forceCollide().radius(node => getNodeCollisionRadius(node)).iterations(2).strength(0.9) : null)
     }
     const boundary = {
         left: 0,
@@ -195,6 +261,7 @@ Author Wang Rui <https://github.com/gugutu>
                 app.stage.hitArea = new PIXI.Rectangle(this.left, this.top, this.getWidth(), this.getHeight())
         }
     }
+    applySimulationForces()
     const zoomAnimation = {
         running: false, time: 0, b: 1, c: 0, eventX: null, eventY: null,
         getNowValue: function (t = this.time, b = this.b, c = this.c, d = 100) {
@@ -268,29 +335,54 @@ Author Wang Rui <https://github.com/gugutu>
         }
     }
 
-    let normalNodeContext
-    let highlightNodeContext
-    let tagNodeContext
-    const meNodeContext = new PIXI.GraphicsContext()
-        .circle(0, 0, 25)
-        .fill('rgb(31, 115, 205)')
-        .circle(0, 0, 15)
-        .fill('rgb(28, 143, 251)')
-    const childNodeContext = new PIXI.GraphicsContext()
-        .circle(0, 0, 20)
-        .fill('rgb(226, 153, 2)')
-    const parentNodeContext = new PIXI.GraphicsContext()
-        .circle(0, 0, 20)
-        .fill('rgb(236, 61, 57)')
-    const invalidNodeContext = new PIXI.GraphicsContext()
-        .circle(0, 0, 20)
-        .fill('rgb(195, 195, 199)')
     const lineContext = new PIXI.GraphicsContext()
         .rect(0, -0.5, 1, 1)
         .fill(0x40404d)
     const particleContext = new PIXI.GraphicsContext()
         .circle(0, 0, 1)
         .fill('rgb(102, 102, 112)')
+    let nodeContextCache = new Map()
+
+    function getNodeGraphicsContext(node) {
+        const radius = Math.max(4, Math.round(getNodeRadius(node)))
+        const cacheKey = `${node.type}:${radius}`
+        const cachedContext = nodeContextCache.get(cacheKey)
+        if (cachedContext) return cachedContext
+
+        const context = new PIXI.GraphicsContext()
+        switch (node.type) {
+            case 'highlight':
+                context.circle(0, 0, radius).fill(highlightNodeColor)
+                break
+            case 'me':
+                context.circle(0, 0, radius).fill('rgb(31, 115, 205)')
+                    .circle(0, 0, Math.max(6, radius * 0.6)).fill('rgb(28, 143, 251)')
+                break
+            case 'parent child':
+                context.circle(0, 0, radius).fill('rgb(236, 61, 57)')
+                    .circle(0, 0, Math.max(6, radius * 0.7)).fill('rgb(226, 153, 2)')
+                break
+            case 'parent':
+                context.circle(0, 0, radius).fill('rgb(236, 61, 57)')
+                break
+            case 'child':
+                context.circle(0, 0, radius).fill('rgb(226, 153, 2)')
+                break
+            case 'tag':
+                context.circle(0, 0, radius).fill(tagNodeColor)
+                break
+            case 'invalid':
+                context.circle(0, 0, radius).fill('rgb(195, 195, 199)')
+                break
+            case 'normal':
+            default:
+                context.circle(0, 0, radius).fill(normalNodeColor)
+                break
+        }
+
+        nodeContextCache.set(cacheKey, context)
+        return context
+    }
 
 
     function reloadGraphData() {
@@ -327,15 +419,7 @@ Author Wang Rui <https://github.com/gugutu>
             } else return text
         }
 
-        normalNodeContext = new PIXI.GraphicsContext()
-            .circle(0, 0, 20)
-            .fill(normalNodeColor)
-        highlightNodeContext = new PIXI.GraphicsContext()
-            .circle(0, 0, 20)
-            .fill(highlightNodeColor)
-        tagNodeContext = new PIXI.GraphicsContext()
-            .circle(0, 0, 20)
-            .fill(tagNodeColor)
+        nodeContextCache = new Map()
 
         circleList = nodes.map(node => {//将nodes列表转换为对应的图形列表
             if (node.mainField === null) {
@@ -344,33 +428,7 @@ Author Wang Rui <https://github.com/gugutu>
             } else {
                 node.mainField = convertHtmlToPlainText(node.mainField)
             }
-            let circle
-            switch (node.type) {
-                case 'normal':
-                    circle = new PIXI.Graphics(normalNodeContext)
-                    break
-                case 'highlight':
-                    circle = new PIXI.Graphics(highlightNodeContext)
-                    break
-                case 'me':
-                    circle = new PIXI.Graphics(meNodeContext)
-                    break
-                case 'parent child':
-                case 'parent':
-                    circle = new PIXI.Graphics(parentNodeContext)
-                    break
-                case 'child':
-                    circle = new PIXI.Graphics(childNodeContext)
-                    break
-                case 'tag':
-                    circle = new PIXI.Graphics(tagNodeContext)
-                    break
-                case 'invalid':
-                    circle = new PIXI.Graphics(invalidNodeContext)
-                    break
-                default:
-                    circle = new PIXI.Graphics(normalNodeContext)
-            }
+            const circle = new PIXI.Graphics(getNodeGraphicsContext(node))
 
             circle.on('click', event => {
                 if (node.type === 'tag') {
@@ -530,10 +588,11 @@ Author Wang Rui <https://github.com/gugutu>
         if (needAdaptScale) { //自适应比例
             let mostLeft = 0, mostRight = 0, mostTop = 0, mostBottom = 0
             nodes.forEach(node => {
-                if (node.x < mostLeft) mostLeft = node.x
-                else if (node.x > mostRight) mostRight = node.x
-                if (node.y < mostTop) mostTop = node.y
-                else if (node.y > mostBottom) mostBottom = node.y
+                const radius = getNodeRadius(node)
+                if (node.x - radius < mostLeft) mostLeft = node.x - radius
+                else if (node.x + radius > mostRight) mostRight = node.x + radius
+                if (node.y - radius < mostTop) mostTop = node.y - radius
+                else if (node.y + radius > mostBottom) mostBottom = node.y + radius
             })
 
             const scaleX = 0.8 * (window.innerWidth) / (mostRight - mostLeft + 80)
@@ -579,9 +638,10 @@ Author Wang Rui <https://github.com/gugutu>
         for (let i = 0; i < circleList.length; i++) {//对每个节点进行布局
             const x = nodes[i].x
             const y = nodes[i].y
+            const radius = getNodeRadius(nodes[i])
             circleList[i].x = x
             circleList[i].y = y
-            circleList[i].renderable = boundary.contains(circleList[i].x, circleList[i].y, 20)
+            circleList[i].renderable = boundary.contains(circleList[i].x, circleList[i].y, radius)
 
             //对每个节点的文本进行布局
             const text = textList[i]
@@ -592,12 +652,12 @@ Author Wang Rui <https://github.com/gugutu>
                 }
                 continue
             }
-            text.width = toClientLength(100)
+            const textWidth = getNodeTextWidth(nodes[i])
+            text.width = toClientLength(textWidth)
             text.fontSize = toClientLength(fontSize)
             text.lineHeight = text.fontSize * 1.1
-            text.left = toClientX(x - 50)
-            const offsetY = nodes[i].type === 'me' ? 27 : 22
-            text.top = toClientY(y + offsetY)
+            text.left = toClientX(x - textWidth / 2)
+            text.top = toClientY(y + getNodeTextOffset(nodes[i]))
 
             if (text.left + text.width > 0 && //检测是在可视范围内
                 text.top + text.lineHeight * lineClamp > 0 &&
@@ -629,7 +689,7 @@ Author Wang Rui <https://github.com/gugutu>
 
         for (let i = 0; i < lineContainerList.length; i++) {//对每个线段进行布局
             const lineContainer = lineContainerList[i]
-            if (!linkTools.shouldRenderLink(links[i], 20)) {
+            if (!linkTools.shouldRenderLink(links[i])) {
                 lineContainer.renderable = false
                 lineContainer.children.forEach(it => it.renderable = false)
                 continue
@@ -639,7 +699,8 @@ Author Wang Rui <https://github.com/gugutu>
             lineContainer.x = links[i].source.x
             lineContainer.y = links[i].source.y
             lineContainer.scale.x = linkTools.calculateDistance(links[i].source.x, links[i].source.y, links[i].target.x, links[i].target.y)
-            lineContainer.scale.y = toCanvasLength(3)
+            const linkScreenWidth = getLinkScreenWidth()
+            lineContainer.scale.y = toCanvasLength(linkScreenWidth)
             lineContainer.rotation = linkTools.calculateAngleWithXAxis(links[i].source.x, links[i].source.y, links[i].target.x, links[i].target.y)
             lineContainer.renderable = true
 
@@ -652,8 +713,8 @@ Author Wang Rui <https://github.com/gugutu>
                     particle.renderable = false
                     return
                 }
-                particle.scale.x = 3 / lineContainer.scale.x
-                particle.scale.y = 3 / lineContainer.scale.y
+                particle.scale.x = linkScreenWidth / lineContainer.scale.x
+                particle.scale.y = linkScreenWidth / lineContainer.scale.y
                 particle.x = (j / particleNum + linkTools.particleStep) % 1
                 particle.renderable = true
             })
@@ -665,7 +726,7 @@ Author Wang Rui <https://github.com/gugutu>
     const delay = ms => new Promise(resolve => setTimeout(resolve, ms))
     let webGLSupported = false
 
-    async function reloadPage(newNodes, connections, resetCenter, adaptScale = false, normalColor = null, highlightColor = null, tagColor = null, graphBgColor = [16, 16, 32]) {
+    async function reloadPage(newNodes, connections, resetCenter, adaptScale = false, normalColor = null, highlightColor = null, tagColor = null, graphBgColor = [16, 16, 32], nodeDegreeSizing = 'none') {
         function isWebGLSupported() {
             try {
                 const canvas = document.createElement('canvas');
@@ -695,6 +756,7 @@ Author Wang Rui <https://github.com/gugutu>
         normalNodeColor = normalColor
         highlightNodeColor = highlightColor
         tagNodeColor = tagColor
+        degreeSizing.mode = nodeDegreeSizing || 'none'
         let oldNodes = nodes
         let oldNodeMap = new Map(oldNodes.map(it => [it.id, it]))
 
@@ -710,10 +772,11 @@ Author Wang Rui <https://github.com/gugutu>
         }
         nodes = newNodes
         links = connections
+        updateNodeDegreeSizing(nodes, links)
 
         simulation.nodes(nodes)
-            .force("link", d3.forceLink(links).id(d => d.id).distance(100))
-            .alpha(1).restart()//重新启动力学仿真
+        applySimulationForces()
+        simulation.alpha(1).restart()//重新启动力学仿真
         simulation.alphaTarget(0).restart()//重新启动力学仿真
         reloadGraphData()
         needAdaptScale = adaptScale

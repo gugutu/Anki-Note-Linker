@@ -35,6 +35,15 @@
         -webkit-box-orient: vertical;
     }
 
+    .link-button-title {
+        font-weight: bold;
+        font-size: 14px;
+        line-height: 1.15;
+        margin-bottom: 1px;
+        text-align: center;
+        word-break: break-word;
+    }
+
     .katex {
         white-space: normal !important;
         font-size: 16px;
@@ -163,7 +172,7 @@
         }
     }
 
-    function reloadPage(parentNodes = [], childNodes = [], waitingForShowAnswer = false) {
+    function reloadPage(parentNodes = [], childNodes = [], waitingForShowAnswer = false, showForwardLinkTitle = false) {
         const backLinksDiv = document.getElementById("backLinks");
         const forwardLinksDiv = document.getElementById("forwardLinks");
         if (waitingForShowAnswer) {
@@ -174,23 +183,29 @@
         backLinksDiv.innerHTML = parentNodes.length === 0 ? getTr('None') : ''
         forwardLinksDiv.innerHTML = childNodes.length === 0 ? getTr('None') : ''
         parentNodes.forEach(it => {
-            createButton(it, backLinksDiv, true);
+            createButton(it, backLinksDiv, true, false);
         });
         childNodes.forEach(it => {
-            createButton(it, forwardLinksDiv, false);
+            createButton(it, forwardLinksDiv, false, showForwardLinkTitle);
         });
         renderKatex()
         adjustHeights()
     }
 
-    function createButton(node, container, isBackLink) {
-        const button = document.createElement("div");
+    function createButton(node, container, isBackLink, showForwardLinkTitle) {
         const outer = document.createElement("div");
         outer.className = node.mainField !== null ? "link-button" : 'link-button-invalid';
         if (isBackLink) outer.classList.add('backLink-button')
         else outer.classList.add('forwardLink-button')
-        button.className = 'link-button-text'
-        button.innerText = node.mainField !== null ? convertHtmlToPlainText(node.mainField) : getTr('Invalid link') + node.id
+        if (!isBackLink && showForwardLinkTitle && node.linkTitle) {
+            const title = document.createElement("div");
+            title.className = 'link-button-title'
+            title.innerText = node.linkTitle
+            outer.appendChild(title)
+        }
+        const summary = document.createElement("div");
+        summary.className = 'link-button-text'
+        summary.innerText = node.mainField !== null ? convertHtmlToPlainText(node.mainField) : getTr('Invalid link') + node.id
         outer.onclick = function () {
             const selection = window.getSelection();
             if (selection.toString().length > 0) {
@@ -226,7 +241,7 @@
                 pycmd('AnkiNoteLinker-openNoteInBrowser' + node.id)
             }
         });
-        outer.appendChild(button)
+        outer.appendChild(summary)
         container.appendChild(outer);
     }
 </script>

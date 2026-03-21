@@ -163,12 +163,15 @@ class AnkiNoteLinker(object):
             log(f'-----refresh reviewer panel')
             if waitingForShowAnswer:
                 if links_show and hasattr(mw.reviewer, 'linksPage'):
-                    mw.reviewer.linksPage.eval(f'reloadPage([], [], waitingForShowAnswer = true)')
+                    mw.reviewer.linksPage.eval(
+                        f'reloadPage([], [], waitingForShowAnswer = true, {json.dumps(config["showForwardLinkTitleInLinksPage"])})')
                 if graph_show and hasattr(mw.reviewer, 'graphPage'):
                     mw.reviewer.graphPage.eval(f'reloadPage([], [], false, false)')
                 return
 
             currentNode = self.noteToNoteNode(card.note())
+            showForwardLinkTitle = config["showForwardLinkTitleInLinksPage"]
+            childLinkTitles = self.findChildLinkTitles(currentNode.id, ' '.join(card.note().fields)) if showForwardLinkTitle else {}
             parentNodes: set[NoteNode] = set()
             parentNodeIds: set[NoteId] = set()
             childNodes: list[NoteNode] = []
@@ -186,6 +189,8 @@ class AnkiNoteLinker(object):
                 childNode = self.idToNoteNode(childId)
                 childNodes.append(childNode)
                 jsNode = childNode.toJsNoteNode('child')
+                if showForwardLinkTitle:
+                    jsNode.linkTitle = childLinkTitles.get(childId, None)
                 childJsNodes.append(jsNode)
                 if childNode.id in parentNodeIds:  # When a node is both a parent node and a child node
                     jsNode.type = 'parent child'
@@ -195,7 +200,9 @@ class AnkiNoteLinker(object):
                 mw.reviewer.linksPage.eval(
                     f'''reloadPage(
                                 {json.dumps(parentJsNodes, default=lambda o: o.__dict__)},
-                                {json.dumps(childJsNodes, default=lambda o: o.__dict__)}
+                                {json.dumps(childJsNodes, default=lambda o: o.__dict__)},
+                                false,
+                                {json.dumps(config["showForwardLinkTitleInLinksPage"])}
                             )'''
                 )
 
@@ -581,11 +588,14 @@ class AnkiNoteLinker(object):
     def onEditNote(self, note: Note):
         if note.id == 0:
             return
+        showForwardLinkTitle = config["showForwardLinkTitleInLinksPage"]
+        childLinkTitles = self.findChildLinkTitles(note.id, ' '.join(note.fields)) if showForwardLinkTitle else None
         for editor in self.editors:
             if editor.note and (editor.note.id == note.id):
                 if hasattr(editor, "noteNode") and \
                         editor.noteNode.mainField == self.getMainField(note) and \
-                        operator.eq(editor.noteNode.childIds, self.findChildIds(note.id, ' '.join(note.fields))):
+                        operator.eq(editor.noteNode.childIds, self.findChildIds(note.id, ' '.join(note.fields))) and \
+                        (not showForwardLinkTitle or operator.eq(getattr(editor, "childLinkTitles", {}), childLinkTitles)):
                     return
                 else:
                     self.refreshPage(editor, adaptScale=False, reason='mainField or links of note changed')
@@ -627,7 +637,10 @@ class AnkiNoteLinker(object):
 
         currentId = editor.note.id
         currentNode = self.noteToNoteNode(editor.note)
+        showForwardLinkTitle = config["showForwardLinkTitleInLinksPage"]
+        childLinkTitles = self.findChildLinkTitles(currentId, ' '.join(editor.note.fields)) if showForwardLinkTitle else {}
         editor.noteNode = currentNode
+        editor.childLinkTitles = childLinkTitles
 
         allIds = currentNode.parentIds | set(currentNode.childIds) | {currentId}
 
@@ -648,6 +661,8 @@ class AnkiNoteLinker(object):
             childNode = self.idToNoteNode(childId)
             childNodes.append(childNode)
             jsNode = childNode.toJsNoteNode('child')
+            if showForwardLinkTitle:
+                jsNode.linkTitle = childLinkTitles.get(childId, None)
             childJsNodes.append(jsNode)
             if childNode.id in parentNodeIds:  # When a node is both a parent node and a child node
                 jsNode.type = 'parent child'
@@ -666,7 +681,9 @@ class AnkiNoteLinker(object):
             editor.linksPage.eval(
                 f'''reloadPage(
                     {json.dumps(parentJsNodes, default=lambda o: o.__dict__)},
-                    {json.dumps(childJsNodes, default=lambda o: o.__dict__)}
+                    {json.dumps(childJsNodes, default=lambda o: o.__dict__)},
+                    false,
+                    {json.dumps(config["showForwardLinkTitleInLinksPage"])}
                 )'''
             )
         if target != 'linksPage' and panelShows[1]:
@@ -703,6 +720,19 @@ class AnkiNoteLinker(object):
                         duplicateIdSet.add(childId)
                         idList.append(childId)
         return idList
+
+    def findChildLinkTitles(self, myId: NoteId, joinedFields: str, rangeIdSet=None):
+        duplicateIdSet = set()
+        titleMap: dict[NoteId, str] = {}
+        matches = re.finditer(r'\[((?:[^\[]|\\\[)*?)\|nid(\d{13})\]', joinedFields)
+        if matches:
+            for match in matches:
+                childId = NoteId(int(match.group(2)))
+                if myId != childId and childId not in duplicateIdSet:
+                    if rangeIdSet is None or childId in rangeIdSet:
+                        duplicateIdSet.add(childId)
+                        titleMap[childId] = match.group(1).replace('\\[', '[')
+        return titleMap
 
     def findParentIds(self, myId):
         parentIds = set(mw.col.find_notes('[*|nid' + str(myId) + ']'))

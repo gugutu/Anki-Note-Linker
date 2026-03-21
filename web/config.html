@@ -82,6 +82,9 @@
         <div><label class="collapseClozeInLinksPage"></label>
             <input id="collapseClozeInLinksPage" type="checkbox">
         </div>
+        <div><label class="showForwardLinkTitleInLinksPage"></label>
+            <input id="showForwardLinkTitleInLinksPage" type="checkbox">
+        </div>
         <div><label class="useHjpPreviewer"></label>
             <input id="useHjpPreviewer" type="checkbox">
         </div>
@@ -223,6 +226,7 @@
     document.getElementsByClassName('showLinksPageInReviewerAutomatically')[0].innerHTML = getTr('Automatically show links panel when entering reviewer') + ':&nbsp;'
     document.getElementsByClassName('showGraphPageInReviewerAutomatically')[0].innerHTML = getTr('Automatically show graph panel when entering reviewer') + ':&nbsp;'
     document.getElementsByClassName('collapseClozeInLinksPage')[0].innerHTML = getTr('Collapse cloze in links panel') + ':&nbsp;'
+    document.getElementsByClassName('showForwardLinkTitleInLinksPage')[0].innerHTML = getTr('Show forward link title above note summary in links panel') + ':&nbsp;'
     document.getElementsByClassName('useHjpPreviewer')[0].innerHTML = getTr('If the "hjp-linkmaster" add-on is installed, use its previewer') + ':&nbsp;'
     document.getElementsByClassName('location')[0].innerHTML = getTr('The position of links/graph panel relative to the editor') + ':&nbsp;'
     document.getElementById('location-left').innerHTML = getTr('left')
@@ -292,6 +296,7 @@
         document.getElementById('showLinksPageInReviewerAutomatically').checked = config['showLinksPageInReviewerAutomatically']
         document.getElementById('showGraphPageInReviewerAutomatically').checked = config['showGraphPageInReviewerAutomatically']
         document.getElementById('collapseClozeInLinksPage').checked = config['collapseClozeInLinksPage']
+        document.getElementById('showForwardLinkTitleInLinksPage').checked = config['showForwardLinkTitleInLinksPage']
         document.getElementById('useHjpPreviewer').checked = config['useHjpPreviewer']
         document.getElementById('location-left-radio').checked = config['location'] === 'left'
         document.getElementById('location-right-radio').checked = config['location'] === 'right'
@@ -339,6 +344,7 @@
         userConfig['showLinksPageInReviewerAutomatically'] = document.getElementById('showLinksPageInReviewerAutomatically').checked
         userConfig['showGraphPageInReviewerAutomatically'] = document.getElementById('showGraphPageInReviewerAutomatically').checked
         userConfig['collapseClozeInLinksPage'] = document.getElementById('collapseClozeInLinksPage').checked
+        userConfig['showForwardLinkTitleInLinksPage'] = document.getElementById('showForwardLinkTitleInLinksPage').checked
         userConfig['useHjpPreviewer'] = document.getElementById('useHjpPreviewer').checked
         userConfig['location'] = document.getElementById('location-left-radio').checked ? 'left' : 'right'
         userConfig['positionRelativeToReviewer'] = document.getElementById('positionRelativeToReviewer-left-radio').checked ? 'left' : 'right'

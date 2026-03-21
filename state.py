@@ -56,10 +56,11 @@ class NoteNode:
 
 
 class JsNoteNode:
-    def __init__(self, nid: int, mainField: str, type: str):
+    def __init__(self, nid: int, mainField: str, type: str, linkTitle: str | None = None):
         self.id = nid
         self.mainField = mainField
         self.type = type
+        self.linkTitle = linkTitle
 
 
 class PreviewState:

@@ -31,6 +31,8 @@ function getTr(s) {
             return '进入复习界面时自动显示关系图面板'
         case 'Collapse cloze in links panel':
             return '折叠链接面板中的完形填空'
+        case 'Show forward link title above note summary in links panel':
+            return '在链接面板的正向链接摘要上方显示链接标题'
         case 'Node size scaling by link count':
             return '根据链接数量调整节点大小'
         case 'Do not scale':

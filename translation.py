@@ -55,6 +55,8 @@ def getTr(s: str) -> str:
             return '设置'
         elif s == 'Anki-Note-Linker Config':
             return 'Anki-Note-Linker 设置'
+        elif s == 'Show forward link title above note summary in links panel':
+            return '在链接面板的正向链接摘要上方显示链接标题'
         elif s == 'Node size scaling by link count':
             return '根据链接数量调整节点大小'
         elif s == 'For better performance, select a display driver other than "Software" to enable the new renderer. The old renderer is no longer maintained.':

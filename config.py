@@ -27,6 +27,7 @@ defaultConfig = {
     "positionRelativeToReviewer": "right",
     "linkMaxLines": 5,
     "collapseClozeInLinksPage": True,
+    "showForwardLinkTitleInLinksPage": False,
     "useHjpPreviewer": True,
     "noteFieldsDisplayedInTheNoteSummary": [],
 

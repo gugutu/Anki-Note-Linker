@@ -74,4 +74,5 @@ jobs:
           files: ${{ env.ASSET_NAME }}
           tag_name: ${{ github.ref_name }}
           name: ${{ github.ref_name }}
+          body: Automated release
           overwrite_files: true

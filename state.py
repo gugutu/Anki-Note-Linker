@@ -3,6 +3,7 @@ AGPL3 LICENSE
 Author Wang Rui <https://github.com/gugutu>
 """
 import os
+from typing import Optional
 
 import anki
 from anki.notes import NoteId
@@ -56,7 +57,7 @@ class NoteNode:
 
 
 class JsNoteNode:
-    def __init__(self, nid: int, mainField: str, type: str, linkTitle: str | None = None):
+    def __init__(self, nid: int, mainField: str, type: str, linkTitle: Optional[str] = None):
         self.id = nid
         self.mainField = mainField
         self.type = type
@@ -65,7 +66,7 @@ class JsNoteNode:
 
 class PreviewState:
     def __init__(self, cards):
-        self.previewer: None | BrowserPreviewer = None
+        self.previewer: Optional[BrowserPreviewer] = None
         self.cards = cards
         self.index = 0
         self.card = cards[self.index]

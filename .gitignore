@@ -1,3 +1,5 @@
 /.idea
 /__pycache__
 meta.json
+/dist
+.DS_Store

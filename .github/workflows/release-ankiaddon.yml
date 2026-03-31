@@ -1,0 +1,77 @@
+name: Build Anki Add-on Release
+
+on:
+  push:
+    tags:
+      - "*"
+
+permissions:
+  contents: write
+
+jobs:
+  build-ankiaddon:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Prepare package metadata
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          version_label="${GITHUB_REF_NAME}"
+
+          echo "VERSION_LABEL=${version_label}" >> "$GITHUB_ENV"
+          echo "ASSET_NAME=${version_label}.ankiaddon" >> "$GITHUB_ENV"
+
+      - name: Assemble add-on files
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          mkdir -p package
+
+          find . -mindepth 1 -maxdepth 1 \
+            ! -name '.git' \
+            ! -name '.github' \
+            ! -name 'dist' \
+            ! -name 'scripts' \
+            ! -name 'manifest.json' \
+            ! -name 'README.md' \
+            ! -name 'README-zh.md' \
+            ! -name 'show.gif' \
+            ! -name 'show.jpg' \
+            ! -name 'show0.jpg' \
+            ! -name '.DS_Store' \
+            -exec cp -R {} package/ \;
+
+          cat > package/manifest.json <<EOF
+          {
+            "package": "Anki_Note_Linker",
+            "name": "Anki Note Linker ${VERSION_LABEL}"
+          }
+          EOF
+
+      - name: Build .ankiaddon archive
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          (
+            cd package
+            zip -r "../${ASSET_NAME}" . \
+              -x "__pycache__/*" \
+              -x "*/__pycache__/*" \
+              -x "*.pyc" \
+              -x ".DS_Store"
+          )
+
+      - name: Publish release and upload add-on
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ env.ASSET_NAME }}
+          tag_name: ${{ github.ref_name }}
+          name: ${{ github.ref_name }}
+          overwrite_files: true

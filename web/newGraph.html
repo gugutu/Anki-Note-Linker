@@ -132,7 +132,7 @@ Author Wang Rui <https://github.com/gugutu>
         mode: 'none',
         defaultRadius: 20,
         meRadius: 25,
-        maxExtraRadius: 36,
+        maxSizedDegree: 10,
         radiusPerDegree: 6,
         maxForceDegree: 26,
         chargePerDegree: 72,
@@ -222,10 +222,7 @@ Author Wang Rui <https://github.com/gugutu>
                 node.renderRadius = baseRadius
                 continue
             }
-            const extraRadius = Math.min(
-                degreeSizing.maxExtraRadius,
-                (node.degree || 0) * degreeSizing.radiusPerDegree
-            )
+            const extraRadius = Math.min(node.degree || 0, degreeSizing.maxSizedDegree) * degreeSizing.radiusPerDegree
             node.renderRadius = baseRadius + extraRadius
         }
     }

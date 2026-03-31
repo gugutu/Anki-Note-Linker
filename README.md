@@ -2,6 +2,8 @@
 
 # Anki Note Linker
 
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/gugutu/Anki-Note-Linker)
+
 [View on AnkiWeb](https://ankiweb.net/shared/info/1077002392)
 
 ![show0.jpg](show0.jpg)

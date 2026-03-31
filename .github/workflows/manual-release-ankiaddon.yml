@@ -1,0 +1,101 @@
+name: Publish Manual Anki Add-on Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version_name:
+        description: Release and tag name to publish
+        required: true
+        type: string
+      target_commit:
+        description: Commit SHA or ref to build from
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  build-ankiaddon:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository history
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Resolve target commit
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          resolved_commit="$(git rev-parse "${{ inputs.target_commit }}")"
+          git checkout "$resolved_commit"
+
+          echo "VERSION_LABEL=${{ inputs.version_name }}" >> "$GITHUB_ENV"
+          echo "TARGET_COMMIT=${resolved_commit}" >> "$GITHUB_ENV"
+          echo "ASSET_NAME=${{ inputs.version_name }}.ankiaddon" >> "$GITHUB_ENV"
+
+      - name: Assemble add-on files
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          mkdir -p package
+
+          find . -mindepth 1 -maxdepth 1 \
+            ! -name '.git' \
+            ! -name '.github' \
+            ! -name 'dist' \
+            ! -name 'scripts' \
+            ! -name 'manifest.json' \
+            ! -name 'README.md' \
+            ! -name 'README-zh.md' \
+            ! -name 'show.gif' \
+            ! -name 'show.jpg' \
+            ! -name 'show0.jpg' \
+            ! -name '.DS_Store' \
+            -exec cp -R {} package/ \;
+
+          cat > package/manifest.json <<EOF
+          {
+            "package": "Anki_Note_Linker",
+            "name": "Anki Note Linker ${VERSION_LABEL}"
+          }
+          EOF
+
+      - name: Build .ankiaddon archive
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          (
+            cd package
+            zip -r "../${ASSET_NAME}" . \
+              -x "__pycache__/*" \
+              -x "*/__pycache__/*" \
+              -x "*.pyc" \
+              -x ".DS_Store"
+          )
+
+      - name: Recreate release on demand
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if gh release view "$VERSION_LABEL" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release delete "$VERSION_LABEL" \
+              --repo "$GITHUB_REPOSITORY" \
+              --cleanup-tag \
+              --yes
+          fi
+
+          gh release create "$VERSION_LABEL" "$ASSET_NAME" \
+            --repo "$GITHUB_REPOSITORY" \
+            --target "$TARGET_COMMIT" \
+            --title "$VERSION_LABEL" \
+            --notes "Automated release" \
+            --latest=false

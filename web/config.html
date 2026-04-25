@@ -40,9 +40,20 @@
 
     #content > div {
         display: flex;
-        height: 34px;
+        height: 40px; /* Increased height for more air */
         margin: 0;
         align-items: center;
+        border-bottom: 1px solid rgba(128, 128, 128, 0.15);
+    }
+
+    #content > div.title {
+        height: 50px;
+        border-bottom: 2px solid rgba(128, 128, 128, 0.2);
+        margin-top: 10px;
+    }
+
+    #content > div:last-child {
+        border-bottom: none;
     }
 
     .radio-group {
@@ -124,16 +135,21 @@
         <div><label class="linkMaxLines"></label>
             <input id="linkMaxLines" type="text" oninput="value=value.replace(/\D/g,'')">
         </div>
-        <div><label class="noteFieldsDisplayedInTheNoteSummary"></label>
+        <div><label class="enableImagePreview">Enable Image Previews</label>
+            <input id="enableImagePreview" type="checkbox">
+        </div>
+        <div style="border-bottom: none;"><label class="noteFieldsDisplayedInTheNoteSummary"></label>
             <button onclick="alert(getTr('The note fields displayed in the note summary (content shown in the link panel or graphic). \n' +
         'The add-on will find the first matching field to display as the note summary. \n' +
         'If no field is set or there is no matching field, the first field of the note will be used by default.'))">❔
             </button>
         </div>
-        <div id="noteFieldsDisplayedInTheNoteSummary" style="height: auto; display: block"></div>
-        <button onclick="noteFieldsDisplayedInTheNoteSummaryConfigTemp.push('');loadNoteFields(null,false);">
-            ➕
-        </button>
+        <div id="noteFieldsDisplayedInTheNoteSummary" style="height: auto; display: block; border-bottom: none;"></div>
+        <div style="height: auto;">
+            <button onclick="noteFieldsDisplayedInTheNoteSummaryConfigTemp.push('');loadNoteFields(null,false);">
+                ➕
+            </button>
+        </div>
         <div class="title" id="title-globalGraph">globalGraph</div>
         <div><label class="globalGraph-defaultSearchText"></label>
             <input id="globalGraph-defaultSearchText" type="text">
@@ -175,7 +191,12 @@
         <div><label class="globalGraph-backgroundColor"></label>
             <input id="globalGraph-backgroundColor" type="color">
         </div>
-        <div class="title" id="title-shortcuts">shortcuts</div>
+        <div class="title">
+            <span id="title-shortcuts">shortcuts</span>
+            <button id="mac-shortcuts-help" style="display: none; margin-left: 10px;"
+                    onclick="alert(getTr('On macOS, the default shortcuts use Command (Ctrl) + Option (Alt) to avoid conflicts with Anki\'s built-in shortcuts and special character typing.'))">❔
+            </button>
+        </div>
         <div><label class="shortcuts-copyNoteID"></label>
             <input id="shortcuts-copyNoteID" type="text">
         </div>
@@ -227,6 +248,7 @@
     document.getElementsByClassName('showGraphPageInReviewerAutomatically')[0].innerHTML = getTr('Automatically show graph panel when entering reviewer') + ':&nbsp;'
     document.getElementsByClassName('collapseClozeInLinksPage')[0].innerHTML = getTr('Collapse cloze in links panel') + ':&nbsp;'
     document.getElementsByClassName('showForwardLinkTitleInLinksPage')[0].innerHTML = getTr('Show forward link title above note summary in links panel') + ':&nbsp;'
+    document.getElementsByClassName('enableImagePreview')[0].innerHTML = getTr('Enable Image Previews') + ':&nbsp;'
     document.getElementsByClassName('useHjpPreviewer')[0].innerHTML = getTr('If the "hjp-linkmaster" add-on is installed, use its previewer') + ':&nbsp;'
     document.getElementsByClassName('location')[0].innerHTML = getTr('The position of links/graph panel relative to the editor') + ':&nbsp;'
     document.getElementById('location-left').innerHTML = getTr('left')
@@ -260,6 +282,9 @@
     document.getElementById('title-basic').innerHTML = getTr('Basic')
     document.getElementById('title-globalGraph').innerHTML = getTr('Global Relationship Graph')
     document.getElementById('title-shortcuts').innerHTML = getTr('Shortcut keys')
+    if (isMac) {
+        document.getElementById('mac-shortcuts-help').style.display = 'inline-block';
+    }
     document.getElementById('button-restoreDefaults').innerHTML = getTr('Restore Defaults')
     document.getElementById('button-cancel').innerHTML = getTr('Cancel')
     document.getElementById('button-ok').innerHTML = getTr('OK')
@@ -298,6 +323,7 @@
         document.getElementById('collapseClozeInLinksPage').checked = config['collapseClozeInLinksPage']
         document.getElementById('showForwardLinkTitleInLinksPage').checked = config['showForwardLinkTitleInLinksPage']
         document.getElementById('useHjpPreviewer').checked = config['useHjpPreviewer']
+        document.getElementById('enableImagePreview').checked = config['enableImagePreview'] !== undefined ? config['enableImagePreview'] : true
         document.getElementById('location-left-radio').checked = config['location'] === 'left'
         document.getElementById('location-right-radio').checked = config['location'] === 'right'
         document.getElementById('positionRelativeToReviewer-left-radio').checked = config['positionRelativeToReviewer'] === 'left'
@@ -346,6 +372,7 @@
         userConfig['collapseClozeInLinksPage'] = document.getElementById('collapseClozeInLinksPage').checked
         userConfig['showForwardLinkTitleInLinksPage'] = document.getElementById('showForwardLinkTitleInLinksPage').checked
         userConfig['useHjpPreviewer'] = document.getElementById('useHjpPreviewer').checked
+        userConfig['enableImagePreview'] = document.getElementById('enableImagePreview').checked
         userConfig['location'] = document.getElementById('location-left-radio').checked ? 'left' : 'right'
         userConfig['positionRelativeToReviewer'] = document.getElementById('positionRelativeToReviewer-left-radio').checked ? 'left' : 'right'
         userConfig['splitRatio'] = document.getElementById('splitRatio').value

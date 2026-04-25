@@ -9,7 +9,7 @@ from typing import Any
 import anki
 from aqt import QWidget, QVBoxLayout, Qt, gui_hooks
 from aqt import mw
-from aqt.utils import restoreGeom, saveGeom
+from aqt.utils import restoreGeom, saveGeom, isMac
 from aqt.webview import AnkiWebView
 
 from .translation import getTr
@@ -29,14 +29,15 @@ defaultConfig = {
     "collapseClozeInLinksPage": True,
     "showForwardLinkTitleInLinksPage": False,
     "useHjpPreviewer": True,
+    "enableImagePreview": True,
     "noteFieldsDisplayedInTheNoteSummary": [],
 
-    "shortcuts-copyNoteID": "Alt+Shift+C",
-    "shortcuts-copyNoteLink": "Alt+Shift+L",
-    "shortcuts-openNoteInNewWindow": "Alt+Shift+W",
-    "shortcuts-insertLinkWithClipboardID": "Alt+Shift+V",
-    "shortcuts-insertNewLink": "Alt+Shift+N",
-    "shortcuts-insertLinkTemplate": "Alt+Shift+T",
+    "shortcuts-copyNoteID": "Ctrl+Alt+C" if isMac else "Alt+Shift+C",
+    "shortcuts-copyNoteLink": "Ctrl+Alt+L" if isMac else "Alt+Shift+L",
+    "shortcuts-openNoteInNewWindow": "Ctrl+Alt+W" if isMac else "Alt+Shift+W",
+    "shortcuts-insertLinkWithClipboardID": "Ctrl+Alt+V" if isMac else "Alt+Shift+V",
+    "shortcuts-insertNewLink": "Ctrl+Alt+N" if isMac else "Alt+Shift+N",
+    "shortcuts-insertLinkTemplate": "Ctrl+Alt+T" if isMac else "Alt+Shift+T",
 
     "globalGraph-defaultSearchText": "deck:current",
     "globalGraph-defaultHighlightFilter": "is:due",
@@ -113,6 +114,7 @@ class ConfigView(QWidget):
         gui_hooks.webview_did_receive_js_message.append(self.handlePycmd)
         self.web.stdHtml(
             f'<script>const ankiLanguage = "{anki.lang.current_lang}"</script>'
+            f'<script>const isMac = {json.dumps(isMac)}</script>'
             f'<script>const defaultConfig = {json.dumps(defaultConfig, default=lambda o: o.__dict__)}</script>'
             f'<script>const userConfig = {json.dumps(config, default=lambda o: o.__dict__)}</script>'
             f'<script src="{getWebFileLink("js/translation.js")}"></script>' + config_html

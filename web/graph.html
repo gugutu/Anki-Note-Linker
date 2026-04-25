@@ -106,13 +106,21 @@
         .width(window.innerWidth)
         .height(window.innerHeight)
         .nodeAutoColorBy('group')
-        .nodeLabel(node =>
-            node.mainField !== null ? node.mainField
+        .nodeLabel(node => {
+            const text = node.mainField !== null ? node.mainField
                     .replace(/&/g, '&amp;')
                     .replace(/</g, '&lt;')
                     .replace(/>/g, '&gt;')
-                : getTr('Invalid note') + node.id
-        )
+                : getTr('Invalid note') + node.id;
+            
+            if (node.imageSrc) {
+                return `<div style="text-align: center; background: rgba(0,0,0,0.85); padding: 8px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.2);">
+                    <img src="${node.imageSrc}" style="max-width: 400px !important; max-height: 300px !important; width: auto !important; height: auto !important; display: block; margin: 0 auto 8px; border-radius: 4px; object-fit: contain !important;" onerror="this.style.display='none'">
+                    <span>${text}</span>
+                </div>`;
+            }
+            return text;
+        })
         .linkColor(() => 'rgba(255,255,255,0.2)')
         .d3Force("x", d3.forceX())
         .d3Force("y", d3.forceY())
@@ -143,6 +151,8 @@
             pycmd('AnkiNoteLinker-openNoteInNewEditor' + node.id)
         })
         .linkWidth(2)
+        .minZoom(0.05)
+        .maxZoom(15)
         .enablePointerInteraction(!largeSize)
 
     if (!largeSize) graph
@@ -190,15 +200,55 @@
         let oldNodes = graph.graphData().nodes
         let oldNodeMap = new Map(oldNodes.map(it => [it.id, it]))
 
+        const mediaServerUrl = window.location.origin + '/'
+
+        function processNoteContent(node, html) {
+            node.imageSrc = null
+            let content = html
+            if (content.includes('&lt;')) {
+                const parser = new DOMParser()
+                const doc = parser.parseFromString(content, 'text/html')
+                content = doc.documentElement.textContent
+            }
+            const doc = new DOMParser().parseFromString(content, 'text/html')
+            const img = doc.querySelector('img')
+            if (img) {
+                const src = img.getAttribute('src')
+                if (src && !src.startsWith('http') && !src.startsWith('data:')) {
+                    node.imageSrc = src.startsWith('/') ? src : '/' + src
+                } else if (src) {
+                    node.imageSrc = src
+                }
+            }
+            let text = doc.body.innerText.replace(/\n+/g, ' ').trim()
+            if (text === '') {
+                text = content.replace(/<[^>]*>/g, '').replace(/\n+/g, ' ').trim()
+            }
+            text = text.replace(/\[\.\.\.\]/g, '').trim()
+            if (node.imageSrc && text && text !== '' && text !== '\n') {
+                return text + ' (+img)'
+            } else if (node.imageSrc) {
+                return '[Image]'
+            }
+            return text || '\n'
+        }
+
         for (const node of nodes) {
             const oldNode = oldNodeMap.get(node.id);
             if (oldNode) {
                 const tempMainField = node.mainField
                 const tempType = node.type
+                const tempImageSrc = oldNode.imageSrc
                 Object.assign(node, oldNode);
                 node.mainField = tempMainField
                 node.type = tempType
                 node.isPlainText = false
+                if (tempImageSrc) node.imageSrc = tempImageSrc
+            }
+            // Process images and text
+            if (node.mainField && (node.mainField.includes('<') || node.mainField.includes('&lt;'))) {
+                node.mainField = processNoteContent(node, node.mainField)
+                node.isPlainText = true
             }
         }
         graph.graphData({nodes: nodes, links: connections})

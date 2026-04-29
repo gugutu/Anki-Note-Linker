@@ -16,7 +16,8 @@ Author Wang Rui <https://github.com/gugutu>
     }
 
     :root {
-        --circleText-color: #fff; /*Default text color*/
+        --circleText-color: #fff;
+        /*Default text color*/
     }
 
     .circleText {
@@ -53,22 +54,26 @@ Author Wang Rui <https://github.com/gugutu>
     .label {
         font-family: Arial, sans-serif;
         font-size: 18px;
-        padding: 5px;
-        border-radius: 6px;
+        padding: 8px;
+        border-radius: 8px;
         word-break: break-word;
         color: rgb(255, 255, 255);
-        background-color: rgba(0, 0, 0, 0.7);
-        max-width: 500px;
-        /* word-break: break-all; */
+        background-color: rgba(0, 0, 0, 0.85);
+        max-width: 400px;
+        max-height: 400px;
+        overflow-y: auto;
         position: absolute !important;
         text-overflow: ellipsis;
         pointer-events: none;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+
         -webkit-user-select: none;
-        /* Safari */
         -moz-user-select: none;
-        /* Firefox */
         -ms-user-select: none;
-        /* IE/Edge */
         user-select: none;
         /* 标准语法 */
     }
@@ -79,7 +84,7 @@ Author Wang Rui <https://github.com/gugutu>
 </style>
 
 <body>
-<div id="texts"></div>
+    <div id="texts"></div>
 </body>
 <!--<script src="./pixi.js"></script>-->
 <!--<script src="./d3.v7.js"></script>-->
@@ -160,8 +165,8 @@ Author Wang Rui <https://github.com/gugutu>
     const textContainer = document.getElementById('texts')
     const renderKatex = () => renderMathInElement(document.body, {
         delimiters: [
-            {left: '\\(', right: '\\)', display: false},
-            {left: '\\[', right: '\\]', display: true}
+            { left: '\\(', right: '\\)', display: false },
+            { left: '\\[', right: '\\]', display: true }
         ],
         throwOnError: false
     })
@@ -261,37 +266,54 @@ Author Wang Rui <https://github.com/gugutu>
     applySimulationForces()
     const zoomAnimation = {
         running: false, time: 0, b: 1, c: 0, eventX: null, eventY: null,
-        getNowValue: function (t = this.time, b = this.b, c = this.c, d = 100) {
+        getNowValue: function (t = this.time, b = this.b, c = this.c, d = 250) {
             let result
             if (t >= d) {
                 result = b + c
                 zoomAnimation.running = false
-            } else result = c * t / d + b
-
-            if (result <= 0.01) {
-                zoomAnimation.running = false
-                return 0.01
+            } else {
+                const progress = t / d
+                const easeOut = 1 - Math.pow(1 - progress, 3)
+                result = b + c * easeOut
             }
-            if (result >= 100) {
+
+            const minLimit = 0.05
+            const maxLimit = 4.0 // Lowered to fit ~3 nodes on screen
+            if (result <= minLimit) {
                 zoomAnimation.running = false
-                return 100
+                return minLimit
+            }
+            if (result >= maxLimit) {
+                zoomAnimation.running = false
+                return maxLimit
             }
             return result
         },
         start: function (event) {
             if (event.deltaY === 0 || inDragCanvas) return
 
-            const step = -event.deltaY / 400
+            // 1. Clamp the step to prevent "scrolling hard" from accelerating too much
+            let step = -event.deltaY / 1200
+            const maxStepPerEvent = 0.15 // Max 15% zoom change per single scroll notch
+            step = Math.max(-maxStepPerEvent, Math.min(maxStepPerEvent, step))
 
             const now = app.stage.scale.x
+            const minLimit = 0.05
+            const maxLimit = 4.0
 
-            if (now === 100 && step > 0 || now === 0.01 && step < 0) return
+            if (now >= maxLimit && step > 0 || now <= minLimit && step < 0) return
 
             if (this.running) {
-                const nextStart = this.b + this.c
+                // 2. Limit total accumulated target change to prevent runaway zoom
+                let nextTarget
+                const currentTarget = this.b + this.c
+                if (step > 0) nextTarget = currentTarget * (1 + step)
+                else nextTarget = currentTarget / (1 - step)
 
-                if (step > 0) this.c = nextStart * (1 + step) - now
-                else this.c = nextStart / (1 - step) - now
+                const maxLead = 0.4 // Target can't be more than 40% ahead of current scale
+                nextTarget = Math.max(now * (1 - maxLead), Math.min(now * (1 + maxLead), nextTarget))
+
+                this.c = nextTarget - now
             } else {
                 if (step > 0) this.c = now * step
                 else this.c = now / (1 - step) - now
@@ -382,8 +404,10 @@ Author Wang Rui <https://github.com/gugutu>
     }
 
 
+    const mediaServerUrl = window.location.origin + '/'
+
     function reloadGraphData() {
-        app.stage.removeChildren().forEach(it => it.destroy({children: true}))
+        app.stage.removeChildren().forEach(it => it.destroy({ children: true }))
         while (textContainer.firstChild) textContainer.removeChild(textContainer.firstChild)//移除所有文本DOM
         document.body.style.cursor = 'default'
         if (labelElement !== null) {
@@ -406,24 +430,63 @@ Author Wang Rui <https://github.com/gugutu>
             return lineContainer
         })
 
-        function convertHtmlToPlainText(html) {
-            tempDiv.innerHTML = html.replace(/\[sound:.*?\]/g, ' ')
-            text = tempDiv.innerText.replace(/\n+/g, ' ').trim()
+        function processNoteContent(node, html) {
+            node.imageSrc = null
+
+            // Handle both escaped and raw HTML
+            let content = html
+            if (content.includes('&lt;')) {
+                const parser = new DOMParser()
+                const doc = parser.parseFromString(content, 'text/html')
+                content = doc.documentElement.textContent
+            }
+
+            // Clean up Image Occlusion data strings before processing text
+            // This removes those long "image-occlusion:rect..." coordinates
+            content = content.replace(/image-occlusion:[^>\s]*?:oi=1/g, '')
+            content = content.replace(/oi-data:[^>\s]*?:oi=1/g, '')
+
+            const doc = new DOMParser().parseFromString(content, 'text/html')
+            const img = doc.querySelector('img')
+
+            if (img) {
+                const src = img.getAttribute('src')
+                if (src && !src.startsWith('http') && !src.startsWith('data:')) {
+                    node.imageSrc = src.startsWith('/') ? src : '/' + src
+                } else if (src) {
+                    node.imageSrc = src
+                }
+            }
+
+            // Extract text and clean it up
+            let text = doc.body.innerText.replace(/\n+/g, ' ').trim()
             if (text === '') {
-                const t = tempDiv.innerHTML.replace(/(<br\s*\/?>|\n)+/g, ' ').trim();
-                if (t === '') return '\n'
-                else return t
-            } else return text
+                text = content.replace(/<[^>]*>/g, '').replace(/\n+/g, ' ').trim()
+            }
+
+            // More aggressive cleanup for coordinates that might have survived
+            text = text.replace(/image-occlusion:.*?:oi=1/g, '')
+            text = text.replace(/rect:left=.*?:oi=1/g, '')
+            text = text.replace(/\[\.\.\.\]/g, '')
+            text = text.trim()
+
+            if (node.imageSrc && text && text !== '' && text !== '\n') {
+                return text + ' (+img)'
+            } else if (node.imageSrc) {
+                return '[Image]'
+            }
+            return text || '\n'
         }
 
         nodeContextCache = new Map()
 
         circleList = nodes.map(node => {//将nodes列表转换为对应的图形列表
-            if (node.mainField === null) {
+            if (node.mainField === null || node.mainField === undefined) {
                 node.mainField = getTr('Invalid note')
                 node.type = 'invalid'
-            } else {
-                node.mainField = convertHtmlToPlainText(node.mainField)
+            } else if (node.mainField.includes('<') || node.mainField.includes('&lt;')) {
+                // If it looks like HTML, process it
+                node.mainField = processNoteContent(node, node.mainField)
             }
             const circle = new PIXI.Graphics(getNodeGraphicsContext(node))
 
@@ -470,7 +533,29 @@ Author Wang Rui <https://github.com/gugutu>
                 document.body.style.cursor = 'pointer'
                 labelElement = document.createElement('div')
                 labelElement.classList.add("label")
-                labelElement.textContent = node.mainField// 设置div的内容
+
+                // Construct label with image if present
+                if (node.imageSrc) {
+                    const img = document.createElement('img')
+                    img.src = node.imageSrc
+                    img.alt = "" // Clear alt text to prevent broken icon dot
+                    img.style.setProperty('max-width', '400px', 'important')
+                    img.style.setProperty('max-height', '300px', 'important')
+                    img.style.setProperty('width', 'auto', 'important')
+                    img.style.setProperty('height', 'auto', 'important')
+                    img.style.setProperty('object-fit', 'contain', 'important')
+                    img.style.display = 'block'
+                    img.style.marginBottom = '8px'
+                    img.style.borderRadius = '4px'
+                    // If image fails to load, just remove it entirely
+                    img.onerror = () => img.remove()
+                    labelElement.appendChild(img)
+                }
+
+                const textSpan = document.createElement('span')
+                textSpan.textContent = node.mainField
+                labelElement.appendChild(textSpan)
+
                 document.body.appendChild(labelElement)
                 try {
                     renderKatex()
@@ -571,8 +656,15 @@ Author Wang Rui <https://github.com/gugutu>
             if (labelElement !== null) {
                 let left = event.x - labelElement.offsetWidth / 2
                 if (left < 0) left = 1
+                if (left + labelElement.offsetWidth > window.innerWidth) left = window.innerWidth - labelElement.offsetWidth - 1
                 labelElement.style.left = left + 'px'
-                labelElement.style.top = event.y + 25 + 'px'
+
+                let top = event.y + 25
+                // If label goes off bottom, show it above the cursor
+                if (top + labelElement.offsetHeight > window.innerHeight) {
+                    top = event.y - labelElement.offsetHeight - 15
+                }
+                labelElement.style.top = top + 'px'
             }
         })
         app.stage.on('wheel', (event) => zoomAnimation.start(event))//滚轮滚动时
@@ -762,9 +854,11 @@ Author Wang Rui <https://github.com/gugutu>
             if (oldNode) {
                 const tempMainField = node.mainField
                 const tempType = node.type
+                const tempImageSrc = oldNode.imageSrc // Preserve detected image
                 Object.assign(node, oldNode)
                 node.mainField = tempMainField
                 node.type = tempType
+                if (tempImageSrc) node.imageSrc = tempImageSrc
             }
         }
         nodes = newNodes

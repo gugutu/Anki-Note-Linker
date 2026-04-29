@@ -742,10 +742,19 @@ class AnkiNoteLinker(object):
     def getMainField(self, note: Note) -> str:
         mainField: str = note.fields[0]
         fmap = mw.col.models.field_map(note.note_type())
+        mainFieldList = []
+
+        # Automatically include "Image" field if enabled
+        if config.get('enableImagePreview', True):
+            if "Image" in fmap:
+                mainFieldList.append(note.fields[fmap["Image"][0]])
+
         for fieldName in config['noteFieldsDisplayedInTheNoteSummary']:
-            if fieldName in fmap:
-                mainField = note.fields[fmap[fieldName][0]]
-                break
+            if fieldName in fmap and fieldName != "Image": # Skip "Image" if already added or if we want to avoid double adding
+                mainFieldList.append(note.fields[fmap[fieldName][0]])
+        
+        if mainFieldList:
+            mainField = ' '.join(mainFieldList)
         # Clear Link Format
         mainField = re.sub(r'\[((?:[^\[]|\\\[)*?)\|(nid\d{13})\]', lambda m: m[1].replace('\\[', '['), mainField)
         # Clear Cloze Format

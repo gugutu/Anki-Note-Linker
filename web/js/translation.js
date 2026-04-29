@@ -1,6 +1,9 @@
 function getTr(s) {
-    if (ankiLanguage !== 'zh-CN') return s;
-    else switch (s) {
+    if (ankiLanguage !== 'zh-CN') {
+        if (s === 'enableImagePreview') return 'Enable Image Previews';
+        return s;
+    }
+    switch (s) {
         case 'Back Links':
             return '反向链接'
         case 'Forward Links':
@@ -97,6 +100,11 @@ function getTr(s) {
         'The add-on will find the first matching field to display as the note summary. \n' +
         'If no field is set or there is no matching field, the first field of the note will be used by default.':
             return '在笔记摘要（链接面板或图形中显示的内容）中显示的笔记字段。\n插件将找到第一个匹配的字段将其显示为笔记摘要。\n如果没有设定或没有匹配的字段，则默认使用笔记的第一个字段。'
+        case 'enableImagePreview':
+        case 'Enable Image Previews':
+            return '启用图片预览'
+        case 'On macOS, the default shortcuts use Command (Ctrl) + Option (Alt) to avoid conflicts with Anki\'s built-in shortcuts and special character typing.':
+            return '在 macOS 上，默认快捷键使用 Command (Ctrl) + Option (Alt) 以避免与 Anki 的内置快捷键以及特殊字符输入冲突。'
         default:
             return s
     }

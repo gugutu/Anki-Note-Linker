@@ -33,26 +33,28 @@
         white-space: nowrap;
     }
 
-    input:not([type="radio"]), select {
+    input:not([type="radio"]),
+    select {
         margin-left: auto;
         /*margin-right: 15px;*/
     }
 
-    #content > div {
+    #content>div {
         display: flex;
-        height: 40px; /* Increased height for more air */
+        height: 40px;
+        /* Increased height for more air */
         margin: 0;
         align-items: center;
         border-bottom: 1px solid rgba(128, 128, 128, 0.15);
     }
 
-    #content > div.title {
+    #content>div.title {
         height: 50px;
         border-bottom: 2px solid rgba(128, 128, 128, 0.2);
         margin-top: 10px;
     }
 
-    #content > div:last-child {
+    #content>div:last-child {
         border-bottom: none;
     }
 
@@ -69,7 +71,7 @@
         gap: 4px;
     }
 
-    .radio-group > label {
+    .radio-group>label {
         display: inline-flex;
         align-items: center;
         gap: 6px;
@@ -99,6 +101,9 @@
         <div><label class="useHjpPreviewer"></label>
             <input id="useHjpPreviewer" type="checkbox">
         </div>
+        <div><label class="enableAutocomplete">Enable wikilink autocomplete</label>
+            <input id="enableAutocomplete" type="checkbox">
+        </div>
         <div><label class="location"></label>
             <div class="radio-group" id="location">
                 <label>
@@ -114,11 +119,13 @@
         <div><label class="positionRelativeToReviewer"></label>
             <div class="radio-group" id="positionRelativeToReviewer">
                 <label>
-                    <input id="positionRelativeToReviewer-left-radio" type="radio" name="positionRelativeToReviewer" value="left">
+                    <input id="positionRelativeToReviewer-left-radio" type="radio" name="positionRelativeToReviewer"
+                        value="left">
                     <span id="positionRelativeToReviewer-left">left</span>
                 </label>
                 <label>
-                    <input id="positionRelativeToReviewer-right-radio" type="radio" name="positionRelativeToReviewer" value="right">
+                    <input id="positionRelativeToReviewer-right-radio" type="radio" name="positionRelativeToReviewer"
+                        value="right">
                     <span id="positionRelativeToReviewer-right">right</span>
                 </label>
             </div>
@@ -163,18 +170,22 @@
         <div><label class="globalGraph-defaultShowTags"></label>
             <input id="globalGraph-defaultShowTags" type="checkbox">
         </div>
-        <div style="height: auto; align-items: flex-start; padding: 4px 0;"><label class="globalGraph-nodeDegreeSizing" style="padding-top: 2px;"></label>
+        <div style="height: auto; align-items: flex-start; padding: 4px 0;"><label class="globalGraph-nodeDegreeSizing"
+                style="padding-top: 2px;"></label>
             <div class="radio-group vertical" id="globalGraph-nodeDegreeSizing">
                 <label>
-                    <input id="globalGraph-nodeDegreeSizing-none-radio" type="radio" name="globalGraph-nodeDegreeSizing" value="none">
+                    <input id="globalGraph-nodeDegreeSizing-none-radio" type="radio" name="globalGraph-nodeDegreeSizing"
+                        value="none">
                     <span id="globalGraph-nodeDegreeSizing-none">none</span>
                 </label>
                 <label>
-                    <input id="globalGraph-nodeDegreeSizing-out-radio" type="radio" name="globalGraph-nodeDegreeSizing" value="out">
+                    <input id="globalGraph-nodeDegreeSizing-out-radio" type="radio" name="globalGraph-nodeDegreeSizing"
+                        value="out">
                     <span id="globalGraph-nodeDegreeSizing-out">out</span>
                 </label>
                 <label>
-                    <input id="globalGraph-nodeDegreeSizing-all-radio" type="radio" name="globalGraph-nodeDegreeSizing" value="all">
+                    <input id="globalGraph-nodeDegreeSizing-all-radio" type="radio" name="globalGraph-nodeDegreeSizing"
+                        value="all">
                     <span id="globalGraph-nodeDegreeSizing-all">all</span>
                 </label>
             </div>
@@ -194,7 +205,7 @@
         <div class="title">
             <span id="title-shortcuts">shortcuts</span>
             <button id="mac-shortcuts-help" style="display: none; margin-left: 10px;"
-                    onclick="alert(getTr('On macOS, the default shortcuts use Command (Ctrl) + Option (Alt) to avoid conflicts with Anki\'s built-in shortcuts and special character typing.'))">❔
+                onclick="alert(getTr('On macOS, the default shortcuts use Command (Ctrl) + Option (Alt) to avoid conflicts with Anki\'s built-in shortcuts and special character typing.'))">❔
             </button>
         </div>
         <div><label class="shortcuts-copyNoteID"></label>
@@ -219,11 +230,11 @@
 </div>
 <div id="buttons">
     <button class="button" id="button-restoreDefaults" style="margin-left: 5px; margin-right: auto;"
-            onclick="readConfig(defaultConfig)">
+        onclick="readConfig(defaultConfig)">
         Restore Defaults
     </button>
     <button class="button" id="button-cancel" style="margin-left: auto;"
-            onclick="pycmd('AnkiNoteLinker-config-cancel')">
+        onclick="pycmd('AnkiNoteLinker-config-cancel')">
         Cancel
     </button>
     <button class="button" id="button-ok" style="margin-left: 5px; margin-right: 5px;" onclick="setConfig()">
@@ -250,6 +261,7 @@
     document.getElementsByClassName('showForwardLinkTitleInLinksPage')[0].innerHTML = getTr('Show forward link title above note summary in links panel') + ':&nbsp;'
     document.getElementsByClassName('enableImagePreview')[0].innerHTML = getTr('Enable Image Previews') + ':&nbsp;'
     document.getElementsByClassName('useHjpPreviewer')[0].innerHTML = getTr('If the "hjp-linkmaster" add-on is installed, use its previewer') + ':&nbsp;'
+    document.getElementsByClassName('enableAutocomplete')[0].innerHTML = getTr('Enable Wikilink Autocomplete') + ':&nbsp;'
     document.getElementsByClassName('location')[0].innerHTML = getTr('The position of links/graph panel relative to the editor') + ':&nbsp;'
     document.getElementById('location-left').innerHTML = getTr('left')
     document.getElementById('location-right').innerHTML = getTr('right')
@@ -323,6 +335,7 @@
         document.getElementById('collapseClozeInLinksPage').checked = config['collapseClozeInLinksPage']
         document.getElementById('showForwardLinkTitleInLinksPage').checked = config['showForwardLinkTitleInLinksPage']
         document.getElementById('useHjpPreviewer').checked = config['useHjpPreviewer']
+        document.getElementById('enableAutocomplete').checked = config['enableAutocomplete'] !== undefined ? config['enableAutocomplete'] : true
         document.getElementById('enableImagePreview').checked = config['enableImagePreview'] !== undefined ? config['enableImagePreview'] : true
         document.getElementById('location-left-radio').checked = config['location'] === 'left'
         document.getElementById('location-right-radio').checked = config['location'] === 'right'
@@ -372,6 +385,7 @@
         userConfig['collapseClozeInLinksPage'] = document.getElementById('collapseClozeInLinksPage').checked
         userConfig['showForwardLinkTitleInLinksPage'] = document.getElementById('showForwardLinkTitleInLinksPage').checked
         userConfig['useHjpPreviewer'] = document.getElementById('useHjpPreviewer').checked
+        userConfig['enableAutocomplete'] = document.getElementById('enableAutocomplete').checked
         userConfig['enableImagePreview'] = document.getElementById('enableImagePreview').checked
         userConfig['location'] = document.getElementById('location-left-radio').checked ? 'left' : 'right'
         userConfig['positionRelativeToReviewer'] = document.getElementById('positionRelativeToReviewer-left-radio').checked ? 'left' : 'right'

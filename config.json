@@ -25,5 +25,6 @@
   "globalGraph-nodeColor": [57, 125, 237],
   "globalGraph-highlightedNodeColor": [244, 165, 0],
   "globalGraph-tagNodeColor": [127, 199, 132],
-  "globalGraph-backgroundColor": [16, 16, 32]
+  "globalGraph-backgroundColor": [16, 16, 32],
+  "enableAutocomplete": true
 }

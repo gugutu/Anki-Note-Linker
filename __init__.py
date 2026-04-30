@@ -4,8 +4,9 @@ Author Wang Rui <https://github.com/gugutu>
 """
 import json
 import operator
+import re
 import uuid
-from typing import Set
+from typing import Set, Optional, Any
 
 import anki
 from anki import notetypes_pb2
@@ -13,6 +14,7 @@ from anki.cards import Card
 from anki.errors import NotFoundError
 from anki.notes import Note, NoteId
 from aqt import gui_hooks, mw
+from aqt.qt import *
 from aqt.browser import Browser
 from aqt.browser.previewer import BrowserPreviewer, Previewer
 from aqt.editor import Editor, EditorWebView, EditorMode
@@ -35,6 +37,7 @@ except ImportError:
 
 from .config import ConfigView, config
 from .editors import MyAddCards, MyEditCurrent
+from . import state
 from .state import Connection, JsNoteNode, NoteNode, addon_path, log, links_html, \
     graph_html, PreviewState, newGraph_html, getWebFileLink
 from .translation import getTr
@@ -384,17 +387,21 @@ class AnkiNoteLinker(object):
             QShortcut(QKeySequence(config['shortcuts-openNoteInNewWindow']), web,
                       lambda: self.openNoteInNewEditor(web))
 
-    def convertLink(self, text: str, card: Card, kind: str):
+    def convertLink(self, text, card, kind):
         """Convert note links to HTML hyperlinks, set add-on active flag"""
+        # 1. Original nid links [Title|nid123]
+        # Supports [Title|nid123] and [[Title|nid123]]
+        text = re.sub(
+            r'\[+((?:[^\[\]]|\\\[|\\\])*?)\|nid(\d{13})\]+',
+            lambda match:
+            f'<a class="noteLink" href="javascript:pycmd(`AnkiNoteLinker-openNoteInPreviewer`+`{match.group(2)}`)" '
+            f'oncontextmenu="event.preventDefault();pycmd(`AnkiNoteLinker-openNoteInNewEditor`+`{match.group(2)}`)">' +
+            match.group(1).replace('\\[', '[').replace('\\]', ']') + '</a>', text
+        )
+
         return (
                 '<script>window.AnkiNoteLinkerIsActive = true</script>' +
-                re.sub(
-                    r'\[((?:[^\[]|\\\[)*?)\|nid(\d{13})\]',
-                    lambda match:
-                    f'<a class="noteLink" href="javascript:pycmd(`AnkiNoteLinker-openNoteInPreviewer`+`{match.group(2)}`)" '
-                    f'oncontextmenu="event.preventDefault();pycmd(`AnkiNoteLinker-openNoteInNewEditor`+`{match.group(2)}`)">' +
-                    match.group(1).replace('\\[', '[') + '</a>', text
-                )
+                text
         )
 
     def injectLinksPage(self, editor: Editor):
@@ -574,14 +581,19 @@ class AnkiNoteLinker(object):
             func=toggleGraphPage,
             disables=False,
         )
-        buttons.append(toggleLinksPageButton)
         buttons.append(toggleGraphPageButton)
 
     def onLoadNote(self, editor: Editor):
-        # self.editors = set(filter(lambda it: it.note is not None, self.editors))
         if editor.addMode:
             return
         self.editors.add(editor)
+        
+        # Check if autocomplete is enabled in config
+        if config.get("enableAutocomplete", True):
+            # Combined injection point: when a note is loaded
+            # Using a delay to ensure UI is ready
+            mw.progress.timer(500, lambda: self.forceInject(editor), False)
+            
         # log(json.dumps(editor.note.note_type(), default=lambda o: o.__dict__, indent = 4))
         self.refreshPage(editor, resetCenter=True, reason='loaded note')
 
@@ -702,23 +714,36 @@ class AnkiNoteLinker(object):
             except Exception:
                 pass
 
+    def forceInject(self, editor: Editor):
+        try:
+            if not hasattr(editor, "web") or not editor.web:
+                return
+            autocomplete_path = os.path.join(addon_path, 'web', 'js', 'autocomplete.js')
+            with open(autocomplete_path, 'r', encoding='utf-8') as f:
+                autocomplete_js = f.read()
+            
+            # Use runJavaScript for better compatibility on macOS
+            editor.web.page().runJavaScript(autocomplete_js)
+        except Exception as e:
+            print(f"AnkiNoteLinker: Force inject error: {e}")
+
     def appendJsToEditor(self, web_content, context):
-        """Enable the editor to support shortcut keys and double-click nid trigger operations"""
-        if not isinstance(context, Editor):
-            return
-        web_content.head += f'<script src="{getWebFileLink("js/detectClick.js")}"></script>'
+        """No longer used for baseline injection - we use forceInject instead for stability."""
+        pass
 
     def findChildIds(self, myId: NoteId, joinedFields: str, rangeIdSet=None):
         duplicateIdSet = set()  # Used to remove duplicates
         idList: list[NoteId] = []
-        matches = re.finditer(r'\[(?:[^\[]|\\\[)*?\|nid(\d{13})\]', joinedFields)
-        if matches:
-            for match in matches:
-                childId = NoteId(int(match.group(1)))
-                if myId != childId and childId not in duplicateIdSet:  # Shield self ring connection and remove duplicates
-                    if rangeIdSet is None or childId in rangeIdSet:
-                        duplicateIdSet.add(childId)
-                        idList.append(childId)
+        
+        # Modern & Legacy search (supports [Title|nid123], [[Title|nid123]], etc.)
+        # We use [+ and ]+ to handle any number of brackets cleanly
+        matches = re.finditer(r'\[+((?:[^\[\]]|\\\[|\\\])*?)\|nid(\d{13})\]+', joinedFields)
+        for match in matches:
+            childId = NoteId(int(match.group(2)))
+            if myId != childId and childId not in duplicateIdSet:
+                if rangeIdSet is None or childId in rangeIdSet:
+                    duplicateIdSet.add(childId)
+                    idList.append(childId)
         return idList
 
     def findChildLinkTitles(self, myId: NoteId, joinedFields: str, rangeIdSet=None):
@@ -735,7 +760,9 @@ class AnkiNoteLinker(object):
         return titleMap
 
     def findParentIds(self, myId):
-        parentIds = set(mw.col.find_notes('[*|nid' + str(myId) + ']'))
+        search_query = f'"|nid{myId}]" OR "[nid{myId}]"'
+        parentIds = set(mw.col.find_notes(search_query))
+            
         parentIds.discard(myId)
         return parentIds
 
@@ -763,7 +790,7 @@ class AnkiNoteLinker(object):
             mainField = re.sub(pattern, '[...]' if config['collapseClozeInLinksPage'] else r'\1', mainField)
         return mainField
 
-    def handlePycmd(self, handled: tuple[bool, Any], message: str, context: Any):
+    def handlePycmd(self, handled, message, context):
         """Handling web js events"""
 
         def validateNid(nid):
@@ -840,6 +867,42 @@ class AnkiNoteLinker(object):
                 context.switchToOldRenderer()
             else:
                 pass
+            return True, None
+        elif message.startswith('AnkiNoteLinker-searchNotes:'):
+            query = message[27:].strip()
+            web = context.web if hasattr(context, 'web') else context
+            if not query:
+                return True, None
+            
+            try:
+                # fuzzy multi-word search
+                words = query.split()
+                if not words:
+                    search_query = '"*"'
+                else:
+                    search_query = ' '.join([f'"{w}*"' for w in words])
+                
+                nids = mw.col.find_notes(search_query)
+                
+                results = []
+                for nid in nids[:30]: # Increase check limit
+                    note = mw.col.get_note(nid)
+                    if not note.fields: continue
+                    field0 = note.fields[0]
+                    if hasattr(mw.col.media, "strip_html"):
+                        label = mw.col.media.strip_html(field0).strip()
+                    else:
+                        label = anki.utils.stripHTML(field0).strip()
+                    if not label: label = f"Note {nid}"
+                    results.append({"id": str(nid), "label": label})
+                
+                # Sort by length for better relevance
+                results.sort(key=lambda x: len(x['label']))
+                
+                if hasattr(web, 'eval'):
+                    web.eval(f'window.onAnkiNoteLinkerSearchResults({json.dumps(results[:15])})')
+            except Exception as e:
+                print(f"AnkiNoteLinker: Search error: {e}")
             return True, None
         else:
             return handled

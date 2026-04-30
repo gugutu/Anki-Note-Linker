@@ -61,5 +61,7 @@ def getTr(s: str) -> str:
             return '根据链接数量调整节点大小'
         elif s == 'For better performance, select a display driver other than "Software" to enable the new renderer. The old renderer is no longer maintained.':
             return '为了获得更好的性能，请在Anki设置中选择除"Software"之外的显示驱动以启用新的渲染器，旧的渲染器将不再维护。'
+        elif s == 'Enable wikilink autocomplete':
+            return '启用 Wikilink 自动补全'
         else:
             return s

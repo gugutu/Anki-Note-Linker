@@ -60,7 +60,7 @@
         if (searchResults.length > 0) {
             updateMenuUI();
         } else {
-            hideAutocompleteMenu();
+            if (menu) menu.style.display = 'none';
         }
     };
 
@@ -118,25 +118,46 @@
         const selection = window.getSelection();
         if (!selection.rangeCount) return;
 
-        // Highlight backwards to capture the '[' and search query
-        const charsToReplace = keyBuffer.length;
-        for (let i = 0; i < charsToReplace; i++) {
+        // Extend selection backward until hitting the '[' trigger
+        let safetyLimit = 0;
+        while (safetyLimit < 100) {
+            const selectedText = selection.toString();
+            if (selectedText.startsWith('[')) break;
+
+            const prevLength = selectedText.length;
             selection.modify("extend", "backward", "character");
+
+            // If the selection length hasn't changed, we've hit an editor boundary
+            if (selection.toString().length === prevLength && safetyLimit > 0) break;
+            safetyLimit++;
         }
 
         // Replace highlighted text with formatted link
         const linkText = `[${label}|nid${noteId}]`;
+
+        // If double bracket '[[', capture the second one too
+        selection.modify("extend", "backward", "character");
+        if (!selection.toString().startsWith('[[')) {
+            // Not a double bracket, so shrink the selection back by one character
+            selection.modify("extend", "forward", "character");
+        }
+
         document.execCommand('insertText', false, linkText);
 
-        hideAutocompleteMenu();
+        resetAutocomplete();
     };
 
-    const hideAutocompleteMenu = () => {
+    const resetAutocomplete = () => {
         if (menu) menu.style.display = 'none';
         isMenuVisible = false;
         currentQuery = "";
         selectedIndex = -1;
         keyBuffer = "";
+    };
+
+    const hideAutocompleteMenu = () => {
+        if (menu) menu.style.display = 'none';
+        selectedIndex = -1;
     };
 
     // Main keyboard event handler
@@ -168,13 +189,13 @@
                 keyBuffer = keyBuffer.slice(0, -1);
             }
             if (keyBuffer.lastIndexOf('[') === -1) {
-                hideAutocompleteMenu();
+                resetAutocomplete();
+                return;
             }
         } else if (event.key && event.key.length === 1) {
             keyBuffer += event.key;
         } else if (event.key === 'Enter' || event.key === 'Escape') {
-            keyBuffer = "";
-            hideAutocompleteMenu();
+            resetAutocomplete();
             return;
         }
 
@@ -201,8 +222,7 @@
         const isMenuClick = event.target?.id?.includes('anki-note-linker');
         if (isMenuClick) return;
 
-        keyBuffer = "";
-        hideAutocompleteMenu();
+        resetAutocomplete();
     }, true);
 
 })();

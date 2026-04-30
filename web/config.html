@@ -41,20 +41,19 @@
 
     #content>div {
         display: flex;
-        height: 40px;
-        /* Increased height for more air */
+        height: 40px; /* Increased height for more air */
         margin: 0;
         align-items: center;
         border-bottom: 1px solid rgba(128, 128, 128, 0.15);
     }
 
-    #content>div.title {
+    #content > div.title {
         height: 50px;
         border-bottom: 2px solid rgba(128, 128, 128, 0.2);
         margin-top: 10px;
     }
 
-    #content>div:last-child {
+    #content > div:last-child {
         border-bottom: none;
     }
 
@@ -205,7 +204,7 @@
         <div class="title">
             <span id="title-shortcuts">shortcuts</span>
             <button id="mac-shortcuts-help" style="display: none; margin-left: 10px;"
-                onclick="alert(getTr('On macOS, the default shortcuts use Command (Ctrl) + Option (Alt) to avoid conflicts with Anki\'s built-in shortcuts and special character typing.'))">❔
+                    onclick="alert(getTr('On macOS, the default shortcuts use Command (Ctrl) + Option (Alt) to avoid conflicts with Anki\'s built-in shortcuts and special character typing.'))">❔
             </button>
         </div>
         <div><label class="shortcuts-copyNoteID"></label>

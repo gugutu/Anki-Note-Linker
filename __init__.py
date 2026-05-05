@@ -294,6 +294,7 @@ class AnkiNoteLinker(object):
         mw.reviewer.graphPage.stdHtml(
             f'<script>const ankiContext = "REVIEWER"</script>'
             f'<script>const ankiLanguage = "{anki.lang.current_lang}"</script>'
+            f'<script>const enableImagePreview = {json.dumps(config.get("enableImagePreview", True))}</script>'
             f'<link rel="stylesheet" href="{getWebFileLink("katex.css")}">'
             f'<script defer src="{getWebFileLink("js/katex.js")}"></script>'
             f'<script defer src="{getWebFileLink("js/katex-mhchem.js")}"></script>'
@@ -421,6 +422,7 @@ class AnkiNoteLinker(object):
         editor.graphPage.stdHtml(
             f'<script>const ankiContext = "{context}"</script>'
             f'<script>const ankiLanguage = "{anki.lang.current_lang}"</script>'
+            f'<script>const enableImagePreview = {json.dumps(config.get("enableImagePreview", True))}</script>'
             f'<link rel="stylesheet" href="{getWebFileLink("katex.css")}">'
             f'<script defer src="{getWebFileLink("js/katex.js")}"></script>'
             f'<script defer src="{getWebFileLink("js/katex-mhchem.js")}"></script>'
@@ -435,6 +437,7 @@ class AnkiNoteLinker(object):
         e.graphPage.stdHtml(
             f'<script>const ankiContext = "{context}"</script>'
             f'<script>const ankiLanguage = "{anki.lang.current_lang}"</script>'
+            f'<script>const enableImagePreview = {json.dumps(config.get("enableImagePreview", True))}</script>'
             f'<link rel="stylesheet" href="{getWebFileLink("katex.css")}">'
             f'<script defer src="{getWebFileLink("js/katex.js")}"></script>'
             f'<script defer src="{getWebFileLink("js/katex-mhchem.js")}"></script>'
@@ -451,6 +454,7 @@ class AnkiNoteLinker(object):
         mw.reviewer.graphPage.stdHtml(
             f'<script>const ankiContext = "REVIEWER"</script>'
             f'<script>const ankiLanguage = "{anki.lang.current_lang}"</script>'
+            f'<script>const enableImagePreview = {json.dumps(config.get("enableImagePreview", True))}</script>'
             f'<link rel="stylesheet" href="{getWebFileLink("katex.css")}">'
             f'<script defer src="{getWebFileLink("js/katex.js")}"></script>'
             f'<script defer src="{getWebFileLink("js/katex-mhchem.js")}"></script>'

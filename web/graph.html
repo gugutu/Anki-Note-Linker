@@ -211,7 +211,7 @@
                 content = doc.documentElement.textContent
             }
             const doc = new DOMParser().parseFromString(content, 'text/html')
-            const img = doc.querySelector('img')
+            const img = enableImagePreview ? doc.querySelector('img') : null
             if (img) {
                 const src = img.getAttribute('src')
                 if (src && !src.startsWith('http') && !src.startsWith('data:')) {

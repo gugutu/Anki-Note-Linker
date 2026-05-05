@@ -32,27 +32,40 @@ You can customize the style of the links by using the CSS selector: `.noteLink`
 
 ### In the editor:
 
+Default shortcuts for new installs:
+
+| Action | Windows/Linux | macOS |
+| --- | --- | --- |
+| Copy note ID | `Alt+Shift+C` | `Command+Option+C` |
+| Copy note link | `Alt+Shift+L` | `Command+Option+L` |
+| Insert link with copied note ID | `Alt+Shift+V` | `Command+Option+V` |
+| Insert new link | `Alt+Shift+N` | `Command+Option+N` |
+| Insert link template | `Alt+Shift+T` | `Command+Option+T` |
+| Open current note in new window | `Alt+Shift+W` | `Command+Option+W` |
+
+Existing users keep their current shortcut settings. On macOS, Anki/Qt may display Command+Option shortcuts as Ctrl+Alt in the configuration.
+
 #### Copy note ID
 
-Copy the ID of the current note in the editor by using the right-click menu or pressing `Alt+Shift+C`
+Copy the ID of the current note in the editor by using the right-click menu or the default shortcut
 
 #### Copy note link
 
-Copy the link of the current note in the editor by using the right-click menu or pressing `Alt+Shift+L`
+Copy the link of the current note in the editor by using the right-click menu or the default shortcut
 
 #### Insert link with copied note ID
 
-Generate a link from the note ID in the clipboard and the currently selected text by either using the right-click menu or pressing `Alt+Shift+V`
+Generate a link from the note ID in the clipboard and the currently selected text by using the right-click menu or the default shortcut
 
 #### Insert new link
 
-Generate a new link from the currently selected text by either using the right-click menu or pressing `Alt+Shift+N`
+Generate a new link from the currently selected text by using the right-click menu or the default shortcut
 
 Double-clicking the generated link text allows adding a corresponding new note
 
 #### Insert link template
 
-Generate a link template from the currently selected text by either using the right-click menu or pressing `Alt+Shift+T`
+Generate a link template from the currently selected text by using the right-click menu or the default shortcut
 
 The generated link template looks like this: `[selected text|nid]`, you need to manually complete it
 
@@ -60,7 +73,7 @@ _Note: If no text is selected, using the above actions will generate a link with
 
 #### Open current note in new window
 
-Open current note in new window by using the right-click menu or pressing `Alt+Shift+W`
+Open current note in new window by using the right-click menu or the default shortcut
 
 #### Open the note corresponding to the link
 

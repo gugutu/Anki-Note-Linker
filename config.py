@@ -52,6 +52,9 @@ defaultConfig = {
 # Check if there is an old version of the configuration;
 # if it exists, convert it to the new version and delete the old version.
 configTemp = mw.addonManager.getConfig(__name__)
+# Shortcut keys are intentionally filled from defaultConfig when missing, instead
+# of relying on config.json, so new macOS installs can get Mac-specific defaults
+# without changing shortcut keys already stored by existing users.
 for key, value in defaultConfig.items():
     if key not in configTemp:
         configTemp[key] = value

@@ -103,8 +103,8 @@ function getTr(s) {
         case 'enableImagePreview':
         case 'Enable Image Previews':
             return '启用图片预览'
-        case 'On macOS, the default shortcuts use Command (Ctrl) + Option (Alt) to avoid conflicts with Anki\'s built-in shortcuts and special character typing.':
-            return '在 macOS 上，默认快捷键使用 Command (Ctrl) + Option (Alt) 以避免与 Anki 的内置快捷键以及特殊字符输入冲突。'
+        case 'On macOS, new installs use Command + Option shortcuts to avoid conflicts with Option-based character input. Anki/Qt may display these shortcuts as Ctrl+Alt in the configuration. Existing shortcut settings are not changed.':
+            return '在 macOS 上，新安装用户默认使用 Command + Option 快捷键，以避免和 Option 输入特殊字符冲突。Anki/Qt 的快捷键配置中可能会将这些快捷键显示为 Ctrl+Alt。已有快捷键设置不会被自动修改。'
         default:
             return s
     }

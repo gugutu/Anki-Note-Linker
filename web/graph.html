@@ -238,12 +238,11 @@
             if (oldNode) {
                 const tempMainField = node.mainField
                 const tempType = node.type
-                const tempImageSrc = oldNode.imageSrc
                 Object.assign(node, oldNode);
                 node.mainField = tempMainField
                 node.type = tempType
                 node.isPlainText = false
-                if (tempImageSrc) node.imageSrc = tempImageSrc
+                node.imageSrc = null
             }
             // Process images and text
             if (node.mainField && (node.mainField.includes('<') || node.mainField.includes('&lt;'))) {

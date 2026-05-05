@@ -481,6 +481,7 @@ Author Wang Rui <https://github.com/gugutu>
         nodeContextCache = new Map()
 
         circleList = nodes.map(node => {//将nodes列表转换为对应的图形列表
+            node.imageSrc = null
             if (node.mainField === null || node.mainField === undefined) {
                 node.mainField = getTr('Invalid note')
                 node.type = 'invalid'
@@ -854,11 +855,10 @@ Author Wang Rui <https://github.com/gugutu>
             if (oldNode) {
                 const tempMainField = node.mainField
                 const tempType = node.type
-                const tempImageSrc = oldNode.imageSrc // Preserve detected image
                 Object.assign(node, oldNode)
                 node.mainField = tempMainField
                 node.type = tempType
-                if (tempImageSrc) node.imageSrc = tempImageSrc
+                node.imageSrc = null
             }
         }
         nodes = newNodes

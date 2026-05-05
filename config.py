@@ -30,6 +30,7 @@ defaultConfig = {
     "showForwardLinkTitleInLinksPage": False,
     "useHjpPreviewer": True,
     "enableImagePreview": True,
+    "enableSmoothGraphZoom": False,
     "noteFieldsDisplayedInTheNoteSummary": [],
 
     "shortcuts-copyNoteID": "Ctrl+Alt+C" if isMac else "Alt+Shift+C",

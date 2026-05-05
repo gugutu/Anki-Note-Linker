@@ -319,6 +319,13 @@ Author Wang Rui <https://github.com/gugutu>
                 else this.c = now / (1 - step) - now
             }
 
+            if (!enableSmoothGraphZoom) {
+                const value = Math.max(minLimit, Math.min(maxLimit, now + this.c))
+                applyZoomAt(value, event.x, event.y)
+                this.running = false
+                return
+            }
+
             this.time = 0
             this.b = app.stage.scale.x
             this.eventX = event.x
@@ -672,6 +679,18 @@ Author Wang Rui <https://github.com/gugutu>
         app.ticker.add(ticker => onTick(ticker))//每一帧要做的事
     }
 
+    function applyZoomAt(value, eventX, eventY) {
+        const beforeX = toCanvasX(eventX)
+        const beforeY = toCanvasY(eventY)
+        app.stage.scale.x = value
+        app.stage.scale.y = value
+        const afterX = toCanvasX(eventX)
+        const afterY = toCanvasY(eventY)
+        app.stage.x += toClientLength(afterX - beforeX)
+        app.stage.y += toClientLength(afterY - beforeY)
+        boundary.update()
+    }
+
     function onTick(ticker) {//每一帧要做的事
 
         // console.log(Math.floor(ticker.FPS), Math.floor(ticker.deltaMS), app.renderer.name)
@@ -712,15 +731,7 @@ Author Wang Rui <https://github.com/gugutu>
             // console.log(value.toFixed(4))
             // console.log(zoomAnimate)
             if (zoomAnimation.running) {
-                const beforeX = toCanvasX(zoomAnimation.eventX)
-                const beforeY = toCanvasY(zoomAnimation.eventY)
-                app.stage.scale.x = value
-                app.stage.scale.y = value
-                const afterX = toCanvasX(zoomAnimation.eventX)
-                const afterY = toCanvasY(zoomAnimation.eventY)
-                app.stage.x += toClientLength(afterX - beforeX)
-                app.stage.y += toClientLength(afterY - beforeY)
-                boundary.update()
+                applyZoomAt(value, zoomAnimation.eventX, zoomAnimation.eventY)
             }
         }
 

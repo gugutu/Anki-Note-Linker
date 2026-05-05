@@ -11,6 +11,7 @@
   "linkMaxLines": 5,
   "collapseClozeInLinksPage": true,
   "useHjpPreviewer": true,
+  "enableSmoothGraphZoom": false,
   "noteFieldsDisplayedInTheNoteSummary": [],
   "globalGraph-defaultSearchText": "deck:current",
   "globalGraph-defaultHighlightFilter": "is:due",

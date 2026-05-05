@@ -33,6 +33,14 @@
     let normalNodeColor = "rgb(57, 125, 237)"
     let highlightNodeColor = "rgb(244, 165, 0)"
     let tagNodeColor = "rgb(127, 199, 132)"
+    const clampNumber = (value, fallback, minimum, maximum) => {
+        const number = Number(value)
+        if (!Number.isFinite(number)) return fallback
+        return Math.min(maximum, Math.max(minimum, number))
+    }
+    const zoomConfigSource = typeof graphZoomConfig === 'object' && graphZoomConfig !== null ? graphZoomConfig : {}
+    const minZoomScale = clampNumber(zoomConfigSource.minScale, 0.01, 0.001, 1)
+    const maxZoomScale = clampNumber(zoomConfigSource.maxScale, 100, 1, 100)
     let init = false
     const largeSize = false//gData.links.length + gData.nodes.length > 10000
     const elem = document.getElementById('graph');
@@ -151,14 +159,14 @@
             pycmd('AnkiNoteLinker-openNoteInNewEditor' + node.id)
         })
         .linkWidth(2)
-        .minZoom(0.05)
-        .maxZoom(15)
+        .minZoom(minZoomScale < maxZoomScale ? minZoomScale : 0.01)
+        .maxZoom(minZoomScale < maxZoomScale ? maxZoomScale : 100)
         .enablePointerInteraction(!largeSize)
 
     if (!largeSize) graph
         .linkDirectionalParticles(4)
         .linkDirectionalParticleWidth(4)
-    else graph.linkDirectionalArrowLength(6).zoom(0.05)
+    else graph.linkDirectionalArrowLength(6).zoom(minZoomScale < maxZoomScale ? minZoomScale : 0.01)
 
     function drawTextWithLineBreaks(ctx, text, x, y, maxWidth, maxLineCount, lineHeight) {
         let words = text.split("");

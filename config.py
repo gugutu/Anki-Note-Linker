@@ -31,6 +31,14 @@ defaultConfig = {
     "useHjpPreviewer": True,
     "enableImagePreview": True,
     "enableSmoothGraphZoom": False,
+    "graphZoom-zoomOutLimit": 0.01,
+    "graphZoom-zoomInLimit": 100.0,
+    "graphZoom-normalZoomSpeed": 1.0,
+    "graphZoom-smoothZoomSpeed": 1.0,
+    "graphZoom-smoothStepLimit": 0.15,
+    "graphZoom-smoothResponseRange": 0.4,
+    "graphZoom-smoothDurationMs": 250,
+    "graphZoom-autoFitZoomInLimit": 1.4,
     "noteFieldsDisplayedInTheNoteSummary": [],
 
     "shortcuts-copyNoteID": "Ctrl+Alt+C" if isMac else "Alt+Shift+C",
@@ -50,6 +58,39 @@ defaultConfig = {
     "globalGraph-tagNodeColor": [127, 199, 132],
     "globalGraph-backgroundColor": [16, 16, 32]
 }
+
+graphZoomConfigSpec = {
+    "graphZoom-zoomOutLimit": {"key": "minScale", "default": 0.01, "min": 0.001, "max": 1.0},
+    "graphZoom-zoomInLimit": {"key": "maxScale", "default": 100.0, "min": 1.0, "max": 100.0},
+    "graphZoom-normalZoomSpeed": {"key": "normalZoomSpeed", "default": 1.0, "min": 0.1, "max": 5.0},
+    "graphZoom-smoothZoomSpeed": {"key": "smoothZoomSpeed", "default": 1.0, "min": 0.1, "max": 5.0},
+    "graphZoom-smoothStepLimit": {"key": "smoothStepLimit", "default": 0.15, "min": 0.01, "max": 1.0},
+    "graphZoom-smoothResponseRange": {"key": "smoothResponseRange", "default": 0.4, "min": 0.05, "max": 2.0},
+    "graphZoom-smoothDurationMs": {"key": "smoothDurationMs", "default": 250, "min": 0, "max": 1000},
+    "graphZoom-autoFitZoomInLimit": {"key": "autoFitMaxScale", "default": 1.4, "min": 0.1, "max": 10.0},
+}
+
+
+def _clampNumber(value: Any, fallback: float, minimum: float, maximum: float) -> float:
+    try:
+        number = float(value)
+    except (TypeError, ValueError):
+        number = fallback
+    return min(maximum, max(minimum, number))
+
+
+def getGraphZoomConfig() -> dict[str, float]:
+    result = {}
+    for configKey, spec in graphZoomConfigSpec.items():
+        result[spec["key"]] = _clampNumber(
+            config.get(configKey, spec["default"]), spec["default"], spec["min"], spec["max"]
+        )
+    if result["minScale"] >= result["maxScale"]:
+        result["minScale"] = graphZoomConfigSpec["graphZoom-zoomOutLimit"]["default"]
+        result["maxScale"] = graphZoomConfigSpec["graphZoom-zoomInLimit"]["default"]
+    return result
+
+
 # Check if there is an old version of the configuration;
 # if it exists, convert it to the new version and delete the old version.
 configTemp = mw.addonManager.getConfig(__name__)

@@ -33,7 +33,7 @@ try:
 except ImportError:
     oldVersion = True
 
-from .config import ConfigView, config
+from .config import ConfigView, config, getGraphZoomConfig
 from .editors import MyAddCards, MyEditCurrent
 from .state import Connection, JsNoteNode, NoteNode, addon_path, log, links_html, \
     graph_html, PreviewState, newGraph_html, getWebFileLink
@@ -296,6 +296,7 @@ class AnkiNoteLinker(object):
             f'<script>const ankiLanguage = "{anki.lang.current_lang}"</script>'
             f'<script>const enableImagePreview = {json.dumps(config.get("enableImagePreview", True))}</script>'
             f'<script>const enableSmoothGraphZoom = {json.dumps(config.get("enableSmoothGraphZoom", False))}</script>'
+            f'<script>const graphZoomConfig = {json.dumps(getGraphZoomConfig())}</script>'
             f'<link rel="stylesheet" href="{getWebFileLink("katex.css")}">'
             f'<script defer src="{getWebFileLink("js/katex.js")}"></script>'
             f'<script defer src="{getWebFileLink("js/katex-mhchem.js")}"></script>'
@@ -425,6 +426,7 @@ class AnkiNoteLinker(object):
             f'<script>const ankiLanguage = "{anki.lang.current_lang}"</script>'
             f'<script>const enableImagePreview = {json.dumps(config.get("enableImagePreview", True))}</script>'
             f'<script>const enableSmoothGraphZoom = {json.dumps(config.get("enableSmoothGraphZoom", False))}</script>'
+            f'<script>const graphZoomConfig = {json.dumps(getGraphZoomConfig())}</script>'
             f'<link rel="stylesheet" href="{getWebFileLink("katex.css")}">'
             f'<script defer src="{getWebFileLink("js/katex.js")}"></script>'
             f'<script defer src="{getWebFileLink("js/katex-mhchem.js")}"></script>'
@@ -441,6 +443,7 @@ class AnkiNoteLinker(object):
             f'<script>const ankiLanguage = "{anki.lang.current_lang}"</script>'
             f'<script>const enableImagePreview = {json.dumps(config.get("enableImagePreview", True))}</script>'
             f'<script>const enableSmoothGraphZoom = {json.dumps(config.get("enableSmoothGraphZoom", False))}</script>'
+            f'<script>const graphZoomConfig = {json.dumps(getGraphZoomConfig())}</script>'
             f'<link rel="stylesheet" href="{getWebFileLink("katex.css")}">'
             f'<script defer src="{getWebFileLink("js/katex.js")}"></script>'
             f'<script defer src="{getWebFileLink("js/katex-mhchem.js")}"></script>'
@@ -459,6 +462,7 @@ class AnkiNoteLinker(object):
             f'<script>const ankiLanguage = "{anki.lang.current_lang}"</script>'
             f'<script>const enableImagePreview = {json.dumps(config.get("enableImagePreview", True))}</script>'
             f'<script>const enableSmoothGraphZoom = {json.dumps(config.get("enableSmoothGraphZoom", False))}</script>'
+            f'<script>const graphZoomConfig = {json.dumps(getGraphZoomConfig())}</script>'
             f'<link rel="stylesheet" href="{getWebFileLink("katex.css")}">'
             f'<script defer src="{getWebFileLink("js/katex.js")}"></script>'
             f'<script defer src="{getWebFileLink("js/katex-mhchem.js")}"></script>'

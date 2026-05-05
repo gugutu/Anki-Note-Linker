@@ -38,7 +38,8 @@
         /*margin-right: 15px;*/
     }
 
-    #content > div {
+    #content > div,
+    .setting-row {
         display: flex;
         height: 40px; /* Increased height for more air */
         margin: 0;
@@ -54,6 +55,52 @@
 
     #content > div:last-child {
         border-bottom: none;
+    }
+
+    #content > details {
+        border-bottom: 1px solid rgba(128, 128, 128, 0.15);
+        padding: 4px 0;
+    }
+
+    .advanced-settings summary {
+        cursor: pointer;
+        font-weight: bold;
+        height: 40px;
+        line-height: 40px;
+    }
+
+    .advanced-settings .setting-row:last-child {
+        border-bottom: none;
+    }
+
+    .advanced-settings input[type="number"] {
+        width: 120px;
+        margin-left: auto;
+    }
+
+    .help-button {
+        margin-left: 8px;
+        width: 20px;
+        height: 20px;
+        padding: 0;
+        border: 1px solid rgba(128, 128, 128, 0.8);
+        border-radius: 50%;
+        background: var(--canvas, #fff);
+        color: var(--text-fg, #222);
+        font-weight: bold;
+        line-height: 18px;
+        text-align: center;
+        cursor: pointer;
+    }
+
+    .help-button:disabled {
+        cursor: default;
+        color: rgba(128, 128, 128, 0.9);
+        border-color: rgba(128, 128, 128, 0.45);
+    }
+
+    .disabled-setting {
+        opacity: 0.45;
     }
 
     .radio-group {
@@ -138,13 +185,10 @@
         <div><label class="enableImagePreview">Enable Image Previews</label>
             <input id="enableImagePreview" type="checkbox">
         </div>
-        <div><label class="enableSmoothGraphZoom">Enable Smooth Graph Zoom</label>
-            <input id="enableSmoothGraphZoom" type="checkbox">
-        </div>
         <div style="border-bottom: none;"><label class="noteFieldsDisplayedInTheNoteSummary"></label>
-            <button onclick="alert(getTr('The note fields displayed in the note summary (content shown in the link panel or graphic). \n' +
+            <button class="help-button" onclick="alert(getTr('The note fields displayed in the note summary (content shown in the link panel or graphic). \n' +
         'The add-on will find the first matching field to display as the note summary. \n' +
-        'If no field is set or there is no matching field, the first field of the note will be used by default.'))">❔
+        'If no field is set or there is no matching field, the first field of the note will be used by default.'))">?
             </button>
         </div>
         <div id="noteFieldsDisplayedInTheNoteSummary" style="height: auto; display: block; border-bottom: none;"></div>
@@ -153,6 +197,45 @@
                 ➕
             </button>
         </div>
+        <details class="advanced-settings">
+            <summary id="advancedGraphZoomSummary">Advanced Graph Zoom Settings</summary>
+            <div class="setting-row"><label class="enableSmoothGraphZoom">Enable Smooth Graph Zoom</label>
+                <input id="enableSmoothGraphZoom" type="checkbox">
+                <button class="help-button" id="enableSmoothGraphZoom-help">?</button>
+            </div>
+            <div class="setting-row"><label class="graphZoom-zoomOutLimit">Zoom-out limit</label>
+                <input id="graphZoom-zoomOutLimit" type="number" min="0.001" max="1" step="0.001">
+                <button class="help-button" id="graphZoom-zoomOutLimit-help">?</button>
+            </div>
+            <div class="setting-row"><label class="graphZoom-zoomInLimit">Zoom-in limit</label>
+                <input id="graphZoom-zoomInLimit" type="number" min="1" max="100" step="1">
+                <button class="help-button" id="graphZoom-zoomInLimit-help">?</button>
+            </div>
+            <div class="setting-row"><label class="graphZoom-normalZoomSpeed">Normal zoom speed</label>
+                <input id="graphZoom-normalZoomSpeed" type="number" min="0.1" max="5" step="0.1">
+                <button class="help-button" id="graphZoom-normalZoomSpeed-help">?</button>
+            </div>
+            <div class="setting-row"><label class="graphZoom-smoothZoomSpeed">Smooth zoom speed</label>
+                <input id="graphZoom-smoothZoomSpeed" type="number" min="0.1" max="5" step="0.1">
+                <button class="help-button" id="graphZoom-smoothZoomSpeed-help">?</button>
+            </div>
+            <div class="setting-row"><label class="graphZoom-smoothStepLimit">Smooth zoom step limit</label>
+                <input id="graphZoom-smoothStepLimit" type="number" min="0.01" max="1" step="0.01">
+                <button class="help-button" id="graphZoom-smoothStepLimit-help">?</button>
+            </div>
+            <div class="setting-row"><label class="graphZoom-smoothResponseRange">Smooth zoom response range</label>
+                <input id="graphZoom-smoothResponseRange" type="number" min="0.05" max="2" step="0.05">
+                <button class="help-button" id="graphZoom-smoothResponseRange-help">?</button>
+            </div>
+            <div class="setting-row"><label class="graphZoom-smoothDurationMs">Smooth zoom duration (ms)</label>
+                <input id="graphZoom-smoothDurationMs" type="number" min="0" max="1000" step="10">
+                <button class="help-button" id="graphZoom-smoothDurationMs-help">?</button>
+            </div>
+            <div class="setting-row"><label class="graphZoom-autoFitZoomInLimit">Auto-fit zoom-in limit</label>
+                <input id="graphZoom-autoFitZoomInLimit" type="number" min="0.1" max="10" step="0.1">
+                <button class="help-button" id="graphZoom-autoFitZoomInLimit-help">?</button>
+            </div>
+        </details>
         <div class="title" id="title-globalGraph">globalGraph</div>
         <div><label class="globalGraph-defaultSearchText"></label>
             <input id="globalGraph-defaultSearchText" type="text">
@@ -196,8 +279,8 @@
         </div>
         <div class="title">
             <span id="title-shortcuts">shortcuts</span>
-            <button id="mac-shortcuts-help" style="display: none; margin-left: 10px;"
-                    onclick="alert(getTr('On macOS, new installs use Command + Option shortcuts to avoid conflicts with Option-based character input. Anki/Qt may display these shortcuts as Ctrl+Alt in the configuration. Existing shortcut settings are not changed.'))">❔
+            <button class="help-button" id="mac-shortcuts-help" style="display: none; margin-left: 10px;"
+                    onclick="alert(getTr('On macOS, new installs use Command + Option shortcuts to avoid conflicts with Option-based character input. Anki/Qt may display these shortcuts as Ctrl+Alt in the configuration. Existing shortcut settings are not changed.'))">?
             </button>
         </div>
         <div><label class="shortcuts-copyNoteID"></label>
@@ -237,6 +320,106 @@
 <script>
     const hexToRgb = hex => hex.replace(/^#/, '').match(/.{2}/g).map(x => parseInt(x, 16));
     const rgbToHex = rgb => `#${rgb.map(x => x.toString(16).padStart(2, '0')).join('')}`;
+    const graphZoomNumberSettings = [
+        {
+            key: 'graphZoom-zoomOutLimit',
+            label: 'Zoom-out limit',
+            help: 'Controls how far you can zoom out. Smaller values show more of a large graph at once; larger values keep nodes from becoming extremely tiny. Range: 0.001-1. Default: 0.01.',
+            defaultValue: 0.01,
+            min: 0.001,
+            max: 1
+        },
+        {
+            key: 'graphZoom-zoomInLimit',
+            label: 'Zoom-in limit',
+            help: 'Controls how far you can zoom in. Larger values allow closer inspection of individual nodes. Range: 1-100. Default: 100.',
+            defaultValue: 100,
+            min: 1,
+            max: 100
+        },
+        {
+            key: 'graphZoom-normalZoomSpeed',
+            label: 'Normal zoom speed',
+            help: 'Controls how strongly the view reacts to each wheel movement when smooth zoom is off. Larger values feel faster; smaller values feel slower and more controlled. Range: 0.1-5. Default: 1.',
+            defaultValue: 1,
+            min: 0.1,
+            max: 5
+        },
+        {
+            key: 'graphZoom-smoothZoomSpeed',
+            label: 'Smooth zoom speed',
+            help: 'Controls how strongly the view reacts to each wheel movement when smooth zoom is on. Larger values move the zoom target faster; smaller values make the movement gentler. Range: 0.1-5. Default: 1.',
+            defaultValue: 1,
+            min: 0.1,
+            max: 5,
+            smoothOnly: true
+        },
+        {
+            key: 'graphZoom-smoothStepLimit',
+            label: 'Smooth zoom step limit',
+            help: 'Caps how much one wheel movement can change the zoom target in smooth mode. Lower values prevent sudden jumps; higher values allow stronger zoom bursts. Range: 0.01-1. Default: 0.15.',
+            defaultValue: 0.15,
+            min: 0.01,
+            max: 1,
+            smoothOnly: true
+        },
+        {
+            key: 'graphZoom-smoothResponseRange',
+            label: 'Smooth zoom response range',
+            help: 'Controls how far the animation target may get ahead of the current view while you keep scrolling. Lower values feel steadier; higher values feel more responsive but can overshoot more. Range: 0.05-2. Default: 0.4.',
+            defaultValue: 0.4,
+            min: 0.05,
+            max: 2,
+            smoothOnly: true
+        },
+        {
+            key: 'graphZoom-smoothDurationMs',
+            label: 'Smooth zoom duration (ms)',
+            help: 'How long each smooth zoom animation lasts. Lower values feel snappier; higher values feel softer and slower. Range: 0-1000 ms. Default: 250 ms.',
+            defaultValue: 250,
+            min: 0,
+            max: 1000,
+            smoothOnly: true
+        },
+        {
+            key: 'graphZoom-autoFitZoomInLimit',
+            label: 'Auto-fit zoom-in limit',
+            help: 'Caps how much the graph may automatically zoom in when fitting nodes into view. Lower values keep the initial view wider; higher values let small graphs open closer. Range: 0.1-10. Default: 1.4.',
+            defaultValue: 1.4,
+            min: 0.1,
+            max: 10
+        }
+    ];
+
+    function clampNumber(value, fallback, minimum, maximum) {
+        const number = Number(value)
+        if (!Number.isFinite(number)) return fallback
+        return Math.min(maximum, Math.max(minimum, number))
+    }
+
+    function readNumberSetting(config, setting) {
+        const value = config[setting.key] !== undefined ? config[setting.key] : setting.defaultValue
+        document.getElementById(setting.key).value = clampNumber(value, setting.defaultValue, setting.min, setting.max)
+    }
+
+    function getNumberSetting(setting) {
+        const input = document.getElementById(setting.key)
+        const value = clampNumber(input.value, setting.defaultValue, setting.min, setting.max)
+        input.value = value
+        return value
+    }
+
+    function updateSmoothGraphZoomControls() {
+        const enabled = document.getElementById('enableSmoothGraphZoom').checked
+        graphZoomNumberSettings.filter(setting => setting.smoothOnly).forEach(setting => {
+            const input = document.getElementById(setting.key)
+            const button = document.getElementById(setting.key + '-help')
+            const row = input.closest('.setting-row')
+            input.disabled = !enabled
+            button.disabled = !enabled
+            row.classList.toggle('disabled-setting', !enabled)
+        })
+    }
 
     document.getElementById('scroll').style.height = `${window.innerHeight - document.getElementById('buttons').scrollHeight}px`
     document.getElementById('scroll').style.maxWidth = `${window.innerWidth}px`
@@ -253,6 +436,13 @@
     document.getElementsByClassName('showForwardLinkTitleInLinksPage')[0].innerHTML = getTr('Show forward link title above note summary in links panel') + ':&nbsp;'
     document.getElementsByClassName('enableImagePreview')[0].innerHTML = getTr('Enable Image Previews') + ':&nbsp;'
     document.getElementsByClassName('enableSmoothGraphZoom')[0].innerHTML = getTr('Enable Smooth Graph Zoom') + ':&nbsp;'
+    document.getElementById('advancedGraphZoomSummary').innerHTML = getTr('Advanced Graph Zoom Settings')
+    document.getElementById('enableSmoothGraphZoom-help').onclick = () => alert(getTr('Smoothly animates mouse wheel zoom. Leave off if zoom should feel immediate.'))
+    document.getElementById('enableSmoothGraphZoom').onchange = updateSmoothGraphZoomControls
+    graphZoomNumberSettings.forEach(setting => {
+        document.getElementsByClassName(setting.key)[0].innerHTML = getTr(setting.label) + ':&nbsp;'
+        document.getElementById(setting.key + '-help').onclick = () => alert(getTr(setting.help))
+    })
     document.getElementsByClassName('useHjpPreviewer')[0].innerHTML = getTr('If the "hjp-linkmaster" add-on is installed, use its previewer') + ':&nbsp;'
     document.getElementsByClassName('location')[0].innerHTML = getTr('The position of links/graph panel relative to the editor') + ':&nbsp;'
     document.getElementById('location-left').innerHTML = getTr('left')
@@ -329,6 +519,8 @@
         document.getElementById('useHjpPreviewer').checked = config['useHjpPreviewer']
         document.getElementById('enableImagePreview').checked = config['enableImagePreview'] !== undefined ? config['enableImagePreview'] : true
         document.getElementById('enableSmoothGraphZoom').checked = config['enableSmoothGraphZoom'] !== undefined ? config['enableSmoothGraphZoom'] : false
+        graphZoomNumberSettings.forEach(setting => readNumberSetting(config, setting))
+        updateSmoothGraphZoomControls()
         document.getElementById('location-left-radio').checked = config['location'] === 'left'
         document.getElementById('location-right-radio').checked = config['location'] === 'right'
         document.getElementById('positionRelativeToReviewer-left-radio').checked = config['positionRelativeToReviewer'] === 'left'
@@ -379,6 +571,13 @@
         userConfig['useHjpPreviewer'] = document.getElementById('useHjpPreviewer').checked
         userConfig['enableImagePreview'] = document.getElementById('enableImagePreview').checked
         userConfig['enableSmoothGraphZoom'] = document.getElementById('enableSmoothGraphZoom').checked
+        const graphZoomConfigTemp = {}
+        graphZoomNumberSettings.forEach(setting => graphZoomConfigTemp[setting.key] = getNumberSetting(setting))
+        if (graphZoomConfigTemp['graphZoom-zoomOutLimit'] >= graphZoomConfigTemp['graphZoom-zoomInLimit']) {
+            alert(getTr('Zoom-out limit must be smaller than zoom-in limit.'))
+            return;
+        }
+        graphZoomNumberSettings.forEach(setting => userConfig[setting.key] = graphZoomConfigTemp[setting.key])
         userConfig['location'] = document.getElementById('location-left-radio').checked ? 'left' : 'right'
         userConfig['positionRelativeToReviewer'] = document.getElementById('positionRelativeToReviewer-left-radio').checked ? 'left' : 'right'
         userConfig['splitRatio'] = document.getElementById('splitRatio').value

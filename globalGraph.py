@@ -17,7 +17,7 @@ from aqt.utils import restoreGeom, saveGeom, tooltip
 from aqt.webview import AnkiWebView
 
 from . import state
-from .config import config
+from .config import config, getGraphZoomConfig
 from .translation import getTr
 from .state import Connection, graph_html, NoteNode, log, newGraph_html, getWebFileLink
 
@@ -53,6 +53,7 @@ class GlobalGraph(QWidget):
             f'<script>const ankiLanguage = "{anki.lang.current_lang}"</script>'
             f'<script>const enableImagePreview = {json.dumps(config.get("enableImagePreview", True))}</script>'
             f'<script>const enableSmoothGraphZoom = {json.dumps(config.get("enableSmoothGraphZoom", False))}</script>'
+            f'<script>const graphZoomConfig = {json.dumps(getGraphZoomConfig())}</script>'
             f'<script defer src="{getWebFileLink("js/katex.js")}"></script>'
             f'<script defer src="{getWebFileLink("js/katex-mhchem.js")}"></script>'
             f'<script defer src="{getWebFileLink("js/katex-auto-render.js")}"></script>'
@@ -93,6 +94,7 @@ class GlobalGraph(QWidget):
             f'<script>const ankiLanguage = "{anki.lang.current_lang}"</script>'
             f'<script>const enableImagePreview = {json.dumps(config.get("enableImagePreview", True))}</script>'
             f'<script>const enableSmoothGraphZoom = {json.dumps(config.get("enableSmoothGraphZoom", False))}</script>'
+            f'<script>const graphZoomConfig = {json.dumps(getGraphZoomConfig())}</script>'
             f'<script defer src="{getWebFileLink("js/katex.js")}"></script>'
             f'<script defer src="{getWebFileLink("js/katex-mhchem.js")}"></script>'
             f'<script defer src="{getWebFileLink("js/katex-auto-render.js")}"></script>'

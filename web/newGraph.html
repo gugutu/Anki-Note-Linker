@@ -263,10 +263,30 @@ Author Wang Rui <https://github.com/gugutu>
                 app.stage.hitArea = new PIXI.Rectangle(this.left, this.top, this.getWidth(), this.getHeight())
         }
     }
+    const clampNumber = (value, fallback, minimum, maximum) => {
+        const number = Number(value)
+        if (!Number.isFinite(number)) return fallback
+        return Math.min(maximum, Math.max(minimum, number))
+    }
+    const zoomConfigSource = typeof graphZoomConfig === 'object' && graphZoomConfig !== null ? graphZoomConfig : {}
+    const zoomConfig = {
+        minScale: clampNumber(zoomConfigSource.minScale, 0.01, 0.001, 1),
+        maxScale: clampNumber(zoomConfigSource.maxScale, 100, 1, 100),
+        normalZoomSpeed: clampNumber(zoomConfigSource.normalZoomSpeed, 1, 0.1, 5),
+        smoothZoomSpeed: clampNumber(zoomConfigSource.smoothZoomSpeed, 1, 0.1, 5),
+        smoothStepLimit: clampNumber(zoomConfigSource.smoothStepLimit, 0.15, 0.01, 1),
+        smoothResponseRange: clampNumber(zoomConfigSource.smoothResponseRange, 0.4, 0.05, 2),
+        smoothDurationMs: clampNumber(zoomConfigSource.smoothDurationMs, 250, 0, 1000),
+        autoFitMaxScale: clampNumber(zoomConfigSource.autoFitMaxScale, 1.4, 0.1, 10)
+    }
+    if (zoomConfig.minScale >= zoomConfig.maxScale) {
+        zoomConfig.minScale = 0.01
+        zoomConfig.maxScale = 100
+    }
     applySimulationForces()
     const zoomAnimation = {
         running: false, time: 0, b: 1, c: 0, eventX: null, eventY: null,
-        getNowValue: function (t = this.time, b = this.b, c = this.c, d = 250) {
+        getNowValue: function (t = this.time, b = this.b, c = this.c, d = zoomConfig.smoothDurationMs) {
             let result
             if (t >= d) {
                 result = b + c
@@ -277,31 +297,27 @@ Author Wang Rui <https://github.com/gugutu>
                 result = b + c * easeOut
             }
 
-            const minLimit = 0.05
-            const maxLimit = 4.0 // Lowered to fit ~3 nodes on screen
-            if (result <= minLimit) {
+            if (result <= zoomConfig.minScale) {
                 zoomAnimation.running = false
-                return minLimit
+                return zoomConfig.minScale
             }
-            if (result >= maxLimit) {
+            if (result >= zoomConfig.maxScale) {
                 zoomAnimation.running = false
-                return maxLimit
+                return zoomConfig.maxScale
             }
             return result
         },
         start: function (event) {
             if (event.deltaY === 0 || inDragCanvas) return
 
-            // 1. Clamp the step to prevent "scrolling hard" from accelerating too much
-            let step = -event.deltaY / 1200
-            const maxStepPerEvent = 0.15 // Max 15% zoom change per single scroll notch
-            step = Math.max(-maxStepPerEvent, Math.min(maxStepPerEvent, step))
+            let step = -event.deltaY * (enableSmoothGraphZoom ? zoomConfig.smoothZoomSpeed / 1200 : zoomConfig.normalZoomSpeed / 400)
+            if (enableSmoothGraphZoom) {
+                step = Math.max(-zoomConfig.smoothStepLimit, Math.min(zoomConfig.smoothStepLimit, step))
+            }
 
             const now = app.stage.scale.x
-            const minLimit = 0.05
-            const maxLimit = 4.0
 
-            if (now >= maxLimit && step > 0 || now <= minLimit && step < 0) return
+            if (now >= zoomConfig.maxScale && step > 0 || now <= zoomConfig.minScale && step < 0) return
 
             if (this.running) {
                 // 2. Limit total accumulated target change to prevent runaway zoom
@@ -310,8 +326,10 @@ Author Wang Rui <https://github.com/gugutu>
                 if (step > 0) nextTarget = currentTarget * (1 + step)
                 else nextTarget = currentTarget / (1 - step)
 
-                const maxLead = 0.4 // Target can't be more than 40% ahead of current scale
-                nextTarget = Math.max(now * (1 - maxLead), Math.min(now * (1 + maxLead), nextTarget))
+                nextTarget = Math.max(
+                    now * (1 - zoomConfig.smoothResponseRange),
+                    Math.min(now * (1 + zoomConfig.smoothResponseRange), nextTarget)
+                )
 
                 this.c = nextTarget - now
             } else {
@@ -320,7 +338,7 @@ Author Wang Rui <https://github.com/gugutu>
             }
 
             if (!enableSmoothGraphZoom) {
-                const value = Math.max(minLimit, Math.min(maxLimit, now + this.c))
+                const value = Math.max(zoomConfig.minScale, Math.min(zoomConfig.maxScale, now + this.c))
                 applyZoomAt(value, event.x, event.y)
                 this.running = false
                 return
@@ -706,8 +724,9 @@ Author Wang Rui <https://github.com/gugutu>
 
             const scaleX = 0.8 * (window.innerWidth) / (mostRight - mostLeft + 80)
             const scaleY = 0.8 * (window.innerHeight) / (mostBottom - mostTop + 80)
-            scale = scaleX < scaleY ? scaleX : scaleY
-            app.stage.scale.x = app.stage.scale.y = scale < 1.4 ? scale : 1.4
+            let scale = scaleX < scaleY ? scaleX : scaleY
+            scale = scale < zoomConfig.autoFitMaxScale ? scale : zoomConfig.autoFitMaxScale
+            app.stage.scale.x = app.stage.scale.y = Math.max(zoomConfig.minScale, Math.min(zoomConfig.maxScale, scale))
             app.stage.x = window.innerWidth / 2
             app.stage.y = window.innerHeight / 2
             needAdaptScale = false

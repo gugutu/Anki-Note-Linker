@@ -105,6 +105,44 @@ function getTr(s) {
             return '启用图片预览'
         case 'Enable Smooth Graph Zoom':
             return '启用关系图平滑缩放'
+        case 'Advanced Graph Zoom Settings':
+            return '高级关系图缩放设置'
+        case 'Zoom-out limit':
+            return '缩小限制'
+        case 'Zoom-in limit':
+            return '放大限制'
+        case 'Normal zoom speed':
+            return '普通缩放速度'
+        case 'Smooth zoom speed':
+            return '平滑缩放速度'
+        case 'Smooth zoom step limit':
+            return '平滑缩放单步限制'
+        case 'Smooth zoom response range':
+            return '平滑缩放响应范围'
+        case 'Smooth zoom duration (ms)':
+            return '平滑缩放时长（毫秒）'
+        case 'Auto-fit zoom-in limit':
+            return '自动适配放大限制'
+        case 'Smoothly animates mouse wheel zoom. Leave off if zoom should feel immediate.':
+            return '用动画平滑处理鼠标滚轮缩放。如果希望缩放立即响应，可以保持关闭。'
+        case 'Controls how far you can zoom out. Smaller values show more of a large graph at once; larger values keep nodes from becoming extremely tiny. Range: 0.001-1. Default: 0.01.':
+            return '控制关系图最多能缩小到什么程度。数值越小，一屏能看到的大图节点越多；数值越大，可以避免节点变得过小。范围：0.001-1。默认值：0.01。'
+        case 'Controls how far you can zoom in. Larger values allow closer inspection of individual nodes. Range: 1-100. Default: 100.':
+            return '控制关系图最多能放大到什么程度。数值越大，越适合近距离查看单个节点。范围：1-100。默认值：100。'
+        case 'Controls how strongly the view reacts to each wheel movement when smooth zoom is off. Larger values feel faster; smaller values feel slower and more controlled. Range: 0.1-5. Default: 1.':
+            return '控制未启用平滑缩放时，每次滚动滚轮对视图缩放的影响。数值越大，缩放越快；数值越小，缩放越慢、越稳。范围：0.1-5。默认值：1。'
+        case 'Controls how strongly the view reacts to each wheel movement when smooth zoom is on. Larger values move the zoom target faster; smaller values make the movement gentler. Range: 0.1-5. Default: 1.':
+            return '控制启用平滑缩放时，每次滚动滚轮对目标缩放的影响。数值越大，目标变化越快；数值越小，移动越柔和。范围：0.1-5。默认值：1。'
+        case 'Caps how much one wheel movement can change the zoom target in smooth mode. Lower values prevent sudden jumps; higher values allow stronger zoom bursts. Range: 0.01-1. Default: 0.15.':
+            return '限制平滑模式下单次滚轮动作最多能改变多少目标缩放。数值越小，越不容易突然跳变；数值越大，快速滚动时缩放力度更强。范围：0.01-1。默认值：0.15。'
+        case 'Controls how far the animation target may get ahead of the current view while you keep scrolling. Lower values feel steadier; higher values feel more responsive but can overshoot more. Range: 0.05-2. Default: 0.4.':
+            return '控制连续滚动时，动画目标可以比当前视图提前多少。数值越小越稳定；数值越大响应更快，但也更容易有过冲感。范围：0.05-2。默认值：0.4。'
+        case 'How long each smooth zoom animation lasts. Lower values feel snappier; higher values feel softer and slower. Range: 0-1000 ms. Default: 250 ms.':
+            return '控制每次平滑缩放动画持续多久。数值越小，响应越利落；数值越大，动画越柔和但也越慢。范围：0-1000 毫秒。默认值：250 毫秒。'
+        case 'Caps how much the graph may automatically zoom in when fitting nodes into view. Lower values keep the initial view wider; higher values let small graphs open closer. Range: 0.1-10. Default: 1.4.':
+            return '控制关系图自动适配节点到视野内时，最多允许放大到什么程度。数值越小，初始视野越宽；数值越大，小型关系图打开时会离节点更近。范围：0.1-10。默认值：1.4。'
+        case 'Zoom-out limit must be smaller than zoom-in limit.':
+            return '缩小限制必须小于放大限制。'
         case 'On macOS, new installs use Command + Option shortcuts to avoid conflicts with Option-based character input. Anki/Qt may display these shortcuts as Ctrl+Alt in the configuration. Existing shortcut settings are not changed.':
             return '在 macOS 上，新安装用户默认使用 Command + Option 快捷键，以避免和 Option 输入特殊字符冲突。Anki/Qt 的快捷键配置中可能会将这些快捷键显示为 Ctrl+Alt。已有快捷键设置不会被自动修改。'
         default:

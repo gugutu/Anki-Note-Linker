@@ -48,6 +48,7 @@ jobs:
             ! -name '.git' \
             ! -name '.github' \
             ! -name 'dist' \
+            ! -name 'package' \
             ! -name 'scripts' \
             ! -name 'manifest.json' \
             ! -name 'README.md' \

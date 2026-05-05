@@ -232,7 +232,8 @@
             if (text === '') {
                 text = content.replace(/<[^>]*>/g, '').replace(/\n+/g, ' ').trim()
             }
-            text = text.replace(/\[\.\.\.\]/g, '').trim()
+            // Keep "[...]" intact: getMainField() uses it for collapsed cloze deletions.
+            text = text.trim()
             if (node.imageSrc && text && text !== '' && text !== '\n') {
                 return text + ' (+img)'
             } else if (node.imageSrc) {

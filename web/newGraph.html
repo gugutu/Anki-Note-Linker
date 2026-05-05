@@ -492,7 +492,7 @@ Author Wang Rui <https://github.com/gugutu>
             // More aggressive cleanup for coordinates that might have survived
             text = text.replace(/image-occlusion:.*?:oi=1/g, '')
             text = text.replace(/rect:left=.*?:oi=1/g, '')
-            text = text.replace(/\[\.\.\.\]/g, '')
+            // Keep "[...]" intact: getMainField() uses it for collapsed cloze deletions.
             text = text.trim()
 
             if (node.imageSrc && text && text !== '' && text !== '\n') {

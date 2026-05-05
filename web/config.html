@@ -343,7 +343,8 @@
             help: 'Controls how strongly the view reacts to each wheel movement when smooth zoom is off. Larger values feel faster; smaller values feel slower and more controlled. Range: 0.1-5. Default: 1.',
             defaultValue: 1,
             min: 0.1,
-            max: 5
+            max: 5,
+            normalOnly: true
         },
         {
             key: 'graphZoom-smoothZoomSpeed',
@@ -411,13 +412,14 @@
 
     function updateSmoothGraphZoomControls() {
         const enabled = document.getElementById('enableSmoothGraphZoom').checked
-        graphZoomNumberSettings.filter(setting => setting.smoothOnly).forEach(setting => {
+        graphZoomNumberSettings.filter(setting => setting.smoothOnly || setting.normalOnly).forEach(setting => {
             const input = document.getElementById(setting.key)
             const button = document.getElementById(setting.key + '-help')
             const row = input.closest('.setting-row')
-            input.disabled = !enabled
-            button.disabled = !enabled
-            row.classList.toggle('disabled-setting', !enabled)
+            const disabled = setting.smoothOnly ? !enabled : enabled
+            input.disabled = disabled
+            button.disabled = disabled
+            row.classList.toggle('disabled-setting', disabled)
         })
     }
 

@@ -57,6 +57,7 @@ def default_config(is_mac: bool) -> Dict[str, Any]:
         "globalGraph-defaultHighlightFilter": "is:due",
         "globalGraph-defaultShowSingleNode": False,
         "globalGraph-defaultShowTags": False,
+        "globalGraph-defaultShowSuspended": False,
         "globalGraph-nodeDegreeSizing": "none",
         "globalGraph-nodeColor": [57, 125, 237],
         "globalGraph-highlightedNodeColor": [244, 165, 0],

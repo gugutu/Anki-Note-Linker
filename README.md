@@ -97,6 +97,8 @@ Open current note in new window by using the right-click menu or the default sho
 
 Entrance: `Menu -> Anki Note Linker -> Global Relationship Graph`
 
+Notes whose cards are all suspended are hidden by default. Use `Display suspended notes` in the graph toolbar to include them.
+
 Please set the video driver in Anki preference to an option other than `Software`, as it can significantly decrease graphic performance
 
 ### Customize shortcut keys

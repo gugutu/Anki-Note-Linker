@@ -1,4 +1,19 @@
-from anki_note_linker.core.graph import GraphRecord, build_graph_snapshot
+from anki_note_linker.core.graph import (
+    GraphRecord,
+    build_global_graph_note_search,
+    build_global_graph_search,
+    build_graph_snapshot,
+)
+
+
+def test_builds_search_for_suspended_note_visibility() -> None:
+    assert build_global_graph_search("deck:current", show_suspended=False) == "(deck:current) -is:suspended"
+    assert build_global_graph_search("", show_suspended=False) == "-is:suspended"
+    assert build_global_graph_search("  tag:keep  ", show_suspended=True) == "tag:keep"
+    assert build_global_graph_note_search(123, "tag:keep OR tag:later", False) == (
+        "nid:123 ((tag:keep OR tag:later) -is:suspended)"
+    )
+    assert build_global_graph_note_search(123, "", True) == "nid:123"
 
 
 def test_builds_unique_note_and_tag_connections() -> None:

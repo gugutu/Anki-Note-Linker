@@ -95,6 +95,7 @@ const checkboxKeys = [
   "enableSmoothGraphZoom",
   "globalGraph-defaultShowSingleNode",
   "globalGraph-defaultShowTags",
+  "globalGraph-defaultShowSuspended",
 ] as const;
 
 const textKeys = [
@@ -303,6 +304,7 @@ function initializeTranslations(): void {
     "globalGraph-defaultSearchText": "Default search text",
     "globalGraph-defaultShowSingleNode": "Default display of single nodes",
     "globalGraph-defaultShowTags": "Default display of tag nodes",
+    "globalGraph-defaultShowSuspended": "Default display of notes with all cards suspended",
     "globalGraph-highlightedNodeColor": "Highlighted node color",
     "globalGraph-nodeColor": "Node color",
     "globalGraph-nodeDegreeSizing": "Node size scaling by link count",

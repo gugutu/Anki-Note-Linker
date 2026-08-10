@@ -26,6 +26,7 @@ from aqt.operations import QueryOp
 from aqt.utils import restoreGeom, saveGeom, tooltip
 from aqt.webview import AnkiWebView
 
+from ..core.graph import build_global_graph_note_search, build_global_graph_search
 from . import state
 from .configuration import config
 from .i18n import getTr
@@ -45,7 +46,7 @@ class GlobalGraph(QWidget):
         self.searchedIds: set[NoteId] = set()
         self.needRefreshAgain = False
         self.inRefreshProcess = False
-        self.lastSearchText = None
+        self.lastSearchState = None
         self.linkCache: list[Connection] = []
         self.noteCacheList = []
         self.hlIds = set()
@@ -68,10 +69,15 @@ class GlobalGraph(QWidget):
         self.lineEdit.setText(config["globalGraph-defaultSearchText"])
         self.lineEdit2 = QLineEdit()
         self.lineEdit2.setText(config["globalGraph-defaultHighlightFilter"])
-        self.checkBox = QCheckBox(getTr("Display single nodes"))
-        self.checkBox.setChecked(config["globalGraph-defaultShowSingleNode"])
-        self.checkBox2 = QCheckBox(getTr("Display tag nodes"))
-        self.checkBox2.setChecked(config["globalGraph-defaultShowTags"])
+        self.showSingleNodesCheckBox = QCheckBox(getTr("Display single nodes"))
+        self.showSingleNodesCheckBox.setChecked(config["globalGraph-defaultShowSingleNode"])
+        self.showTagNodesCheckBox = QCheckBox(getTr("Display tag nodes"))
+        self.showTagNodesCheckBox.setChecked(config["globalGraph-defaultShowTags"])
+        self.showSuspendedNotesCheckBox = QCheckBox(getTr("Display suspended notes"))
+        self.showSuspendedNotesCheckBox.setChecked(config["globalGraph-defaultShowSuspended"])
+        self.showSuspendedNotesCheckBox.setToolTip(
+            getTr("When this option is off, notes remain visible if at least one of their cards is not suspended.")
+        )
         self.sButton = QPushButton(getTr("Search"))
         qconnect(
             self.sButton.clicked, lambda: self.refreshGlobalGraph(resetCenter=True, reason="Search Button Clicked")
@@ -80,8 +86,9 @@ class GlobalGraph(QWidget):
         topBarLayout.addWidget(self.lineEdit)
         topBarLayout.addWidget(QLabel(getTr("Highlight specified notes:")))
         topBarLayout.addWidget(self.lineEdit2)
-        topBarLayout.addWidget(self.checkBox)
-        topBarLayout.addWidget(self.checkBox2)
+        topBarLayout.addWidget(self.showSingleNodesCheckBox)
+        topBarLayout.addWidget(self.showTagNodesCheckBox)
+        topBarLayout.addWidget(self.showSuspendedNotesCheckBox)
         topBarLayout.addWidget(self.sButton)
 
         enable_immediate_profile_close(self)
@@ -106,14 +113,20 @@ class GlobalGraph(QWidget):
             self.refreshGlobalGraph(reason="onOpChange")
 
     def onTagUpdate(self, note: Note):
-        if not self._closed and self.checkBox2.isChecked():
+        if not self._closed and self.showTagNodesCheckBox.isChecked():
             self.refreshGlobalGraph(reason="tag of note changed", changedTagNote=note)
 
     def rebuildCache(
-        self, col: Collection, searchText: str, highlightText: str, showTags: bool, keepTagNote: Note = None
+        self,
+        col: Collection,
+        searchText: str,
+        highlightText: str,
+        showTags: bool,
+        showSuspended: bool,
+        keepTagNote: Note = None,
     ):
         self.noteCache = {}
-        self.searchedIds = set(col.find_notes(searchText))
+        self.searchedIds = set(col.find_notes(build_global_graph_search(searchText, showSuspended)))
 
         if highlightText == "":
             self.hlIds = set()
@@ -181,18 +194,39 @@ class GlobalGraph(QWidget):
         self.inRefreshProcess = True
         searchText = self.lineEdit.text()
         highlightText = self.lineEdit2.text()
-        searchKey = searchText + highlightText
-        showSingle = self.checkBox.isChecked()
-        showTags = self.checkBox2.isChecked()
+        showSingle = self.showSingleNodesCheckBox.isChecked()
+        showTags = self.showTagNodesCheckBox.isChecked()
+        showSuspended = self.showSuspendedNotesCheckBox.isChecked()
+        searchState = (searchText, highlightText, showTags, showSuspended)
 
         def op(col):
-            if onlyChangedNote is not None and searchKey == self.lastSearchText:
+            if onlyChangedNote is not None and searchState == self.lastSearchState:
                 log("-----Refresh Global Graph With Update Single Node: ", reason)
-
-                self.updateNodeCache(onlyChangedNote, showTags=showTags)
+                matches_search = bool(
+                    col.find_notes(build_global_graph_note_search(onlyChangedNote.id, searchText, showSuspended))
+                )
+                was_searched = onlyChangedNote.id in self.searchedIds
+                if matches_search != was_searched:
+                    self.rebuildCache(
+                        col,
+                        searchText,
+                        highlightText,
+                        showTags,
+                        showSuspended,
+                        keepTagNote=changedTagNote,
+                    )
+                elif matches_search:
+                    self.updateNodeCache(onlyChangedNote, showTags=showTags)
             else:
                 log("-----Refresh Global Graph With Rebuild Cache: ", reason)
-                self.rebuildCache(col, searchText, highlightText, showTags, keepTagNote=changedTagNote)
+                self.rebuildCache(
+                    col,
+                    searchText,
+                    highlightText,
+                    showTags,
+                    showSuspended,
+                    keepTagNote=changedTagNote,
+                )
 
             self.noteCacheList = [
                 x for x in self.noteCache.values() if showSingle or len(x.childIds) != 0 or len(x.parentIds) != 0
@@ -212,7 +246,7 @@ class GlobalGraph(QWidget):
                 self.refreshGlobalGraph(onlyChangedNote, "backlog")
                 return
 
-            self.lastSearchText = searchKey
+            self.lastSearchState = searchState
             self.web.eval(
                 f'''reloadPage(
                             {json.dumps([x.toJsNoteNode("highlight") if x.id in self.hlIds else x.toJsNoteNode("normal") for x in self.noteCacheList], default=lambda o: o.__dict__)},

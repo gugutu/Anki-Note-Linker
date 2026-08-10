@@ -42,6 +42,24 @@ class GraphSnapshot:
         return [node for node in self.nodes.values() if node.child_ids or node.parent_ids]
 
 
+def build_global_graph_search(search_text: str, show_suspended: bool) -> str:
+    """Combine the user's search with the suspended-card visibility setting."""
+    search_text = search_text.strip()
+    if show_suspended:
+        return search_text
+    if search_text:
+        return f"({search_text}) -is:suspended"
+    return "-is:suspended"
+
+
+def build_global_graph_note_search(note_id: int, search_text: str, show_suspended: bool) -> str:
+    """Scope the global graph search to one note for incremental refreshes."""
+    graph_search = build_global_graph_search(search_text, show_suspended)
+    if graph_search:
+        return f"nid:{note_id} ({graph_search})"
+    return f"nid:{note_id}"
+
+
 def build_graph_snapshot(records: Iterable[GraphRecord], show_tags: bool) -> GraphSnapshot:
     record_list = list(records)
     allowed_ids = {record.note_id for record in record_list}

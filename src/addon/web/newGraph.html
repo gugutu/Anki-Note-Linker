@@ -1,0 +1,88 @@
+<!--
+AGPL3 LICENSE
+Author Wang Rui <https://github.com/gugutu>
+-->
+
+<style>
+    body {
+        margin: 0;
+        padding: 0;
+        overflow: clip;
+    }
+
+    .katex {
+        white-space: normal !important;
+        font-size: 100%;
+    }
+
+    :root {
+        --circleText-color: #fff;
+        /*Default text color*/
+    }
+
+    .circleText {
+        font-family: Arial, sans-serif;
+        word-break: break-word;
+        position: absolute !important;
+        text-align: center;
+        line-clamp: 4;
+        -webkit-line-clamp: 4;
+        display: -webkit-box;
+        -webkit-box-orient: vertical;
+        overflow-x: visible;
+        overflow-y: clip;
+        text-overflow: ellipsis;
+        pointer-events: none;
+
+        -webkit-user-select: none;
+        /* Safari */
+        -moz-user-select: none;
+        /* Firefox */
+        -ms-user-select: none;
+        /* IE/Edge */
+        user-select: none;
+        /* Standard syntax */
+
+        color: var(--circleText-color);
+        opacity: .87;
+    }
+
+    .circleText .katex-display {
+        margin: 0;
+    }
+
+    .label {
+        font-family: Arial, sans-serif;
+        font-size: 18px;
+        padding: 8px;
+        border-radius: 8px;
+        word-break: break-word;
+        color: rgb(255, 255, 255);
+        background-color: rgba(0, 0, 0, 0.85);
+        max-width: 400px;
+        max-height: 400px;
+        overflow-y: auto;
+        position: absolute !important;
+        text-overflow: ellipsis;
+        pointer-events: none;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+
+        -webkit-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+        user-select: none;
+        /* Standard syntax */
+    }
+
+    .label .katex-display {
+        margin: 5px;
+    }
+</style>
+
+<body>
+    <div id="texts"></div>
+</body>

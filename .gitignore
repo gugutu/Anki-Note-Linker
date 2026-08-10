@@ -1,5 +1,16 @@
 /.idea
-/__pycache__
+__pycache__/
+*.py[cod]
+/.coverage
+/.mypy_cache
+/.pytest_cache
+/.ruff_cache
+/.venv
+/coverage
+node_modules/
+/frontend/playwright-report
+/frontend/test-results
+/src/addon/web/dist
 meta.json
 /dist
 .DS_Store

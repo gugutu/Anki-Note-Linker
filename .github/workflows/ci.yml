@@ -1,0 +1,100 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  python-tests:
+    name: Python ${{ matrix.python-version }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.9", "3.13"]
+    steps:
+      - uses: actions/checkout@v6
+      - uses: astral-sh/setup-uv@v9
+        with:
+          python-version: ${{ matrix.python-version }}
+          enable-cache: true
+      - run: uv sync --frozen --group dev
+      - run: uv run --frozen --group dev python -m pytest -q
+      - run: uv run --frozen --group dev python -m compileall -q src/addon scripts tests
+
+  python-quality:
+    name: Python quality
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: astral-sh/setup-uv@v9
+        with:
+          python-version: "3.13"
+          enable-cache: true
+      - run: uv sync --frozen --group dev
+      - run: uv run --frozen --group dev ruff check .
+      - run: uv run --frozen --group dev ruff format --check src/addon/anki_note_linker scripts tests
+      - run: uv run --frozen --group dev mypy
+
+  frontend:
+    name: Frontend
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm --prefix frontend ci
+      - run: npm --prefix frontend run typecheck
+      - run: npm --prefix frontend run lint
+      - run: npm --prefix frontend test
+      - run: npm --prefix frontend exec -- playwright install --with-deps chromium
+      - run: npm --prefix frontend run test:browser
+      - name: Verify deterministic frontend output
+        shell: bash
+        run: |
+          set -euo pipefail
+          find src/addon/web/dist -type f -print0 | sort -z | xargs -0 sha256sum > /tmp/frontend-first.sha256
+          npm --prefix frontend run build
+          find src/addon/web/dist -type f -print0 | sort -z | xargs -0 sha256sum > /tmp/frontend-second.sha256
+          diff -u /tmp/frontend-first.sha256 /tmp/frontend-second.sha256
+
+  package:
+    name: Release package
+    needs: [python-tests, python-quality, frontend]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - uses: astral-sh/setup-uv@v9
+        with:
+          python-version: "3.13"
+          enable-cache: true
+      - run: npm --prefix frontend ci
+      - run: npm --prefix frontend run build
+      - name: Verify deterministic add-on archive
+        shell: bash
+        run: |
+          set -euo pipefail
+          uv run --frozen python scripts/build_addon.py --version ci --output dist/anki-note-linker-ci.ankiaddon
+          uv run --frozen python scripts/build_addon.py --version ci --output dist/anki-note-linker-ci-copy.ankiaddon
+          cmp dist/anki-note-linker-ci.ankiaddon dist/anki-note-linker-ci-copy.ankiaddon
+      - uses: actions/upload-artifact@v7
+        with:
+          name: anki-note-linker-ci
+          path: dist/anki-note-linker-ci.ankiaddon
+          if-no-files-found: error

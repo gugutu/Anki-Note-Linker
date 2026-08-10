@@ -179,5 +179,9 @@ The implementation of this add-on is inspired by the following add-ons:
 
 - [Editor Live Preview](https://ankiweb.net/shared/info/1960039667)
 
+## Development
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for setup and test commands, and [ARCHITECTURE.md](ARCHITECTURE.md) for project boundaries and compatibility rules.
+
 ---
 Add-on code：1077002392

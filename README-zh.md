@@ -178,5 +178,9 @@ _提示: 若没有选中文本，使用上述操作将生成一个没有标题�
 
 - [Editor Live Preview](https://ankiweb.net/shared/info/1960039667)
 
+## 开发
+
+开发环境与测试命令请参阅 [CONTRIBUTING.md](CONTRIBUTING.md)，项目结构和兼容性约束请参阅 [ARCHITECTURE.md](ARCHITECTURE.md)。
+
 ---
 插件代码：1077002392

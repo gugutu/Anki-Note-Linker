@@ -1,0 +1,37 @@
+{
+  "name": "anki-note-linker-frontend",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint \"src/**/*.ts\" \"tests/**/*.ts\" && node --check scripts/build.mjs",
+    "test": "vitest run",
+    "test:browser": "npm run build && playwright test"
+  },
+  "dependencies": {
+    "d3": "7.9.0",
+    "force-graph": "1.43.5",
+    "katex": "0.16.10",
+    "pixi.js": "8.19.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "@playwright/test": "1.62.1",
+    "@types/d3": "7.4.3",
+    "@types/d3-force": "3.0.10",
+    "@types/katex": "0.16.8",
+    "@types/node": "24.13.3",
+    "@vitest/coverage-v8": "4.1.10",
+    "esbuild": "0.28.2",
+    "eslint": "10.8.1",
+    "jsdom": "29.1.1",
+    "typescript": "5.9.3",
+    "typescript-eslint": "8.66.0",
+    "vitest": "4.1.10"
+  }
+}

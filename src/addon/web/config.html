@@ -1,0 +1,318 @@
+<style>
+    body {
+        margin: 0;
+        padding: 0;
+    }
+
+    #buttons {
+        position: fixed;
+        display: flex;
+        left: 0;
+        right: 0;
+        margin: 0;
+        bottom: 0;
+        padding: 3px 0;
+        width: 100%;
+        background: var(--canvas);
+        box-shadow: 0 0 3px #cccccc;
+    }
+
+    .title {
+        font-size: 1.5em;
+        font-weight: bold;
+    }
+
+    #scroll {
+        overflow: auto !important;
+        padding: 0 15px;
+    }
+
+    #content {
+        margin: auto;
+        width: fit-content;
+        white-space: nowrap;
+    }
+
+    input:not([type="radio"]), select {
+        margin-left: auto;
+        /*margin-right: 15px;*/
+    }
+
+    #content > div,
+    .setting-row {
+        display: flex;
+        height: 40px; /* Increased height for more air */
+        margin: 0;
+        align-items: center;
+        border-bottom: 1px solid rgba(128, 128, 128, 0.15);
+    }
+
+    #content > div.title {
+        height: 50px;
+        border-bottom: 2px solid rgba(128, 128, 128, 0.2);
+        margin-top: 10px;
+    }
+
+    #content > div:last-child {
+        border-bottom: none;
+    }
+
+    #content > details {
+        border-bottom: 1px solid rgba(128, 128, 128, 0.15);
+        padding: 4px 0;
+    }
+
+    .advanced-settings summary {
+        cursor: pointer;
+        font-weight: bold;
+        height: 40px;
+        line-height: 40px;
+    }
+
+    .advanced-settings .setting-row:last-child {
+        border-bottom: none;
+    }
+
+    .advanced-settings input[type="number"] {
+        width: 120px;
+        margin-left: auto;
+    }
+
+    .help-button {
+        margin-left: 8px;
+        width: 20px;
+        height: 20px;
+        padding: 0;
+        border: 1px solid rgba(128, 128, 128, 0.8);
+        border-radius: 50%;
+        background: var(--canvas, #fff);
+        color: var(--text-fg, #222);
+        font-weight: bold;
+        line-height: 18px;
+        text-align: center;
+        cursor: pointer;
+    }
+
+    .help-button:disabled {
+        cursor: default;
+        color: rgba(128, 128, 128, 0.9);
+        border-color: rgba(128, 128, 128, 0.45);
+    }
+
+    .disabled-setting {
+        opacity: 0.45;
+    }
+
+    .radio-group {
+        margin-left: auto;
+        display: flex;
+        gap: 12px;
+        align-items: center;
+    }
+
+    .radio-group.vertical {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 4px;
+    }
+
+    .radio-group > label {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+</style>
+<div id="scroll">
+    <div id="content">
+        <div class="title" id="title-basic">Basic</div>
+        <div><label class="showLinksPageAutomatically"></label>
+            <input id="showLinksPageAutomatically" type="checkbox">
+        </div>
+        <div><label class="showGraphPageAutomatically"></label>
+            <input id="showGraphPageAutomatically" type="checkbox">
+        </div>
+        <div><label class="showLinksPageInReviewerAutomatically"></label>
+            <input id="showLinksPageInReviewerAutomatically" type="checkbox">
+        </div>
+        <div><label class="showGraphPageInReviewerAutomatically"></label>
+            <input id="showGraphPageInReviewerAutomatically" type="checkbox">
+        </div>
+        <div><label class="collapseClozeInLinksPage"></label>
+            <input id="collapseClozeInLinksPage" type="checkbox">
+        </div>
+        <div><label class="showForwardLinkTitleInLinksPage"></label>
+            <input id="showForwardLinkTitleInLinksPage" type="checkbox">
+        </div>
+        <div><label class="useHjpPreviewer"></label>
+            <input id="useHjpPreviewer" type="checkbox">
+        </div>
+        <div><label class="location"></label>
+            <div class="radio-group" id="location">
+                <label>
+                    <input id="location-left-radio" type="radio" name="location" value="left">
+                    <span id="location-left">left</span>
+                </label>
+                <label>
+                    <input id="location-right-radio" type="radio" name="location" value="right">
+                    <span id="location-right">right</span>
+                </label>
+            </div>
+        </div>
+        <div><label class="positionRelativeToReviewer"></label>
+            <div class="radio-group" id="positionRelativeToReviewer">
+                <label>
+                    <input id="positionRelativeToReviewer-left-radio" type="radio" name="positionRelativeToReviewer" value="left">
+                    <span id="positionRelativeToReviewer-left">left</span>
+                </label>
+                <label>
+                    <input id="positionRelativeToReviewer-right-radio" type="radio" name="positionRelativeToReviewer" value="right">
+                    <span id="positionRelativeToReviewer-right">right</span>
+                </label>
+            </div>
+        </div>
+        <div><label class="splitRatio"></label>
+            <input id="splitRatio" type="text">
+        </div>
+        <div><label class="splitRatioBetweenLinksPageAndGraphPage"></label>
+            <input id="splitRatioBetweenLinksPageAndGraphPage" type="text">
+        </div>
+        <div><label class="splitRatioBetweenReviewerAndPanel"></label>
+            <input id="splitRatioBetweenReviewerAndPanel" type="text">
+        </div>
+        <div><label class="linkMaxLines"></label>
+            <input id="linkMaxLines" type="text" oninput="value=value.replace(/\D/g,'')">
+        </div>
+        <div><label class="enableImagePreview">Enable Image Previews</label>
+            <input id="enableImagePreview" type="checkbox">
+        </div>
+        <div style="border-bottom: none;"><label class="noteFieldsDisplayedInTheNoteSummary"></label>
+            <button class="help-button" onclick="alert(getTr('The note fields displayed in the note summary (content shown in the link panel or graphic). \n' +
+        'The add-on will find the first matching field to display as the note summary. \n' +
+        'If no field is set or there is no matching field, the first field of the note will be used by default.'))">?
+            </button>
+        </div>
+        <div id="noteFieldsDisplayedInTheNoteSummary" style="height: auto; display: block; border-bottom: none;"></div>
+        <div style="height: auto;">
+            <button onclick="noteFieldsDisplayedInTheNoteSummaryConfigTemp.push('');loadNoteFields(null,false);">
+                ➕
+            </button>
+        </div>
+        <details class="advanced-settings">
+            <summary id="advancedGraphZoomSummary">Advanced Graph Zoom Settings</summary>
+            <div class="setting-row"><label class="enableSmoothGraphZoom">Enable Smooth Graph Zoom</label>
+                <input id="enableSmoothGraphZoom" type="checkbox">
+                <button class="help-button" id="enableSmoothGraphZoom-help">?</button>
+            </div>
+            <div class="setting-row"><label class="graphZoom-zoomOutLimit">Zoom-out limit</label>
+                <input id="graphZoom-zoomOutLimit" type="number" min="0.001" max="1" step="0.001">
+                <button class="help-button" id="graphZoom-zoomOutLimit-help">?</button>
+            </div>
+            <div class="setting-row"><label class="graphZoom-zoomInLimit">Zoom-in limit</label>
+                <input id="graphZoom-zoomInLimit" type="number" min="1" max="100" step="1">
+                <button class="help-button" id="graphZoom-zoomInLimit-help">?</button>
+            </div>
+            <div class="setting-row"><label class="graphZoom-normalZoomSpeed">Normal zoom speed</label>
+                <input id="graphZoom-normalZoomSpeed" type="number" min="0.1" max="5" step="0.1">
+                <button class="help-button" id="graphZoom-normalZoomSpeed-help">?</button>
+            </div>
+            <div class="setting-row"><label class="graphZoom-smoothZoomSpeed">Smooth zoom speed</label>
+                <input id="graphZoom-smoothZoomSpeed" type="number" min="0.1" max="5" step="0.1">
+                <button class="help-button" id="graphZoom-smoothZoomSpeed-help">?</button>
+            </div>
+            <div class="setting-row"><label class="graphZoom-smoothStepLimit">Smooth zoom step limit</label>
+                <input id="graphZoom-smoothStepLimit" type="number" min="0.01" max="1" step="0.01">
+                <button class="help-button" id="graphZoom-smoothStepLimit-help">?</button>
+            </div>
+            <div class="setting-row"><label class="graphZoom-smoothResponseRange">Smooth zoom response range</label>
+                <input id="graphZoom-smoothResponseRange" type="number" min="0.05" max="2" step="0.05">
+                <button class="help-button" id="graphZoom-smoothResponseRange-help">?</button>
+            </div>
+            <div class="setting-row"><label class="graphZoom-smoothDurationMs">Smooth zoom duration (ms)</label>
+                <input id="graphZoom-smoothDurationMs" type="number" min="0" max="1000" step="10">
+                <button class="help-button" id="graphZoom-smoothDurationMs-help">?</button>
+            </div>
+            <div class="setting-row"><label class="graphZoom-autoFitZoomInLimit">Auto-fit zoom-in limit</label>
+                <input id="graphZoom-autoFitZoomInLimit" type="number" min="0.1" max="10" step="0.1">
+                <button class="help-button" id="graphZoom-autoFitZoomInLimit-help">?</button>
+            </div>
+        </details>
+        <div class="title" id="title-globalGraph">globalGraph</div>
+        <div><label class="globalGraph-defaultSearchText"></label>
+            <input id="globalGraph-defaultSearchText" type="text">
+        </div>
+        <div><label class="globalGraph-defaultHighlightFilter"></label>
+            <input id="globalGraph-defaultHighlightFilter" type="text">
+        </div>
+        <div><label class="globalGraph-defaultShowSingleNode"></label>
+            <input id="globalGraph-defaultShowSingleNode" type="checkbox">
+        </div>
+        <div><label class="globalGraph-defaultShowTags"></label>
+            <input id="globalGraph-defaultShowTags" type="checkbox">
+        </div>
+        <div style="height: auto; align-items: flex-start; padding: 4px 0;"><label class="globalGraph-nodeDegreeSizing" style="padding-top: 2px;"></label>
+            <div class="radio-group vertical" id="globalGraph-nodeDegreeSizing">
+                <label>
+                    <input id="globalGraph-nodeDegreeSizing-none-radio" type="radio" name="globalGraph-nodeDegreeSizing" value="none">
+                    <span id="globalGraph-nodeDegreeSizing-none">none</span>
+                </label>
+                <label>
+                    <input id="globalGraph-nodeDegreeSizing-out-radio" type="radio" name="globalGraph-nodeDegreeSizing" value="out">
+                    <span id="globalGraph-nodeDegreeSizing-out">out</span>
+                </label>
+                <label>
+                    <input id="globalGraph-nodeDegreeSizing-all-radio" type="radio" name="globalGraph-nodeDegreeSizing" value="all">
+                    <span id="globalGraph-nodeDegreeSizing-all">all</span>
+                </label>
+            </div>
+        </div>
+        <div><label class="globalGraph-nodeColor"></label>
+            <input id="globalGraph-nodeColor" type="color">
+        </div>
+        <div><label class="globalGraph-highlightedNodeColor"></label>
+            <input id="globalGraph-highlightedNodeColor" type="color">
+        </div>
+        <div><label class="globalGraph-tagNodeColor"></label>
+            <input id="globalGraph-tagNodeColor" type="color">
+        </div>
+        <div><label class="globalGraph-backgroundColor"></label>
+            <input id="globalGraph-backgroundColor" type="color">
+        </div>
+        <div class="title">
+            <span id="title-shortcuts">shortcuts</span>
+            <button class="help-button" id="mac-shortcuts-help" style="display: none; margin-left: 10px;"
+                    onclick="alert(getTr('On macOS, new installs use Command + Option shortcuts to avoid conflicts with Option-based character input. Anki/Qt may display these shortcuts as Ctrl+Alt in the configuration. Existing shortcut settings are not changed.'))">?
+            </button>
+        </div>
+        <div><label class="shortcuts-copyNoteID"></label>
+            <input id="shortcuts-copyNoteID" type="text">
+        </div>
+        <div><label class="shortcuts-copyNoteLink"></label>
+            <input id="shortcuts-copyNoteLink" type="text">
+        </div>
+        <div><label class="shortcuts-openNoteInNewWindow"></label>
+            <input id="shortcuts-openNoteInNewWindow" type="text">
+        </div>
+        <div><label class="shortcuts-insertLinkWithClipboardID"></label>
+            <input id="shortcuts-insertLinkWithClipboardID" type="text">
+        </div>
+        <div><label class="shortcuts-insertNewLink"></label>
+            <input id="shortcuts-insertNewLink" type="text">
+        </div>
+        <div><label class="shortcuts-insertLinkTemplate"></label>
+            <input id="shortcuts-insertLinkTemplate" type="text">
+        </div>
+    </div>
+</div>
+<div id="buttons">
+    <button class="button" id="button-restoreDefaults" style="margin-left: 5px; margin-right: auto;"
+            onclick="readConfig(defaultConfig)">
+        Restore Defaults
+    </button>
+    <button class="button" id="button-cancel" style="margin-left: auto;"
+            onclick="pycmd('AnkiNoteLinker-config-cancel')">
+        Cancel
+    </button>
+    <button class="button" id="button-ok" style="margin-left: 5px; margin-right: 5px;" onclick="setConfig()">
+        OK
+    </button>
+</div>

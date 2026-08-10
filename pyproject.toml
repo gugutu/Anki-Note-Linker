@@ -1,0 +1,69 @@
+[project]
+name = "anki-note-linker"
+version = "0.0.0"
+description = "Development tooling for the Anki Note Linker add-on"
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "AGPL-3.0-or-later" }
+dependencies = []
+
+[dependency-groups]
+dev = [
+    "mypy==1.18.2",
+    "pytest==8.4.2",
+    "pytest-cov==7.0.0",
+    "ruff==0.14.3",
+]
+
+[tool.pytest.ini_options]
+addopts = "--strict-config --strict-markers --import-mode=importlib"
+testpaths = ["tests/unit"]
+pythonpath = ["src/addon", "."]
+
+[tool.ruff]
+target-version = "py39"
+line-length = 120
+extend-exclude = [
+    "src/addon/web/js",
+    "src/addon/web/fonts",
+    "src/addon/web/dist",
+]
+
+[tool.ruff.lint]
+select = ["B", "E", "F", "I", "SIM", "UP"]
+ignore = [
+    "E501",
+    # Keep annotations importable by Anki builds that still embed Python 3.9.
+    "UP006",
+    "UP035",
+    "UP045",
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["anki_note_linker"]
+
+[tool.mypy]
+python_version = "3.9"
+files = ["src/addon/anki_note_linker", "scripts", "tests/unit"]
+exclude = ["src/addon/anki_note_linker/runtime"]
+mypy_path = ["src/addon"]
+explicit_package_bases = true
+follow_imports = "skip"
+check_untyped_defs = true
+disallow_any_generics = true
+no_implicit_optional = true
+show_error_codes = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+
+[tool.coverage.run]
+branch = true
+source = ["anki_note_linker"]
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = true
+exclude_also = [
+    "if TYPE_CHECKING:",
+    "raise NotImplementedError",
+]

@@ -1,13 +1,12 @@
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 
 const projectRoot = resolve(import.meta.dirname, "../../..");
+const testNodeId = 123;
 
-test("new graph initializes with WebGL and renders supplied nodes", async ({ page }) => {
-  const errors: string[] = [];
-  page.on("pageerror", (error) => errors.push(error.message));
+async function initializeNewGraph(page: Page): Promise<void> {
   const webRoot = resolve(projectRoot, "src/addon/web");
   const html = await readFile(resolve(webRoot, "newGraph.html"), "utf8");
   await page.setContent(html);
@@ -26,8 +25,30 @@ test("new graph initializes with WebGL and renders supplied nodes", async ({ pag
   await page.addScriptTag({ path: resolve(webRoot, "dist/vendor/d3.js") });
   await page.addScriptTag({ path: resolve(webRoot, "dist/vendor/pixi.js") });
   await page.addScriptTag({ path: resolve(webRoot, "dist/new-graph.js") });
-
   await expect(page.locator("canvas")).toBeVisible();
+}
+
+async function loadSingleNode(page: Page): Promise<{ x: number; y: number }> {
+  await page.evaluate(async (nodeId) => {
+    await window.AnkiNoteLinkerNewGraph.reloadPage(
+      [{ id: nodeId, mainField: "Node", type: "normal", x: 0, y: 0, vx: 0, vy: 0 }],
+      [],
+      false,
+      false,
+    );
+  }, testNodeId);
+  await expect(page.locator(".circleText")).toHaveCount(1);
+  const canvas = await page.locator("canvas").boundingBox();
+  if (canvas === null) {
+    throw new Error("Graph canvas has no bounding box.");
+  }
+  return { x: canvas.x + canvas.width / 2, y: canvas.y + canvas.height / 2 };
+}
+
+test("new graph initializes with WebGL and renders supplied nodes", async ({ page }) => {
+  const errors: string[] = [];
+  page.on("pageerror", (error) => errors.push(error.message));
+  await initializeNewGraph(page);
   await page.evaluate(async () => {
     await window.AnkiNoteLinkerNewGraph.reloadPage(
       [
@@ -60,3 +81,37 @@ test("new graph initializes with WebGL and renders supplied nodes", async ({ pag
   expect(await page.evaluate(() => window.commands)).not.toContain("AnkiNoteLinker-switchToOldRenderer");
   expect(errors).toEqual([]);
 });
+
+for (const interaction of [
+  { button: "left", command: `AnkiNoteLinker-openNoteInPreviewer${String(testNodeId)}` },
+  { button: "right", command: `AnkiNoteLinker-openNoteInNewEditor${String(testNodeId)}` },
+] as const) {
+  test(`${interaction.button} click tolerates small pointer movement`, async ({ page }) => {
+    await initializeNewGraph(page);
+    const point = await loadSingleNode(page);
+
+    await page.mouse.move(point.x, point.y);
+    await page.mouse.down({ button: interaction.button });
+    await page.mouse.move(point.x + 3, point.y);
+    await page.mouse.up({ button: interaction.button });
+
+    await expect.poll(() => page.evaluate(() => window.commands)).toEqual([interaction.command]);
+  });
+
+  test(`${interaction.button} button drags a node without opening it`, async ({ page }) => {
+    await initializeNewGraph(page);
+    const point = await loadSingleNode(page);
+    const nodeText = page.locator(".circleText");
+    const initialLeft = Number.parseFloat(await nodeText.evaluate((element) => element.style.left));
+
+    await page.mouse.move(point.x, point.y);
+    await page.mouse.down({ button: interaction.button });
+    await page.mouse.move(point.x + 20, point.y);
+    await expect.poll(async () => (
+      Number.parseFloat(await nodeText.evaluate((element) => element.style.left))
+    )).toBeGreaterThan(initialLeft + 10);
+    await page.mouse.up({ button: interaction.button });
+
+    expect(await page.evaluate(() => window.commands)).toEqual([]);
+  });
+}

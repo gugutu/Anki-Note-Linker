@@ -5,6 +5,7 @@ from pathlib import Path
 import pytest
 
 from scripts.build_addon import (
+    ADDON_PACKAGE_ID,
     REQUIRED_ADDON_FILES,
     REQUIRED_FRONTEND_FILES,
     build_archive,
@@ -16,9 +17,10 @@ from scripts.build_addon import (
 
 def test_manifest_contains_stable_package_identifier() -> None:
     assert json.loads(create_manifest("v.test")) == {
-        "package": "Anki_Note_Linker",
+        "package": ADDON_PACKAGE_ID,
         "name": "Anki Note Linker v.test",
     }
+    assert ADDON_PACKAGE_ID == "1077002392"
 
 
 def test_builds_deterministic_allowlisted_archive(tmp_path: Path) -> None:
@@ -46,6 +48,7 @@ def test_builds_deterministic_allowlisted_archive(tmp_path: Path) -> None:
     assert first.read_bytes() == second.read_bytes()
     validate_archive(first)
     with zipfile.ZipFile(first) as archive:
+        assert "meta.json" not in archive.namelist()
         assert archive.namelist() == [
             "manifest.json",
             *sorted(

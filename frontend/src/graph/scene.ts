@@ -11,11 +11,9 @@ const LINE_CLAMP = 4;
 const PARTICLE_COUNT = 3;
 
 export interface NodeInteractionHandlers {
-  click(node: GraphNode): void;
   pointerDown(node: GraphNode, circle: Graphics, event: FederatedPointerEvent): void;
   pointerEnter(node: GraphNode): void;
   pointerLeave(): void;
-  rightClick(node: GraphNode): void;
 }
 
 export function isResolvedLink(link: GraphConnection): link is ResolvedGraphConnection {
@@ -90,8 +88,6 @@ export class GraphScene {
     handlers: NodeInteractionHandlers,
   ): Graphics {
     const circle = new PIXI.Graphics(factory.context(node));
-    circle.on("click", () => handlers.click(node));
-    circle.on("rightclick", () => handlers.rightClick(node));
     circle.on("pointerdown", (event: FederatedPointerEvent) => handlers.pointerDown(node, circle, event));
     circle.on("pointerenter", () => handlers.pointerEnter(node));
     circle.on("pointerleave", () => handlers.pointerLeave());

@@ -11,6 +11,7 @@ from typing import Iterator, Optional, Sequence, Tuple
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 ADDON_SOURCE = Path("src/addon")
+ADDON_PACKAGE_ID = "1077002392"
 ARCHIVE_TIMESTAMP = (2020, 1, 1, 0, 0, 0)
 IGNORED_PARTS = {".DS_Store", "__pycache__"}
 IGNORED_SUFFIXES = {".pyc", ".pyo"}
@@ -60,7 +61,7 @@ def iter_source_files(project_root: Path = PROJECT_ROOT) -> Iterator[Tuple[Path,
 
 def create_manifest(version_label: str) -> bytes:
     manifest = {
-        "package": "Anki_Note_Linker",
+        "package": ADDON_PACKAGE_ID,
         "name": f"Anki Note Linker {version_label}",
     }
     return (json.dumps(manifest, ensure_ascii=True, indent=2) + "\n").encode("utf-8")

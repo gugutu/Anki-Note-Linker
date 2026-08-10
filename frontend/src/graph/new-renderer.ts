@@ -31,6 +31,19 @@ import { createPointTransform, ViewportBoundary } from "./viewport";
 
 type D3Link = GraphConnection & SimulationLinkDatum<GraphNode>;
 
+const NODE_DRAG_THRESHOLD = 4;
+
+interface NodePointerGesture {
+  button: 0 | 2;
+  dragGapX: number;
+  dragGapY: number;
+  dragging: boolean;
+  node: GraphNode;
+  pointerId: number;
+  startX: number;
+  startY: number;
+}
+
 export interface NewGraphBrowserApi {
   focusNode(nodeId: NodeId): void;
   reloadPage(
@@ -67,17 +80,14 @@ class PixiGraphRenderer implements NewGraphBrowserApi {
     {
       apply: (scale, eventX, eventY) => this.applyZoomAt(scale, eventX, eventY),
       currentScale: () => this.app.stage.scale.x,
-      draggingCanvas: () => this.draggingCanvas,
+      draggingCanvas: () => this.draggingCanvas || this.nodeGesture?.dragging === true,
     },
     this.zoomConfig,
     enableSmoothGraphZoom,
   );
 
   private degreeSizing: NodeDegreeSizingMode = "none";
-  private dragGapX = 0;
-  private dragGapY = 0;
   private draggingCanvas = false;
-  private draggingNode: GraphNode | null = null;
   private fallbackRequested = false;
   private label: HTMLDivElement | null = null;
   private lastWindowHeight: number | null = null;
@@ -85,6 +95,7 @@ class PixiGraphRenderer implements NewGraphBrowserApi {
   private links: GraphConnection[] = [];
   private needAdaptScale = true;
   private nodeColors: NodeColors = { ...DEFAULT_NODE_COLORS };
+  private nodeGesture: NodePointerGesture | null = null;
   private nodes: GraphNode[] = [];
   private stageDragGapX = 0;
   private stageDragGapY = 0;
@@ -229,12 +240,20 @@ class PixiGraphRenderer implements NewGraphBrowserApi {
 
     window.addEventListener("resize", () => this.resize());
     this.app.stage.on("pointerdown", (event: FederatedPointerEvent) => {
+      if (event.target !== this.app.stage) {
+        return;
+      }
       this.stageDragGapX = this.app.stage.x - event.x;
       this.stageDragGapY = this.app.stage.y - event.y;
       this.draggingCanvas = true;
     });
-    this.app.stage.on("pointerup", () => this.finishPointerInteraction());
-    this.app.stage.on("pointerupoutside", () => this.finishPointerInteraction());
+    this.app.stage.on("pointerup", (event: FederatedPointerEvent) => this.finishPointerInteraction(event, true));
+    this.app.stage.on("pointerupoutside", (event: FederatedPointerEvent) => {
+      this.finishPointerInteraction(event, false);
+    });
+    this.app.stage.on("pointercancel", (event: FederatedPointerEvent) => {
+      this.finishPointerInteraction(event, false);
+    });
     this.app.stage.on("globalpointermove", (event: FederatedPointerEvent) => this.movePointer(event));
     this.app.stage.on("wheel", (event: FederatedWheelEvent) => this.zoomAnimation.start(event));
     this.app.ticker.add((ticker: Ticker) => this.tick(ticker));
@@ -260,24 +279,30 @@ class PixiGraphRenderer implements NewGraphBrowserApi {
     document.body.style.cursor = "default";
     this.removeLabel();
     const handlers: NodeInteractionHandlers = {
-      click: (node) => this.openNode(node),
-      pointerDown: (node, circle, event) => this.startNodeDrag(node, circle, event),
+      pointerDown: (node, circle, event) => this.startNodeGesture(node, circle, event),
       pointerEnter: (node) => this.showNodeLabel(node),
       pointerLeave: () => this.hideNodeLabel(),
-      rightClick: (node) => this.openNodeContextAction(node),
     };
     this.scene.rebuild(this.nodes, this.links, this.nodeColors, handlers);
   }
 
-  private startNodeDrag(node: GraphNode, circle: Graphics, event: FederatedPointerEvent): void {
-    if (this.draggingNode === node) {
+  private startNodeGesture(node: GraphNode, circle: Graphics, event: FederatedPointerEvent): void {
+    if ((event.button !== 0 && event.button !== 2) || this.nodeGesture !== null) {
       return;
     }
-    this.draggingNode = node;
+    this.draggingCanvas = false;
     node.fx = circle.x;
     node.fy = circle.y;
-    this.dragGapX = circle.x - this.transform.toCanvasX(event.x);
-    this.dragGapY = circle.y - this.transform.toCanvasY(event.y);
+    this.nodeGesture = {
+      button: event.button,
+      dragGapX: circle.x - this.transform.toCanvasX(event.x),
+      dragGapY: circle.y - this.transform.toCanvasY(event.y),
+      dragging: false,
+      node,
+      pointerId: event.pointerId,
+      startX: event.x,
+      startY: event.y,
+    };
   }
 
   private showNodeLabel(node: GraphNode): void {
@@ -317,26 +342,46 @@ class PixiGraphRenderer implements NewGraphBrowserApi {
     pycmd(`${command}${String(node.id)}`);
   }
 
-  private finishPointerInteraction(): void {
+  private finishPointerInteraction(event: FederatedPointerEvent, activateNode: boolean): void {
     if (this.draggingCanvas) {
       this.draggingCanvas = false;
       this.boundary.update();
     }
     this.app.stage.interactiveChildren = true;
-    if (this.draggingNode !== null) {
-      this.draggingNode.fx = null;
-      this.draggingNode.fy = null;
-      this.draggingNode = null;
+    const gesture = this.nodeGesture;
+    if (gesture !== null && gesture.pointerId === event.pointerId) {
+      this.nodeGesture = null;
+      gesture.node.fx = null;
+      gesture.node.fy = null;
+      document.body.style.cursor = "default";
       this.simulation.alphaTarget(0).restart();
+      if (activateNode && !gesture.dragging) {
+        if (gesture.button === 2) {
+          this.openNodeContextAction(gesture.node);
+        } else {
+          this.openNode(gesture.node);
+        }
+      }
     }
   }
 
   private movePointer(event: FederatedPointerEvent): void {
-    if (this.draggingNode !== null) {
-      this.app.stage.interactiveChildren = false;
-      this.removeLabel();
-      this.draggingNode.fx = this.transform.toCanvasX(event.x) + this.dragGapX;
-      this.draggingNode.fy = this.transform.toCanvasY(event.y) + this.dragGapY;
+    const gesture = this.nodeGesture;
+    if (gesture !== null && gesture.pointerId === event.pointerId) {
+      if (!gesture.dragging) {
+        const distance = Math.hypot(event.x - gesture.startX, event.y - gesture.startY);
+        if (distance < NODE_DRAG_THRESHOLD) {
+          if (this.label !== null) {
+            positionLabel(this.label, event.x, event.y);
+          }
+          return;
+        }
+        gesture.dragging = true;
+        document.body.style.cursor = "grabbing";
+        this.removeLabel();
+      }
+      gesture.node.fx = this.transform.toCanvasX(event.x) + gesture.dragGapX;
+      gesture.node.fy = this.transform.toCanvasY(event.y) + gesture.dragGapY;
       if (this.simulation.alphaTarget() < 0.5) {
         this.simulation.alphaTarget(0.5).restart();
       }

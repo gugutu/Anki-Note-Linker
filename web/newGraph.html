@@ -90,9 +90,9 @@ Author Wang Rui <https://github.com/gugutu>
 <!--<script src="./d3.v7.js"></script>-->
 
 <script>
-    let init = false
     let nodes = []
     let links = []
+    let rendererFallbackRequested = false
 
     // const count = 100
     // for (let i = 0; i < count; i++) {
@@ -118,8 +118,15 @@ Author Wang Rui <https://github.com/gugutu>
 
     const app = new PIXI.Application()
 
+    function requestOldRenderer(error) {
+        if (rendererFallbackRequested) return
+        rendererFallbackRequested = true
+        console.error('Failed to initialize the Pixi graph renderer; switching to the legacy renderer.', error)
+        pycmd('AnkiNoteLinker-switchToOldRenderer')
+    }
 
-    app.init({
+    const appInitPromise = app.init({
+        preference: 'webgl',
         background: 'rgb(16, 16, 32)',
         width: window.innerWidth,
         height: window.innerHeight,
@@ -127,7 +134,13 @@ Author Wang Rui <https://github.com/gugutu>
         resolution: 1.5,
         autoDensity: true,
         useContextAlpha: false
-    }).then(initPixi)
+    }).then(() => {
+        initPixi()
+        return true
+    }).catch(error => {
+        requestOldRenderer(error)
+        return false
+    })
 
 
     const lineClamp = 4
@@ -626,7 +639,6 @@ Author Wang Rui <https://github.com/gugutu>
         app.stage.y = window.innerHeight / 2
         boundary.update()
         app.stage.eventMode = 'static'
-        init = true
         reloadGraphData()
 
         window.addEventListener('resize', () => {
@@ -844,24 +856,9 @@ Author Wang Rui <https://github.com/gugutu>
     }
 
     const delay = ms => new Promise(resolve => setTimeout(resolve, ms))
-    let webGLSupported = false
 
     async function reloadPage(newNodes, connections, resetCenter, adaptScale = false, normalColor = null, highlightColor = null, tagColor = null, graphBgColor = [16, 16, 32], nodeDegreeSizing = 'none') {
-        function isWebGLSupported() {
-            try {
-                const canvas = document.createElement('canvas');
-                return !!(window.WebGLRenderingContext && (canvas.getContext('webgl') || canvas.getContext('experimental-webgl')));
-            } catch (e) {
-                return false;
-            }
-        }
-
-        if (!webGLSupported && !isWebGLSupported()) {
-            pycmd('AnkiNoteLinker-switchToOldRenderer')
-            return
-        } else {
-            webGLSupported = true
-        }
+        if (!await appInitPromise) return
 
         if (graphBgColor) {
             if (app && app.renderer && app.renderer.background) {
@@ -872,7 +869,7 @@ Author Wang Rui <https://github.com/gugutu>
             }
         }
 
-        while (!init || window.innerHeight === 0 || window.innerWidth === 0) await delay(20)
+        while (window.innerHeight === 0 || window.innerWidth === 0) await delay(20)
         normalNodeColor = normalColor
         highlightNodeColor = highlightColor
         tagNodeColor = tagColor

@@ -18,6 +18,7 @@ from aqt.webview import AnkiWebView
 
 from . import state
 from .config import config, getGraphZoomConfig
+from .lifecycle import cleanup_webview, enable_immediate_profile_close, remove_hook_safely
 from .translation import getTr
 from .state import Connection, graph_html, NoteNode, log, newGraph_html, getWebFileLink
 
@@ -25,6 +26,7 @@ from .state import Connection, graph_html, NoteNode, log, newGraph_html, getWebF
 class GlobalGraph(QWidget):
     def __init__(self):
         super().__init__()
+        self._closed = False
         gui_hooks.operation_did_execute.append(self.onOpChange)
         gui_hooks.collection_did_load.append(self.refreshGlobalGraph)
         gui_hooks.editor_did_update_tags.append(self.onTagUpdate)
@@ -83,11 +85,14 @@ class GlobalGraph(QWidget):
         topBarLayout.addWidget(self.checkBox2)
         topBarLayout.addWidget(self.sButton)
 
+        enable_immediate_profile_close(self)
         self.activateWindow()
         self.show()
         self.refreshGlobalGraph(adaptScale=True, reason='Init Global Graph')
 
     def switchToOldRenderer(self):
+        if self._closed or self.web is None:
+            return
         self.web.stdHtml(
             f'<link rel="stylesheet" href="{getWebFileLink("katex.css")}">'
             f'<script>const ankiContext = "GLOBAL_GRAPH"</script>'
@@ -109,28 +114,29 @@ class GlobalGraph(QWidget):
 
     def onOpChange(self, changes: OpChanges, handler: Optional[object]):
         # self.printChanges(changes)
-        if changes.study_queues or changes.notetype:
+        if not self._closed and (changes.study_queues or changes.notetype):
             self.refreshGlobalGraph(reason='onOpChange')
 
     def onTagUpdate(self, note: Note):
-        if self.checkBox2.isChecked():
+        if not self._closed and self.checkBox2.isChecked():
             self.refreshGlobalGraph(reason='tag of note changed', changedTagNote=note)
 
-    def rebuildCache(self, col: Collection, keepTagNote: Note = None):
+    def rebuildCache(self, col: Collection, searchText: str, highlightText: str, showTags: bool,
+                     keepTagNote: Note = None):
         self.noteCache = {}  # 清空缓存
-        self.searchedIds = set(col.find_notes(self.lineEdit.text()))  # 获取搜索节点id
+        self.searchedIds = set(col.find_notes(searchText))  # 获取搜索节点id
         # 获取高亮节点id
-        if self.lineEdit2.text() == '':
+        if highlightText == '':
             self.hlIds = set()
         else:
-            self.hlIds = set(col.find_notes(self.lineEdit2.text()))
+            self.hlIds = set(col.find_notes(highlightText))
         for noteId in self.searchedIds:  # 遍历符合搜索条件的笔记的id
             note = col.get_note(noteId)
-            self.updateNodeCache(note, keepTagNote)
+            self.updateNodeCache(note, keepTagNote, showTags)
 
-    def updateNodeCache(self, note: Note, keepTagNote: Note = None):
+    def updateNodeCache(self, note: Note, keepTagNote: Note = None, showTags: bool = False):
         """Set the node for the note link"""
-        if self.needRefreshAgain:  # 如果此时又有了新的刷新请求，则抛出异常使当前刷新操作退出
+        if self._closed or self.needRefreshAgain:  # 如果此时又有了新的刷新请求，则抛出异常使当前刷新操作退出
             raise Exception('-----Interrupted Refresh Global Graph Process')
         noteId = note.id
         childIds = state.addon.findChildIds(noteId, ' '.join(note.fields), rangeIdSet=self.searchedIds)  # 找出当前节点的子节点id
@@ -152,7 +158,7 @@ class GlobalGraph(QWidget):
             # 如果当前节点不存在缓存中，创建一个新的NoteNode对象并将其插入缓存
             node = self.noteCache[noteId] = NoteNode(noteId, childIds, set(), mainField)
 
-        if self.checkBox2.isChecked():
+        if showTags:
             for tag in keepTagNote.tags if keepTagNote is not None and keepTagNote.id == note.id else note.tags:
                 if tag == "":
                     continue
@@ -177,6 +183,8 @@ class GlobalGraph(QWidget):
 
     def refreshGlobalGraph(self, onlyChangedNote: Note = None, reason: str = '', adaptScale=False, resetCenter=False,
                            changedTagNote: Note = None):
+        if self._closed:
+            return
         if isinstance(onlyChangedNote, Collection):
             onlyChangedNote = None
             reason = 'collection_did_load'
@@ -185,20 +193,25 @@ class GlobalGraph(QWidget):
             return
 
         self.inRefreshProcess = True
+        searchText = self.lineEdit.text()
+        highlightText = self.lineEdit2.text()
+        searchKey = searchText + highlightText
+        showSingle = self.checkBox.isChecked()
+        showTags = self.checkBox2.isChecked()
 
         # print(reason)
 
         def op(col):
             # 如果只改变了一个笔记且此次搜索条件没发生变化
-            if onlyChangedNote is not None and self.lineEdit.text() + self.lineEdit2.text() == self.lastSearchText:
+            if onlyChangedNote is not None and searchKey == self.lastSearchText:
                 log('-----Refresh Global Graph With Update Single Node: ', reason)
                 # 目前存在的问题：如果修改一个笔记使其不符合搜索条件，自动刷新不会使该笔记消失，需要手动刷新
-                self.updateNodeCache(onlyChangedNote)  # 只更新改变了的笔记
+                self.updateNodeCache(onlyChangedNote, showTags=showTags)  # 只更新改变了的笔记
             else:
                 log('-----Refresh Global Graph With Rebuild Cache: ', reason)
-                self.rebuildCache(col, keepTagNote=changedTagNote)  # 重新构造缓存
+                self.rebuildCache(col, searchText, highlightText, showTags,
+                                  keepTagNote=changedTagNote)  # 重新构造缓存
 
-            showSingle = self.checkBox.isChecked()
             self.noteCacheList = [x for x in self.noteCache.values()
                                   if showSingle or len(x.childIds) != 0 or len(x.parentIds) != 0]
 
@@ -209,12 +222,14 @@ class GlobalGraph(QWidget):
 
         def onSuccess(p):
             self.inRefreshProcess = False
+            if self._closed:
+                return
             if self.needRefreshAgain:
                 self.needRefreshAgain = False
                 self.refreshGlobalGraph(onlyChangedNote, 'backlog')
                 return
 
-            self.lastSearchText = self.lineEdit.text() + self.lineEdit2.text()
+            self.lastSearchText = searchKey
             self.web.eval(
                 f'''reloadPage(
                             {json.dumps([x.toJsNoteNode('highlight') if x.id in self.hlIds else x.toJsNoteNode('normal') for x in self.noteCacheList], default=lambda o: o.__dict__)},
@@ -231,6 +246,8 @@ class GlobalGraph(QWidget):
 
         def onFailure(e: Exception):
             self.inRefreshProcess = False
+            if self._closed:
+                return
             if isinstance(e, SearchError):
                 show_exception(parent=self, exception=e)
             else:
@@ -243,12 +260,16 @@ class GlobalGraph(QWidget):
         QueryOp(parent=self, op=op, success=onSuccess).failure(onFailure).run_in_background()
 
     def closeEvent(self, event):
-        gui_hooks.operation_did_execute.remove(self.onOpChange)
-        gui_hooks.collection_did_load.remove(self.refreshGlobalGraph)
-        gui_hooks.editor_did_update_tags.remove(self.onTagUpdate)
+        if self._closed:
+            event.accept()
+            return
+        self._closed = True
+        self.needRefreshAgain = False
+        remove_hook_safely(gui_hooks.operation_did_execute, self.onOpChange)
+        remove_hook_safely(gui_hooks.collection_did_load, self.refreshGlobalGraph)
+        remove_hook_safely(gui_hooks.editor_did_update_tags, self.onTagUpdate)
         saveGeom(self, "GlobalGraph")
-        self.web.cleanup()
-        self.web.close()
+        cleanup_webview(self, "web")
         state.globalGraph = None
         event.accept()
 
@@ -264,7 +285,7 @@ class GlobalGraph(QWidget):
         the layout isn't ready yet.
         """
         try:
-            if not hasattr(self, 'web') or self.web is None:
+            if self._closed or not hasattr(self, 'web') or self.web is None:
                 return
             js = f"""
 (function(nid){{

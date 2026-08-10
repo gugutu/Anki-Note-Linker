@@ -11,6 +11,7 @@ from aqt import mw, gui_hooks
 from aqt.browser.previewer import BrowserPreviewer
 from aqt.utils import tooltip
 
+from .lifecycle import remove_hook_safely
 from .translation import getTr
 
 
@@ -115,5 +116,5 @@ class PreviewState:
         self.previewer = previewer
 
     def cleanUpState(self):
-        gui_hooks.operation_did_execute.remove(self.onOp)
+        remove_hook_safely(gui_hooks.operation_did_execute, self.onOp)
         self.previewer = None

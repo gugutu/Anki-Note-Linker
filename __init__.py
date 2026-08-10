@@ -33,8 +33,10 @@ try:
 except ImportError:
     oldVersion = True
 
+from . import state
 from .config import ConfigView, config, getGraphZoomConfig
 from .editors import MyAddCards, MyEditCurrent
+from .lifecycle import cleanup_webview
 from .state import Connection, JsNoteNode, NoteNode, addon_path, log, links_html, \
     graph_html, PreviewState, newGraph_html, getWebFileLink
 from .translation import getTr
@@ -59,6 +61,9 @@ class AnkiNoteLinker(object):
         gui_hooks.reviewer_will_end.append(self.onReviewerEnd)
         gui_hooks.reviewer_did_show_answer.append(self.refreshReviewerPanel)
         gui_hooks.reviewer_did_show_question.append(lambda card: self.refreshReviewerPanel(card, True))
+        profile_will_close = getattr(gui_hooks, "profile_will_close", None)
+        if profile_will_close is not None:
+            profile_will_close.append(self.onProfileWillClose)
 
         # gui_hooks.previewer_did_init.append(lambda p: print('init', p))
 
@@ -72,12 +77,8 @@ class AnkiNoteLinker(object):
 
         def cleanUpEditor(editor):
             self.editors.discard(editor)
-            if hasattr(editor, "linksPage") and editor.linksPage:
-                editor.linksPage.cleanup()
-                editor.linksPage.close()
-            if hasattr(editor, "graphPage") and editor.graphPage:
-                editor.graphPage.cleanup()
-                editor.graphPage.close()
+            cleanup_webview(editor, "linksPage")
+            cleanup_webview(editor, "graphPage")
 
         Editor.cleanup = anki.hooks.wrap(Editor.cleanup, cleanUpEditor)
 
@@ -99,20 +100,27 @@ class AnkiNoteLinker(object):
             self.onToggleReviewerLinksPanel(config['showLinksPageInReviewerAutomatically'])
             self.onToggleReviewerGraphPanel(config['showGraphPageInReviewerAutomatically'])
 
+    def onProfileWillClose(self):
+        if state.globalGraph is not None:
+            state.globalGraph.close()
+        if ConfigView.configView is not None:
+            ConfigView.configView.close()
+        self.onReviewerEnd()
+
     def onReviewerEnd(self):
-        self.onToggleReviewerLinksPanel(False)
-        self.onToggleReviewerGraphPanel(False)
+        mw.reviewer.showLinksPage = False
+        mw.reviewer.showGraphPage = False
         if hasattr(mw.reviewer, 'linksPageSplitter'):
+            linksPageSplitter = mw.reviewer.linksPageSplitter
             mw.setCentralWidget(mw.mwWidget)
             mw.mwWidget.setParent(mw)
+            linksPageSplitter.deleteLater()
             del mw.reviewer.linksPageSplitter
+        cleanup_webview(mw.reviewer, 'linksPage')
         if hasattr(mw.reviewer, 'linksPage'):
-            mw.reviewer.linksPage.cleanup()
-            mw.reviewer.linksPage.close()
             del mw.reviewer.linksPage
+        cleanup_webview(mw.reviewer, 'graphPage')
         if hasattr(mw.reviewer, 'graphPage'):
-            mw.reviewer.graphPage.cleanup()
-            mw.reviewer.graphPage.close()
             del mw.reviewer.graphPage
         if hasattr(mw.reviewer, 'panelSplitter'):
             del mw.reviewer.panelSplitter

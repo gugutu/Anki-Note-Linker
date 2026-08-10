@@ -7,11 +7,16 @@ import re
 from typing import Any
 
 import anki
+try:
+    from anki.utils import is_mac
+except ImportError:
+    from anki.utils import isMac as is_mac
 from aqt import QWidget, QVBoxLayout, Qt, gui_hooks
 from aqt import mw
-from aqt.utils import restoreGeom, saveGeom, isMac
+from aqt.utils import restoreGeom, saveGeom
 from aqt.webview import AnkiWebView
 
+from .lifecycle import cleanup_webview, enable_immediate_profile_close, remove_hook_safely
 from .translation import getTr
 from .state import config_html, getWebFileLink
 
@@ -41,12 +46,12 @@ defaultConfig = {
     "graphZoom-autoFitZoomInLimit": 1.4,
     "noteFieldsDisplayedInTheNoteSummary": [],
 
-    "shortcuts-copyNoteID": "Ctrl+Alt+C" if isMac else "Alt+Shift+C",
-    "shortcuts-copyNoteLink": "Ctrl+Alt+L" if isMac else "Alt+Shift+L",
-    "shortcuts-openNoteInNewWindow": "Ctrl+Alt+W" if isMac else "Alt+Shift+W",
-    "shortcuts-insertLinkWithClipboardID": "Ctrl+Alt+V" if isMac else "Alt+Shift+V",
-    "shortcuts-insertNewLink": "Ctrl+Alt+N" if isMac else "Alt+Shift+N",
-    "shortcuts-insertLinkTemplate": "Ctrl+Alt+T" if isMac else "Alt+Shift+T",
+    "shortcuts-copyNoteID": "Ctrl+Alt+C" if is_mac else "Alt+Shift+C",
+    "shortcuts-copyNoteLink": "Ctrl+Alt+L" if is_mac else "Alt+Shift+L",
+    "shortcuts-openNoteInNewWindow": "Ctrl+Alt+W" if is_mac else "Alt+Shift+W",
+    "shortcuts-insertLinkWithClipboardID": "Ctrl+Alt+V" if is_mac else "Alt+Shift+V",
+    "shortcuts-insertNewLink": "Ctrl+Alt+N" if is_mac else "Alt+Shift+N",
+    "shortcuts-insertLinkTemplate": "Ctrl+Alt+T" if is_mac else "Alt+Shift+T",
 
     "globalGraph-defaultSearchText": "deck:current",
     "globalGraph-defaultHighlightFilter": "is:due",
@@ -149,17 +154,18 @@ class ConfigView(QWidget):
 
     def __init__(self):
         super().__init__()
+        self._closed = False
         self.setWindowTitle(getTr("Anki-Note-Linker Config"))
         restoreGeom(self, "AnkiNoteLinkerConfig", default_size=(530, 550))
         self.setWindowModality(Qt.WindowModality.ApplicationModal)
         self.setMinimumWidth(530)
         outerLayout = QVBoxLayout()
         self.setLayout(outerLayout)
-        self.web = AnkiWebView(self, title="GlobalGraph")
+        self.web = AnkiWebView(self, title="AnkiNoteLinkerConfig")
         gui_hooks.webview_did_receive_js_message.append(self.handlePycmd)
         self.web.stdHtml(
             f'<script>const ankiLanguage = "{anki.lang.current_lang}"</script>'
-            f'<script>const isMac = {json.dumps(isMac)}</script>'
+            f'<script>const isMac = {json.dumps(is_mac)}</script>'
             f'<script>const defaultConfig = {json.dumps(defaultConfig, default=lambda o: o.__dict__)}</script>'
             f'<script>const userConfig = {json.dumps(config, default=lambda o: o.__dict__)}</script>'
             f'<script src="{getWebFileLink("js/translation.js")}"></script>' + config_html
@@ -167,6 +173,7 @@ class ConfigView(QWidget):
         self.web.set_bridge_command(lambda s: s, self)
         outerLayout.addWidget(self.web)
         outerLayout.setContentsMargins(0, 0, 0, 0)
+        enable_immediate_profile_close(self)
         self.activateWindow()
         self.show()
 
@@ -179,13 +186,18 @@ class ConfigView(QWidget):
             ConfigView.configView.activateWindow()
 
     def closeEvent(self, event):
-        gui_hooks.webview_did_receive_js_message.remove(self.handlePycmd)
+        if self._closed:
+            event.accept()
+            return
+        self._closed = True
+        remove_hook_safely(gui_hooks.webview_did_receive_js_message, self.handlePycmd)
         saveGeom(self, "AnkiNoteLinkerConfig")
+        cleanup_webview(self, "web")
         ConfigView.configView = None
         event.accept()
 
     def handlePycmd(self, handled: tuple[bool, Any], message, context: Any):
-        if context != self:
+        if self._closed or context != self:
             return handled
         elif message == "AnkiNoteLinker-config-cancel":
             self.close()

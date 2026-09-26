@@ -1,6 +1,7 @@
 """Note parsing, summary construction, and editor refresh decisions."""
 
 import operator
+from typing import Optional
 
 from anki.errors import NotFoundError
 from anki.notes import Note, NoteId
@@ -18,8 +19,30 @@ class NoteServiceMixin:
     def onLoadNote(self, editor: Editor):
         if editor.addMode:
             return
+        if self.getEditorNote(editor) is None:
+            return
         self.editors.add(editor)
         self.refreshPage(editor, resetCenter=True, reason="loaded note")
+
+    def getEditorNote(self, editor: Editor) -> Optional[Note]:
+        """Return the current note for both legacy and new Anki editors."""
+        note = getattr(editor, "note", None)
+        if note is not None:
+            return note
+
+        nid = getattr(editor, "nid", None)
+        if nid is None:
+            return None
+        try:
+            return mw.col.get_note(NoteId(nid))
+        except NotFoundError:
+            return None
+
+    def onOperationDidExecute(self, changes, handler):
+        """Refresh a new-editor panel after its note has been saved."""
+        for editor in tuple(self.editors):
+            if editor is handler:
+                self.refreshPage(editor, adaptScale=False, reason="saved note")
 
     def onEditNote(self, note: Note):
         if note.id == 0:
@@ -27,7 +50,8 @@ class NoteServiceMixin:
         showForwardLinkTitle = config["showForwardLinkTitleInLinksPage"]
         childLinkTitles = self.findChildLinkTitles(note.id, " ".join(note.fields)) if showForwardLinkTitle else None
         for editor in self.editors:
-            if editor.note and (editor.note.id == note.id):
+            editorNote = self.getEditorNote(editor)
+            if editorNote is not None and editorNote.id == note.id:
                 if (
                     hasattr(editor, "noteNode")
                     and editor.noteNode.mainField == self.getMainField(note)

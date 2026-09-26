@@ -207,7 +207,8 @@ class EditorPanelsMixin:
     def refreshPage(
         self, editor: Editor, resetCenter: bool = False, adaptScale: bool = True, target="all", reason: str = ""
     ):
-        if editor.note is None or editor.addMode:
+        note = self.getEditorNote(editor)
+        if note is None or editor.addMode:
             return
         panelShows = self._isPanelsShow(editor)
         if not panelShows[0] and not panelShows[1]:
@@ -215,12 +216,10 @@ class EditorPanelsMixin:
 
         log(f"-----refresh page: {reason}, at", editor)
 
-        currentId = editor.note.id
-        currentNode = self.noteToNoteNode(editor.note)
+        currentId = note.id
+        currentNode = self.noteToNoteNode(note)
         showForwardLinkTitle = config["showForwardLinkTitleInLinksPage"]
-        childLinkTitles = (
-            self.findChildLinkTitles(currentId, " ".join(editor.note.fields)) if showForwardLinkTitle else {}
-        )
+        childLinkTitles = self.findChildLinkTitles(currentId, " ".join(note.fields)) if showForwardLinkTitle else {}
         editor.noteNode = currentNode
         editor.childLinkTitles = childLinkTitles
 
@@ -288,6 +287,6 @@ class EditorPanelsMixin:
 
     def appendJsToEditor(self, web_content, context):
         """Enable the editor to support shortcut keys and double-click nid trigger operations"""
-        if not isinstance(context, Editor):
+        if not hasattr(context, "editorMode") or not hasattr(context, "web"):
             return
         web_content.head += f'<script src="{getWebFileLink("js/detectClick.js")}"></script>'

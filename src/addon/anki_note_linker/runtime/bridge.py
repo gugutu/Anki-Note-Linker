@@ -58,21 +58,13 @@ class BridgeMixin:
             if editor.addMode:
                 tooltip(getTr("Please add the current note first"))
                 return True, None
-            text = find_new_link_title(editor.note.joined_fields(), placeholder) or ""
-            note = aqt.mw.col.new_note(editor.note.note_type())
-            if (
-                StockNotetype is not None
-                and note.note_type().get("originalStockKind")
-                == StockNotetype.OriginalStockKind.ORIGINAL_STOCK_KIND_IMAGE_OCCLUSION
-            ):
-                for flds in note.note_type()["flds"]:
-                    if flds["tag"] == notetypes_pb2.IMAGE_OCCLUSION_FIELD_HEADER:
-                        note.fields[flds["ord"]] = text
-                        break
+            save_note = getattr(editor, "call_after_note_saved", None)
+            if save_note is None:
+                save_note = getattr(editor, "saveNow", None)
+            if save_note is None:
+                self.openAddNoteWindow(editor, placeholder)
             else:
-                note.fields[0] = text
-            add = MyAddCards(editor.note, placeholder)
-            add.set_note(note, editor.note.cards()[0].did)
+                save_note(lambda: self.openAddNoteWindow(editor, placeholder))
             return True, None
 
         if command.action is BridgeAction.SEARCH_TAG:
@@ -85,7 +77,7 @@ class BridgeMixin:
             return True, None
 
         if command.action is BridgeAction.SWITCH_TO_LEGACY_RENDERER:
-            if isinstance(context, Editor):
+            if hasattr(context, "editorMode") and hasattr(context, "graphPage"):
                 self.switchToOldRenderer(context)
             elif hasattr(mw.reviewer, "graphPage") and context == mw.reviewer.graphPage:
                 self.switchReviewerGraphToOldRenderer()
@@ -93,3 +85,24 @@ class BridgeMixin:
                 context.switchToOldRenderer()
             return True, None
         return handled
+
+    def openAddNoteWindow(self, editor: Editor, placeholder: str) -> None:
+        """Read the parent note after pending edits have been saved."""
+        editorNote = self.getEditorNote(editor)
+        if editorNote is None:
+            return
+        text = find_new_link_title(editorNote.joined_fields(), placeholder) or ""
+        note = aqt.mw.col.new_note(editorNote.note_type())
+        if (
+            StockNotetype is not None
+            and note.note_type().get("originalStockKind")
+            == StockNotetype.OriginalStockKind.ORIGINAL_STOCK_KIND_IMAGE_OCCLUSION
+        ):
+            for flds in note.note_type()["flds"]:
+                if flds["tag"] == notetypes_pb2.IMAGE_OCCLUSION_FIELD_HEADER:
+                    note.fields[flds["ord"]] = text
+                    break
+        else:
+            note.fields[0] = text
+        add = MyAddCards(editorNote, placeholder)
+        add.set_note(note, editorNote.cards()[0].did)

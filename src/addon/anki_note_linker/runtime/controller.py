@@ -37,6 +37,9 @@ class AnkiNoteLinker(
         gui_hooks.editor_did_init_buttons.append(self.injectButton)
         gui_hooks.editor_did_load_note.append(self.onLoadNote)
         gui_hooks.editor_did_fire_typing_timer.append(self.onEditNote)
+        operation_did_execute = getattr(gui_hooks, "operation_did_execute", None)
+        if operation_did_execute is not None:
+            operation_did_execute.append(self.onOperationDidExecute)
         gui_hooks.webview_will_set_content.append(self.appendJsToEditor)
         gui_hooks.browser_will_show_context_menu.append(self.injectRightClickMenu)
         gui_hooks.editor_will_show_context_menu.append(self.injectRightClickMenu)

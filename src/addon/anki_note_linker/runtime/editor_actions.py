@@ -1,13 +1,14 @@
 """Editor context-menu, shortcut, link, and navigation actions."""
 
 import importlib
+import json
 import re
 import uuid
 
 import aqt
 from anki.cards import Card
 from anki.notes import NoteId
-from aqt import QAction, QApplication, QKeySequence, QMenu, QShortcut, mw, qconnect
+from aqt import QAction, QApplication, QKeySequence, QMenu, QShortcut, gui_hooks, mw, qconnect
 from aqt.browser import Browser
 from aqt.browser.previewer import BrowserPreviewer
 from aqt.editor import Editor, EditorWebView
@@ -22,31 +23,32 @@ from .state import PreviewState
 
 class EditorActionsMixin:
     def injectRightClickMenu(self, context, menu: QMenu):
-        if isinstance(context, EditorWebView):
-            if context.editor.currentField is not None:
+        editor = self._getEditorFromContext(context)
+        if editor is not None:
+            if editor.currentField is not None:
                 menu.addSeparator()
                 insertLinkWithClipboardIDAction = QAction(context)
                 insertLinkWithClipboardIDAction.setText(getTr("Insert link with copied note ID"))
                 insertLinkWithClipboardIDAction.setShortcut(config["shortcuts-insertLinkWithClipboardID"])
                 qconnect(
                     insertLinkWithClipboardIDAction.triggered,
-                    lambda _, c=context: self.insertLinkWithClipboardID(c.editor),
+                    lambda _, e=editor: self.insertLinkWithClipboardID(e),
                 )
                 menu.addAction(insertLinkWithClipboardIDAction)
 
                 insertNewLinkAction = QAction(context)
                 insertNewLinkAction.setText(getTr("Insert new link"))
                 insertNewLinkAction.setShortcut(config["shortcuts-insertNewLink"])
-                qconnect(insertNewLinkAction.triggered, lambda _, c=context: self.insertNewLink(c.editor))
+                qconnect(insertNewLinkAction.triggered, lambda _, e=editor: self.insertNewLink(e))
                 menu.addAction(insertNewLinkAction)
 
                 insertLinkTemplateAction = QAction(context)
                 insertLinkTemplateAction.setText(getTr("Insert link template"))
                 insertLinkTemplateAction.setShortcut(config["shortcuts-insertLinkTemplate"])
-                qconnect(insertLinkTemplateAction.triggered, lambda _, c=context: self.insertLinkTemplate(c.editor))
+                qconnect(insertLinkTemplateAction.triggered, lambda _, e=editor: self.insertLinkTemplate(e))
                 menu.addAction(insertLinkTemplateAction)
                 menu.addSeparator()
-            if context.editor.addMode:
+            if editor.addMode:
                 return
         menu.addSeparator()
         copyNoteIdAction = QAction(context)
@@ -93,12 +95,22 @@ class EditorActionsMixin:
             text,
         )
 
-    def _getNoteIDFromContext(self, context):
+    def _getEditorFromContext(self, context):
         if isinstance(context, Editor):
-            return context.note.id
-        elif isinstance(context, EditorWebView):
-            return context.editor.note.id
-        elif isinstance(context, Browser):
+            return context
+        editor = getattr(context, "editor", None)
+        if editor is not None and (hasattr(editor, "note") or hasattr(editor, "nid")):
+            return editor
+        if hasattr(context, "nid") and hasattr(context, "set_note"):
+            return context
+        return None
+
+    def _getNoteIDFromContext(self, context):
+        editor = self._getEditorFromContext(context)
+        if editor is not None:
+            note = self.getEditorNote(editor)
+            return note.id if note is not None else getattr(editor, "nid", None)
+        if isinstance(context, Browser):
             browser: Browser = context
             if browser.card is None:
                 tooltip(getTr("Please select a single note/card"))
@@ -162,17 +174,26 @@ class EditorActionsMixin:
 
     def insertLinkTemplate(self, editor: Editor):
         text = escape_title(editor.web.selectedText())
-        editor.doPaste(f"[{text}|nid]", True)
+        self._pasteEditorHtml(editor, f"[{text}|nid]", True)
 
     def insertLinkWithClipboardID(self, editor: Editor):
         text = editor.web.selectedText()
         idText = QApplication.clipboard().text()
         if re.fullmatch(r"\d{13}", idText):
-            editor.doPaste(format_note_link(int(idText), text), True)
+            self._pasteEditorHtml(editor, format_note_link(int(idText), text), True)
         else:
             tooltip(getTr("The content in the clipboard is not a note ID"))
 
     def insertNewLink(self, editor: Editor):
         text = editor.web.selectedText()
         placeholder = str(uuid.uuid4().int)[0:8]
-        editor.doPaste(format_new_link(placeholder, text), True)
+        self._pasteEditorHtml(editor, format_new_link(placeholder, text), True)
+
+    def _pasteEditorHtml(self, editor: Editor, html: str, internal: bool) -> None:
+        paste = getattr(editor, "doPaste", None)
+        if paste is not None:
+            paste(html, internal)
+            return
+
+        editor.web.eval(f"pasteHTML({json.dumps(html)}, {json.dumps(internal)}, false);")
+        gui_hooks.editor_did_paste(editor, html, internal, False)

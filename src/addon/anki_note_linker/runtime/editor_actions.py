@@ -96,6 +96,8 @@ class EditorActionsMixin:
         )
 
     def _getEditorFromContext(self, context):
+        if isinstance(context, Browser):
+            return None
         if isinstance(context, Editor):
             return context
         editor = getattr(context, "editor", None)
@@ -106,18 +108,17 @@ class EditorActionsMixin:
         return None
 
     def _getNoteIDFromContext(self, context):
-        editor = self._getEditorFromContext(context)
-        if editor is not None:
-            note = self.getEditorNote(editor)
-            return note.id if note is not None else getattr(editor, "nid", None)
         if isinstance(context, Browser):
             browser: Browser = context
             if browser.card is None:
                 tooltip(getTr("Please select a single note/card"))
                 return None
             return browser.card.nid
-        else:
-            return None
+        editor = self._getEditorFromContext(context)
+        if editor is not None:
+            note = self.getEditorNote(editor)
+            return note.id if note is not None else None
+        return None
 
     def copyNoteID(self, context):
         nid = self._getNoteIDFromContext(context)
@@ -172,20 +173,35 @@ class EditorActionsMixin:
                 browser.search_for('"deck:' + aqt.mw.col.decks.get(card.did)["name"] + '"')
                 browser.table.select_single_card(card.id)
 
-    def insertLinkTemplate(self, editor: Editor):
-        text = escape_title(editor.web.selectedText())
+    def _editorSelection(self, editor: Editor, action: str, selectedText):
+        if selectedText is not None:
+            return selectedText
+        if not hasattr(editor, "note"):
+            editor.web.eval(f"window.AnkiNoteLinkerEditor.runAction({json.dumps(action)});")
+            return None
+        return editor.web.selectedText()
+
+    def insertLinkTemplate(self, editor: Editor, selectedText=None):
+        selection = self._editorSelection(editor, "insertLinkTemplate", selectedText)
+        if selection is None:
+            return
+        text = escape_title(selection)
         self._pasteEditorHtml(editor, f"[{text}|nid]", True)
 
-    def insertLinkWithClipboardID(self, editor: Editor):
-        text = editor.web.selectedText()
+    def insertLinkWithClipboardID(self, editor: Editor, selectedText=None):
+        text = self._editorSelection(editor, "insertLinkWithClipboardID", selectedText)
+        if text is None:
+            return
         idText = QApplication.clipboard().text()
         if re.fullmatch(r"\d{13}", idText):
             self._pasteEditorHtml(editor, format_note_link(int(idText), text), True)
         else:
             tooltip(getTr("The content in the clipboard is not a note ID"))
 
-    def insertNewLink(self, editor: Editor):
-        text = editor.web.selectedText()
+    def insertNewLink(self, editor: Editor, selectedText=None):
+        text = self._editorSelection(editor, "insertNewLink", selectedText)
+        if text is None:
+            return
         placeholder = str(uuid.uuid4().int)[0:8]
         self._pasteEditorHtml(editor, format_new_link(placeholder, text), True)
 
@@ -195,5 +211,5 @@ class EditorActionsMixin:
             paste(html, internal)
             return
 
-        editor.web.eval(f"pasteHTML({json.dumps(html)}, {json.dumps(internal)}, false);")
+        editor.web.eval(f"window.AnkiNoteLinkerEditor.pasteHtml({json.dumps(html)}, {json.dumps(internal)});")
         gui_hooks.editor_did_paste(editor, html, internal, False)

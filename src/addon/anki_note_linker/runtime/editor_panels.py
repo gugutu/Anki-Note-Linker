@@ -5,7 +5,7 @@ import os
 import weakref
 
 from anki.notes import NoteId
-from aqt import QHBoxLayout, QSplitter, Qt, QVBoxLayout, QWidget, mw
+from aqt import QHBoxLayout, QKeySequence, QSplitter, Qt, QVBoxLayout, QWidget, mw
 from aqt.editor import Editor, EditorMode
 from aqt.utils import tooltip
 from aqt.webview import AnkiWebView
@@ -77,6 +77,8 @@ class EditorPanelsMixin:
         editor_reference = weakref.ref(editor)
         editor.web.destroyed.connect(lambda _object=None, reference=editor_reference: self._cleanupEditor(reference))
         self.injectShortcuts(editor.web)
+        if not hasattr(editor, "note"):
+            self.injectNewEditorScripts(editor)
         if editor.addMode:
             return
 
@@ -287,6 +289,47 @@ class EditorPanelsMixin:
 
     def appendJsToEditor(self, web_content, context):
         """Enable the editor to support shortcut keys and double-click nid trigger operations"""
-        if not hasattr(context, "editorMode") or not hasattr(context, "web"):
+        if not isinstance(context, Editor):
             return
-        web_content.head += f'<script src="{getWebFileLink("js/detectClick.js")}"></script>'
+        web_content.head += f'<script src="{getWebFileLink("dist/editor.js")}"></script>'
+
+    def injectNewEditorScripts(self, editor):
+        """Install listeners after Svelte has mounted; stdHtml hooks do not run here."""
+        actions = (
+            (
+                "insertLinkWithClipboardID",
+                "Insert link with copied note ID",
+                "shortcuts-insertLinkWithClipboardID",
+                True,
+            ),
+            ("insertNewLink", "Insert new link", "shortcuts-insertNewLink", True),
+            ("insertLinkTemplate", "Insert link template", "shortcuts-insertLinkTemplate", True),
+            ("copyNoteID", "Copy current note ID", "shortcuts-copyNoteID", False),
+            ("copyNoteLink", "Copy current note link", "shortcuts-copyNoteLink", False),
+            ("openNoteInNewEditor", "Open current note in new window", "shortcuts-openNoteInNewWindow", False),
+        )
+        settings = {
+            "addMode": editor.addMode,
+            "menuItems": [
+                {
+                    "action": action,
+                    "label": getTr(label),
+                    "shortcut": QKeySequence(config[key]).toString(QKeySequence.SequenceFormat.NativeText),
+                    "requiresField": requiresField,
+                }
+                for action, label, key, requiresField in actions
+            ],
+        }
+        editor.web.eval(
+            f"""(() => {{
+                const initialize = () => window.AnkiNoteLinkerEditor.initialize({json.dumps(settings)});
+                if (window.AnkiNoteLinkerEditor) {{
+                    initialize();
+                    return;
+                }}
+                const script = document.createElement('script');
+                script.src = {json.dumps(getWebFileLink("dist/editor.js"))};
+                script.addEventListener('load', initialize, {{ once: true }});
+                document.head.appendChild(script);
+            }})()"""
+        )

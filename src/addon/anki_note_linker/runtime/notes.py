@@ -31,7 +31,7 @@ class NoteServiceMixin:
             return note
 
         nid = getattr(editor, "nid", None)
-        if nid is None:
+        if not nid or mw.col is None or editor.widget.isHidden():
             return None
         try:
             return mw.col.get_note(NoteId(nid))
@@ -39,10 +39,17 @@ class NoteServiceMixin:
             return None
 
     def onOperationDidExecute(self, changes, handler):
-        """Refresh a new-editor panel after its note has been saved."""
+        """NewEditor saves report the active window, not the editor instance."""
+        if not changes.note_text:
+            return
+        hasNewEditor = False
         for editor in tuple(self.editors):
-            if editor is handler:
-                self.refreshPage(editor, adaptScale=False, reason="saved note")
+            if hasattr(editor, "note") or self.getEditorNote(editor) is None:
+                continue
+            hasNewEditor = True
+            self.refreshPage(editor, adaptScale=False, reason="note text changed")
+        if hasNewEditor and state.globalGraph is not None and not (changes.study_queues or changes.notetype):
+            state.globalGraph.refreshGlobalGraph(reason="note text changed in new editor")
 
     def onEditNote(self, note: Note):
         if note.id == 0:
@@ -60,7 +67,7 @@ class NoteServiceMixin:
                         not showForwardLinkTitle or operator.eq(getattr(editor, "childLinkTitles", {}), childLinkTitles)
                     )
                 ):
-                    return
+                    continue
                 else:
                     self.refreshPage(editor, adaptScale=False, reason="mainField or links of note changed")
 

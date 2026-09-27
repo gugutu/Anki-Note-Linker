@@ -10,7 +10,7 @@ from aqt.browser import Browser
 from aqt.editor import Editor
 from aqt.utils import tooltip
 
-from ..core.bridge import BridgeAction, parse_bridge_command
+from ..core.bridge import BridgeAction, EditorAction, parse_bridge_command
 from ..core.links import find_new_link_title
 from .editor_windows import MyAddCards
 from .i18n import getTr
@@ -34,6 +34,25 @@ class BridgeMixin:
         command = parse_bridge_command(message)
         if command is None:
             return handled
+
+        if command.action is BridgeAction.EDITOR_ACTION:
+            editor = self._getEditorFromContext(context)
+            if editor is None or editor.web is None:
+                return handled
+            if command.editor_action is EditorAction.INSERT_LINK_WITH_CLIPBOARD_ID:
+                self.insertLinkWithClipboardID(editor, command.selected_text)
+            elif command.editor_action is EditorAction.INSERT_NEW_LINK:
+                self.insertNewLink(editor, command.selected_text)
+            elif command.editor_action is EditorAction.INSERT_LINK_TEMPLATE:
+                self.insertLinkTemplate(editor, command.selected_text)
+            elif not editor.addMode:
+                if command.editor_action is EditorAction.COPY_NOTE_ID:
+                    self.copyNoteID(editor)
+                elif command.editor_action is EditorAction.COPY_NOTE_LINK:
+                    self.copyNoteLink(editor)
+                elif command.editor_action is EditorAction.OPEN_NOTE_IN_EDITOR:
+                    self.openNoteInNewEditor(editor)
+            return True, None
 
         if command.note_id is not None:
             nid = command.note_id

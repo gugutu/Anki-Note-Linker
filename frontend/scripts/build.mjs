@@ -14,6 +14,7 @@ await build({
   entryNames: "[name]",
   entryPoints: {
     config: "frontend/src/config/app.ts",
+    editor: "frontend/src/editor/app.ts",
     "graph-core": "frontend/src/graph/browser-api.ts",
     links: "frontend/src/links/app.ts",
     "new-graph": "frontend/src/graph/new-renderer.ts",

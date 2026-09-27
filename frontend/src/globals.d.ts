@@ -23,9 +23,13 @@ declare function renderMathInElement(
 ): void;
 
 interface Window {
+  AnkiNoteLinkerEditor?: import("./editor/app").EditorBrowserApi;
   AnkiNoteLinkerGraph: typeof import("./graph/browser-api").graphBrowserApi;
   AnkiNoteLinkerNewGraph: import("./graph/new-renderer").NewGraphBrowserApi;
   commands?: string[];
+  getNoteId?: () => bigint | number | string | null;
+  pasteHTML?: (html: string, internal: boolean, extended: boolean) => void;
+  require?: (name: string) => import("./editor/app").NoteEditorModule;
   loadNoteFields: (config: AddonConfig | null, useConfig?: boolean) => void;
   noteFieldsDisplayedInTheNoteSummaryConfigTemp: string[];
   readConfig: (config: AddonConfig) => void;

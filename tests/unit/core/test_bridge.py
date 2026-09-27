@@ -2,7 +2,7 @@ from typing import Optional
 
 import pytest
 
-from anki_note_linker.core.bridge import BridgeAction, parse_bridge_command
+from anki_note_linker.core.bridge import BridgeAction, EditorAction, parse_bridge_command
 
 
 @pytest.mark.parametrize(
@@ -45,3 +45,32 @@ def test_exposes_note_id_only_for_note_commands() -> None:
 
     assert note_command is not None and note_command.note_id == 1234567890123
     assert new_note_command is not None and new_note_command.note_id is None
+
+
+@pytest.mark.parametrize("action", list(EditorAction))
+def test_parses_editor_actions_with_selected_text(action: EditorAction) -> None:
+    import json
+
+    command = parse_bridge_command(
+        "AnkiNoteLinker-editorAction" + json.dumps({"action": action.value, "selectedText": "中文 [标题]"})
+    )
+    assert command is not None
+    assert command.action is BridgeAction.EDITOR_ACTION
+    assert command.editor_action is action
+    assert command.selected_text == "中文 [标题]"
+    assert command.note_id is None
+
+
+@pytest.mark.parametrize(
+    "payload",
+    [
+        "{",
+        "null",
+        "[]",
+        '{"action":"cleanup","selectedText":""}',
+        '{"action":"copyNoteID","selectedText":null}',
+        '{"action":"copyNoteID"}',
+    ],
+)
+def test_rejects_invalid_editor_actions(payload: str) -> None:
+    assert parse_bridge_command("AnkiNoteLinker-editorAction" + payload) is None

@@ -27,11 +27,11 @@ REQUIRED_ADDON_FILES = (
     "web/graph.html",
     "web/links.html",
     "web/newGraph.html",
-    "web/js/detectClick.js",
     "web/js/translation.js",
 )
 REQUIRED_FRONTEND_FILES = (
     "web/dist/config.js",
+    "web/dist/editor.js",
     "web/dist/graph-core.js",
     "web/dist/links.js",
     "web/dist/new-graph.js",

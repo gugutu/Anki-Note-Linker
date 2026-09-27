@@ -84,6 +84,14 @@ def find_new_link_title(text: str, placeholder: str) -> Optional[str]:
     return unescape_title(match.group(1)) if match else None
 
 
+def resolve_new_link(text: str, placeholder: str, note_id: int) -> str:
+    """Resolve only matching link placeholders, preserving surrounding content."""
+    if not re.fullmatch(r"\d{8}", placeholder):
+        return text
+    pattern = re.compile(NEW_LINK_PATTERN_TEMPLATE.format(placeholder=re.escape(placeholder)))
+    return pattern.sub(lambda match: format_note_link(note_id, unescape_title(match.group(1))), text)
+
+
 def format_note_link(note_id: int, title: str = "") -> str:
     if not re.fullmatch(r"\d{13}", str(note_id)):
         raise ValueError("Anki note IDs must contain exactly 13 digits")

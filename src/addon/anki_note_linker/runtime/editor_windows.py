@@ -1,5 +1,6 @@
 import aqt
 from anki.collection import OpChanges
+from anki.errors import NotFoundError
 from anki.notes import Note, NoteId
 from aqt import QDialogButtonBox, QKeySequence, QMainWindow, QPushButton, QShortcut, Qt, gui_hooks, qconnect
 from aqt.addcards import AddCards
@@ -8,6 +9,7 @@ from aqt.operations.note import add_note
 from aqt.sound import av_player
 from aqt.utils import restoreGeom, saveGeom, shortcut, tooltip, tr
 
+from ..core.links import resolve_new_link
 from .lifecycle import mark_managed_dialog_closed, register_managed_dialog, remove_hook_safely
 
 
@@ -108,12 +110,20 @@ class MyAddCards(AddCards):
             tooltip(tr.adding_added(), period=500)
             av_player.stop_and_clear_queue()
 
-            self.backLinkNote.fields = map(
-                lambda it: it.replace("new" + self.placeholder, "nid" + str(note.id)), self.backLinkNote.fields
-            )
-            aqt.mw.col.update_note(self.backLinkNote)
+            self._update_back_link(note.id)
             self._load_new_note(sticky_fields_from=note)
             gui_hooks.add_cards_did_add_note(note)
             self.close()
 
         add_note(parent=self, note=note, target_deck_id=target_deck_id).success(on_success).run_in_background()
+
+    def _update_back_link(self, note_id: NoteId) -> None:
+        """Patch the latest parent note, not the snapshot captured when opening."""
+        try:
+            parent_note = aqt.mw.col.get_note(self.backLinkNote.id)
+        except NotFoundError:
+            return
+        fields = [resolve_new_link(field, self.placeholder, note_id) for field in parent_note.fields]
+        if fields != parent_note.fields:
+            parent_note.fields = fields
+            aqt.mw.col.update_note(parent_note)

@@ -8,6 +8,7 @@ from anki_note_linker.core.links import (
     format_note_link,
     iter_note_links,
     replace_note_links_with_titles,
+    resolve_new_link,
 )
 
 
@@ -55,3 +56,16 @@ def test_finds_only_the_requested_new_link_placeholder() -> None:
     assert find_new_link_title(text, "22222222") == "A [title"
     assert find_new_link_title(text, "33333333") is None
     assert find_new_link_title(text, "invalid") is None
+
+
+def test_resolves_only_matching_links_without_changing_other_content() -> None:
+    text = r"<b>[A \[title|new12345678]</b> [Other|new87654321] new12345678 [Again|new12345678]"
+    assert resolve_new_link(text, "12345678", 1234567890123) == (
+        r"<b>[A \[title|nid1234567890123]</b> [Other|new87654321] new12345678 [Again|nid1234567890123]"
+    )
+
+
+@pytest.mark.parametrize("placeholder", ["12345678", "invalid"])
+def test_does_not_restore_removed_placeholders(placeholder: str) -> None:
+    text = "Latest text without a link [Existing|nid1234567890123]"
+    assert resolve_new_link(text, placeholder, 2345678901234) == text

@@ -266,8 +266,8 @@ class EditorPanelsMixin:
         if target != "graphPage" and panelShows[0]:
             editor.linksPage.eval(
                 f"""reloadPage(
-                    {json.dumps(parentJsNodes, default=lambda o: o.__dict__)},
-                    {json.dumps(childJsNodes, default=lambda o: o.__dict__)},
+                    {json.dumps(parentJsNodes, default=lambda o: o.to_dict())},
+                    {json.dumps(childJsNodes, default=lambda o: o.to_dict())},
                     false,
                     {json.dumps(config["showForwardLinkTitleInLinksPage"])}
                 )"""
@@ -275,8 +275,8 @@ class EditorPanelsMixin:
         if target != "linksPage" and panelShows[1]:
             editor.graphPage.eval(
                 f"""reloadPage(
-                {json.dumps(allJsNodes, default=lambda o: o.__dict__)},
-                {json.dumps(allConnections, default=lambda o: o.__dict__)},
+                {json.dumps(allJsNodes, default=lambda o: o.to_dict())},
+                {json.dumps(allConnections, default=lambda o: o.to_dict())},
                 {json.dumps(resetCenter)},
                 {json.dumps(adaptScale)}
                 )"""

@@ -160,6 +160,34 @@ test("large graphs recreate visible labels after zooming out and back in", async
   await expect(page.locator(".circleText")).toHaveText("Visible");
 });
 
+test("shared node listeners keep hover labels attached to the correct node", async ({ page }) => {
+  await initializeNewGraph(page, true);
+  await page.evaluate(async () => {
+    await window.AnkiNoteLinkerNewGraph.reloadPage(
+      [
+        { id: 1, mainField: "First node", type: "normal", fx: -100, fy: 0 },
+        { id: 2, mainField: "Second node", type: "normal", fx: 100, fy: 0 },
+      ],
+      [],
+      false,
+    );
+  });
+  await expect(page.locator(".circleText")).toHaveCount(2);
+  const points = await page.evaluate(() => window.graphTestApp?.stage.children.map((circle) => {
+    const point = circle.toGlobal({ x: 0, y: 0 });
+    return { x: point.x, y: point.y };
+  }));
+  const first = points?.[0];
+  const second = points?.[1];
+  if (first === undefined || second === undefined) throw new Error("Graph nodes were not captured");
+  await page.mouse.move(first.x, first.y);
+  await expect(page.locator(".label")).toHaveText("First node");
+  await page.mouse.move(second.x, second.y);
+  await expect(page.locator(".label")).toHaveText("Second node");
+  await page.mouse.move(second.x, second.y + 100);
+  await expect(page.locator(".label")).toHaveCount(0);
+});
+
 for (const interaction of [
   { button: "left", command: `AnkiNoteLinker-openNoteInPreviewer${String(testNodeId)}` },
   { button: "right", command: `AnkiNoteLinker-openNoteInNewEditor${String(testNodeId)}` },

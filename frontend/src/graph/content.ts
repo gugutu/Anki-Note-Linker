@@ -1,6 +1,8 @@
 import type { GraphNode } from "./types";
 
 const SOUND_MARKUP = /\[sound:[^\]]+\]/g;
+const POSITION_KEYS = ["x", "y", "vx", "vy", "index"] as const;
+const PIN_KEYS = ["fx", "fy"] as const;
 
 export interface ProcessedNoteContent {
   imageSrc?: string;
@@ -64,11 +66,16 @@ export function preserveNodePosition(nextNode: GraphNode, previousNode: GraphNod
   if (previousNode === undefined) {
     return nextNode;
   }
-  const simulationKeys = ["x", "y", "vx", "vy", "fx", "fy", "index"] as const;
-  for (const key of simulationKeys) {
+  for (const key of POSITION_KEYS) {
     const value = previousNode[key];
     if (value !== undefined) {
-      Object.assign(nextNode, { [key]: value });
+      nextNode[key] = value;
+    }
+  }
+  for (const key of PIN_KEYS) {
+    const value = previousNode[key];
+    if (value !== undefined) {
+      nextNode[key] = value;
     }
   }
   return nextNode;

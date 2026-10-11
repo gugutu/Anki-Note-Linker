@@ -134,8 +134,8 @@ class ReviewerMixin:
             if links_show and hasattr(mw.reviewer, "linksPage"):
                 mw.reviewer.linksPage.eval(
                     f"""reloadPage(
-                                {json.dumps(parentJsNodes, default=lambda o: o.__dict__)},
-                                {json.dumps(childJsNodes, default=lambda o: o.__dict__)},
+                                {json.dumps(parentJsNodes, default=lambda o: o.to_dict())},
+                                {json.dumps(childJsNodes, default=lambda o: o.to_dict())},
                                 false,
                                 {json.dumps(config["showForwardLinkTitleInLinksPage"])}
                             )"""
@@ -156,8 +156,8 @@ class ReviewerMixin:
                             allConnections.append(Connection(parentNode.id, childId))
                 mw.reviewer.graphPage.eval(
                     f"""reloadPage(
-                    {json.dumps(allJsNodes, default=lambda o: o.__dict__)},
-                    {json.dumps(allConnections, default=lambda o: o.__dict__)},
+                    {json.dumps(allJsNodes, default=lambda o: o.to_dict())},
+                    {json.dumps(allConnections, default=lambda o: o.to_dict())},
                     {json.dumps(True)},
                     {json.dumps(True)}
                     )"""

@@ -37,6 +37,18 @@ describe("processNoteContent", () => {
 });
 
 describe("preserveNodePosition", () => {
+  it("preserves all position fields, including released pins and zero values", () => {
+    const next: GraphNode = { id: 1, mainField: "New", type: "normal", x: 50, fx: 50, fy: 50 };
+    const previous: GraphNode = {
+      id: 1, mainField: "Old", type: "normal", x: 0, y: 20, vx: 0, vy: -1, fx: null, fy: null, index: 0,
+    };
+    preserveNodePosition(next, previous);
+    expect(next).toEqual({
+      id: 1, mainField: "New", type: "normal", x: 0, y: 20, vx: 0, vy: -1, fx: null, fy: null, index: 0,
+    });
+    expect(preserveNodePosition(next, undefined)).toBe(next);
+  });
+
   it("copies only simulation position from an old node", () => {
     const next: GraphNode = { id: 1, mainField: "new", type: "normal" };
     const previous: GraphNode = {

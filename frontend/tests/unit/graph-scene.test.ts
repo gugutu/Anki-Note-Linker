@@ -1,4 +1,4 @@
-import { Container, Graphics, GraphicsContext, Rectangle, type Application } from "pixi.js";
+import { Container, Graphics, GraphicsContext, Rectangle, type Application, type FederatedPointerEvent } from "pixi.js";
 import renderMath from "katex/contrib/auto-render";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -46,6 +46,59 @@ function contexts(stage: Container): GraphicsContext[] {
 }
 
 describe("graph scene memory", () => {
+  it("shares three listener functions across thousands of nodes", () => {
+    const { scene, stage, handlers } = createScene();
+    const nodes = Array.from({ length: 5000 }, (_, index) => node(index));
+    scene.rebuild(nodes, [], DEFAULT_NODE_COLORS, handlers);
+    for (const event of ["pointerdown", "pointerenter", "pointerleave"] as const) {
+      const listeners = stage.children.flatMap((circle) => circle.listeners(event));
+      expect(listeners).toHaveLength(nodes.length);
+      expect(new Set(listeners).size).toBe(1);
+    }
+    scene.destroy();
+  });
+
+  it("routes shared listeners to the correct node and clears references on rebuild", () => {
+    const { scene, stage, handlers } = createScene();
+    const first = node(1);
+    const second = node(2, 100);
+    scene.rebuild([first, second], [], DEFAULT_NODE_COLORS, handlers);
+    const firstCircle = stage.children[0];
+    const secondCircle = stage.children[1];
+    if (firstCircle === undefined || secondCircle === undefined) throw new Error("Missing node graphics");
+    const event = { button: 2 } as FederatedPointerEvent;
+    secondCircle.emit("pointerdown", event);
+    firstCircle.emit("pointerenter", event);
+    secondCircle.emit("pointerleave", event);
+    expect(handlers.pointerDown).toHaveBeenCalledExactlyOnceWith(second, secondCircle, event);
+    expect(handlers.pointerEnter).toHaveBeenCalledExactlyOnceWith(first);
+    expect(handlers.pointerLeave).toHaveBeenCalledExactlyOnceWith();
+
+    const nextHandlers = { pointerDown: vi.fn(), pointerEnter: vi.fn(), pointerLeave: vi.fn() };
+    const nextNode = node(3);
+    scene.rebuild([nextNode], [], DEFAULT_NODE_COLORS, nextHandlers);
+    expect(Reflect.get(firstCircle, "graphNode")).toBeNull();
+    expect(Reflect.get(secondCircle, "graphHandlers")).toBeNull();
+    secondCircle.emit("pointerdown", event);
+    expect(handlers.pointerDown).toHaveBeenCalledOnce();
+    stage.children[0]?.emit("pointerdown", event);
+    expect(nextHandlers.pointerDown).toHaveBeenCalledExactlyOnceWith(nextNode, stage.children[0], event);
+    scene.destroy();
+  });
+
+  it("adds graph objects in draw order without spreading large arrays into arguments", () => {
+    const { scene, stage, handlers } = createScene();
+    const addChild = vi.spyOn(stage, "addChild");
+    const first = node(1);
+    const second = node(2, 100);
+    scene.rebuild([first, second], [{ source: first, target: second }], DEFAULT_NODE_COLORS, handlers);
+    expect(addChild.mock.calls.map((arguments_) => arguments_.length)).toEqual([1, 1, 1]);
+    expect(stage.children[0]).toBeInstanceOf(Container);
+    expect(stage.children[0]).not.toBeInstanceOf(Graphics);
+    expect(stage.children.slice(1).every((child) => child instanceof Graphics)).toBe(true);
+    scene.destroy();
+  });
+
   it("releases every old shared context without destroying the new scene", () => {
     const { scene, stage, handlers } = createScene();
     const first = node(1);

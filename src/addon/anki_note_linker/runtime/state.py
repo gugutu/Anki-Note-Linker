@@ -36,12 +36,19 @@ addon = None
 
 
 class Connection:
+    __slots__ = ("source", "target")
+
     def __init__(self, source_id, target_id):
         self.source = source_id
         self.target = target_id
 
+    def to_dict(self):
+        return {"source": self.source, "target": self.target}
+
 
 class NoteNode:
+    __slots__ = ("id", "childIds", "parentIds", "mainField", "isTag")
+
     def __init__(
         self, nid: NoteId, childIds: list[NoteId], parentIds: set[NoteId], mainField: str, isTag: bool = False
     ):
@@ -56,11 +63,16 @@ class NoteNode:
 
 
 class JsNoteNode:
+    __slots__ = ("id", "mainField", "type", "linkTitle")
+
     def __init__(self, nid: int, mainField: str, type: str, linkTitle: Optional[str] = None):
         self.id = nid
         self.mainField = mainField
         self.type = type
         self.linkTitle = linkTitle
+
+    def to_dict(self):
+        return {"id": self.id, "mainField": self.mainField, "type": self.type, "linkTitle": self.linkTitle}
 
 
 class PreviewState:

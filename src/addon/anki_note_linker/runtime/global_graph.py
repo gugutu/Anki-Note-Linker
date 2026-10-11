@@ -47,8 +47,6 @@ class GlobalGraph(QWidget):
         self.needRefreshAgain = False
         self.inRefreshProcess = False
         self.lastSearchState = None
-        self.linkCache: list[Connection] = []
-        self.noteCacheList = []
         self.hlIds = set()
         self.setWindowTitle(getTr("Global Relationship Graph"))
         outerLayout = QVBoxLayout()
@@ -238,16 +236,15 @@ class GlobalGraph(QWidget):
                     keepTagNote=changedTagNote,
                 )
 
-            self.noteCacheList = [
-                x for x in self.noteCache.values() if showSingle or len(x.childIds) != 0 or len(x.parentIds) != 0
-            ]
+            nodes = [x for x in self.noteCache.values() if showSingle or len(x.childIds) != 0 or len(x.parentIds) != 0]
 
-            self.linkCache = []
-            for parentNode in self.noteCacheList:
+            connections = []
+            for parentNode in nodes:
                 for childId in parentNode.childIds:
-                    self.linkCache.append(Connection(parentNode.id, childId))
+                    connections.append(Connection(parentNode.id, childId))
+            return nodes, connections
 
-        def onSuccess(p):
+        def onSuccess(snapshot):
             self.inRefreshProcess = False
             if self._closed:
                 return
@@ -257,10 +254,11 @@ class GlobalGraph(QWidget):
                 return
 
             self.lastSearchState = searchState
+            nodes, connections = snapshot
             self.web.eval(
                 f'''reloadPage(
-                            {json.dumps([x.toJsNoteNode("highlight") if x.id in self.hlIds else x.toJsNoteNode("normal") for x in self.noteCacheList], default=lambda o: o.__dict__)},
-                            {json.dumps(self.linkCache, default=lambda o: o.__dict__)},
+                            {json.dumps([x.toJsNoteNode("highlight") if x.id in self.hlIds else x.toJsNoteNode("normal") for x in nodes], default=lambda o: o.to_dict())},
+                            {json.dumps(connections, default=lambda o: o.to_dict())},
                             {json.dumps(resetCenter)},
                             {json.dumps(adaptScale)},
                             "{self.qColorToString(QColor.fromRgb(*config["globalGraph-nodeColor"]))}",

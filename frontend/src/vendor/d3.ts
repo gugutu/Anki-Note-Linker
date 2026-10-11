@@ -1,3 +1,3 @@
-import * as d3Api from "d3";
+import { forceCollide, forceLink, forceManyBody, forceSimulation, forceX, forceY } from "d3";
 
-Object.assign(globalThis, { d3: d3Api });
+Object.assign(globalThis, { d3: { forceCollide, forceLink, forceManyBody, forceSimulation, forceX, forceY } });

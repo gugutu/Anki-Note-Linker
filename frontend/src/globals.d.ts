@@ -10,7 +10,10 @@ declare const graphZoomConfig: Record<string, unknown>;
 declare const isMac: boolean;
 declare const userConfig: AddonConfig;
 
-declare const d3: typeof import("d3-force");
+declare const d3: Pick<
+  typeof import("d3-force"),
+  "forceCollide" | "forceLink" | "forceManyBody" | "forceSimulation" | "forceX" | "forceY"
+>;
 
 declare function getTr(message: string): string;
 declare function pycmd(command: string): void;

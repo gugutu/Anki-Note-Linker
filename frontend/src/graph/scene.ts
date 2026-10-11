@@ -16,6 +16,27 @@ export interface NodeInteractionHandlers {
   pointerLeave(): void;
 }
 
+interface NodeGraphics extends Graphics {
+  graphNode: GraphNode | null;
+  graphHandlers: NodeInteractionHandlers | null;
+}
+
+function onNodePointerDown(this: NodeGraphics, event: FederatedPointerEvent): void {
+  if (this.graphNode !== null) {
+    this.graphHandlers?.pointerDown(this.graphNode, this, event);
+  }
+}
+
+function onNodePointerEnter(this: NodeGraphics): void {
+  if (this.graphNode !== null) {
+    this.graphHandlers?.pointerEnter(this.graphNode);
+  }
+}
+
+function onNodePointerLeave(this: NodeGraphics): void {
+  this.graphHandlers?.pointerLeave();
+}
+
 export function isResolvedLink(link: GraphConnection): link is ResolvedGraphConnection {
   return typeof link.source === "object" && typeof link.target === "object";
 }
@@ -25,7 +46,7 @@ function coordinate(value: number | undefined): number {
 }
 
 export class GraphScene {
-  private circles: Graphics[] = [];
+  private circles: NodeGraphics[] = [];
   private graphicsFactory: NodeGraphicsFactory | null = null;
   private lineContext: GraphicsContext | null = null;
   private lineContainers: Container[] = [];
@@ -72,11 +93,11 @@ export class GraphScene {
 
     const graphicsFactory = this.graphicsFactory = new NodeGraphicsFactory(colors);
     this.circles = nodes.map((node) => this.createNodeGraphics(node, graphicsFactory, handlers));
-    if (this.lineContainers.length > 0) {
-      this.app.stage.addChild(...this.lineContainers);
+    for (const container of this.lineContainers) {
+      this.app.stage.addChild(container);
     }
-    if (this.circles.length > 0) {
-      this.app.stage.addChild(...this.circles);
+    for (const circle of this.circles) {
+      this.app.stage.addChild(circle);
     }
   }
 
@@ -92,6 +113,10 @@ export class GraphScene {
   }
 
   private clearDisplayObjects(): void {
+    for (const circle of this.circles) {
+      circle.graphNode = null;
+      circle.graphHandlers = null;
+    }
     this.app.stage.removeChildren().forEach((child) => child.destroy({ children: true }));
     this.circles = [];
     this.lineContainers = [];
@@ -110,19 +135,23 @@ export class GraphScene {
     node: GraphNode,
     factory: NodeGraphicsFactory,
     handlers: NodeInteractionHandlers,
-  ): Graphics {
-    const circle = new PIXI.Graphics(factory.context(node));
-    circle.on("pointerdown", (event: FederatedPointerEvent) => handlers.pointerDown(node, circle, event));
-    circle.on("pointerenter", () => handlers.pointerEnter(node));
-    circle.on("pointerleave", () => handlers.pointerLeave());
+  ): NodeGraphics {
+    const circle = new PIXI.Graphics(factory.context(node)) as NodeGraphics;
+    circle.graphNode = node;
+    circle.graphHandlers = handlers;
+    // Pixi supplies the listener context, so every node can share these functions.
+    circle.on("pointerdown", onNodePointerDown, circle);
+    circle.on("pointerenter", onNodePointerEnter, circle);
+    circle.on("pointerleave", onNodePointerLeave, circle);
     circle.eventMode = "static";
     return circle;
   }
 
   private layoutNodes(): void {
-    for (const [index, circle] of this.circles.entries()) {
+    for (let index = 0; index < this.circles.length; index += 1) {
+      const circle = this.circles[index];
       const node = this.nodes[index];
-      if (node === undefined) {
+      if (node === undefined || circle === undefined) {
         continue;
       }
       const x = coordinate(node.x);
@@ -158,13 +187,9 @@ export class GraphScene {
       text.lineHeight = lineHeight;
       text.layoutLeft = layoutLeft;
       text.layoutTop = layoutTop;
-      text.style.cssText = [
-        `left:${String(text.layoutLeft)}px`,
-        `top:${String(text.layoutTop)}px`,
-        `width:${String(text.layoutWidth)}px`,
-        `font-size:${String(text.fontSize)}px`,
-        `line-height:${String(text.lineHeight)}px`,
-      ].join(";");
+      text.style.cssText = `left:${String(text.layoutLeft)}px;top:${String(text.layoutTop)}px;`
+        + `width:${String(text.layoutWidth)}px;font-size:${String(text.fontSize)}px;`
+        + `line-height:${String(text.lineHeight)}px`;
       if (!text.inDocument) {
         this.textContainer.appendChild(text);
         text.inDocument = true;
@@ -182,7 +207,11 @@ export class GraphScene {
   }
 
   private layoutLinks(deltaMilliseconds: number): void {
-    for (const [index, container] of this.lineContainers.entries()) {
+    for (let index = 0; index < this.lineContainers.length; index += 1) {
+      const container = this.lineContainers[index];
+      if (container === undefined) {
+        continue;
+      }
       const link = this.links[index];
       if (link === undefined || !isResolvedLink(link)) {
         container.renderable = false;
@@ -195,7 +224,9 @@ export class GraphScene {
       const radius = Math.max(nodeRadius(link.source), nodeRadius(link.target), 20);
       if (!this.boundary.contains(sourceX, sourceY, radius) && !this.boundary.contains(targetX, targetY, radius)) {
         container.renderable = false;
-        container.children.forEach((child) => { child.renderable = false; });
+        for (const child of container.children) {
+          child.renderable = false;
+        }
         continue;
       }
 
@@ -205,7 +236,11 @@ export class GraphScene {
       container.scale.set(distance, this.transform.toCanvasLength(screenWidth));
       container.rotation = Math.atan2(targetY - sourceY, targetX - sourceX);
       container.renderable = true;
-      container.children.forEach((particle, particleIndex) => {
+      for (let particleIndex = 0; particleIndex < container.children.length; particleIndex += 1) {
+        const particle = container.children[particleIndex];
+        if (particle === undefined) {
+          continue;
+        }
         if (particleIndex === 0) {
           particle.renderable = true;
         } else if (this.app.stage.scale.x < 0.2 || distance === 0) {
@@ -215,7 +250,7 @@ export class GraphScene {
           particle.x = (particleIndex / PARTICLE_COUNT + this.particleStep) % 1;
           particle.renderable = true;
         }
-      });
+      }
     }
     this.particleStep = (this.particleStep + deltaMilliseconds / 1600) % 1;
   }

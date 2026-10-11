@@ -8,6 +8,7 @@ import type { Simulation, SimulationLinkDatum } from "d3-force";
 
 import { CenterAnimation, ZoomAnimation } from "./animations";
 import { applyGraphBackground, DEFAULT_BACKGROUND, normalizeRgbColor } from "./appearance";
+import { preserveNodePosition } from "./content";
 import {
   linkDistance,
   nodeChargeStrength,
@@ -155,19 +156,15 @@ class PixiGraphRenderer implements NewGraphBrowserApi {
     };
     this.degreeSizing = normalizeDegreeSizingMode(degreeSizing);
 
-    const previousNodes = new Map(this.nodes.map((node) => [node.id, node]));
+    const previousNodes = new Map<NodeId, GraphNode>();
+    for (const node of this.nodes) {
+      previousNodes.set(node.id, node);
+    }
     for (const node of newNodes) {
-      const previous = previousNodes.get(node.id);
-      if (previous !== undefined) {
-        for (const key of ["x", "y", "vx", "vy", "fx", "fy", "index"] as const) {
-          const value = previous[key];
-          if (value !== undefined) {
-            Object.assign(node, { [key]: value });
-          }
-        }
-      }
+      preserveNodePosition(node, previousNodes.get(node.id));
       prepareNodeContent(node, enableImagePreview, `${window.location.origin}/`, getTr("Invalid note"));
     }
+    previousNodes.clear();
 
     this.nodes = newNodes;
     this.links = connections;

@@ -4,7 +4,7 @@ import type {
   Graphics,
   Ticker,
 } from "pixi.js";
-import type { Simulation, SimulationLinkDatum } from "d3-force";
+import type { Simulation } from "d3-force";
 
 import { CenterAnimation, ZoomAnimation } from "./animations";
 import { applyGraphBackground, DEFAULT_BACKGROUND, normalizeRgbColor } from "./appearance";
@@ -21,6 +21,7 @@ import { createNodeLabel, positionLabel, renderGraphMath } from "./labels";
 import { prepareNodeContent } from "./node-content";
 import { DEFAULT_NODE_COLORS, type NodeColors } from "./node-graphics";
 import { GraphScene, isResolvedLink, type NodeInteractionHandlers } from "./scene";
+import { releaseReplacedForces, type GraphSimulationLink as D3Link } from "./simulation";
 import type {
   GraphConnection,
   GraphNode,
@@ -30,9 +31,8 @@ import type {
 import { normalizeZoomConfig } from "./zoom";
 import { createPointTransform, ViewportBoundary } from "./viewport";
 
-type D3Link = GraphConnection & SimulationLinkDatum<GraphNode>;
-
 const NODE_DRAG_THRESHOLD = 4;
+const MIN_LINKS_PER_NODE_FOR_INDEX_REUSE = 8;
 
 interface NodePointerGesture {
   button: 0 | 2;
@@ -168,7 +168,17 @@ class PixiGraphRenderer implements NewGraphBrowserApi {
 
     this.nodes = newNodes;
     this.links = connections;
-    updateNodeDegreeSizing(this.nodes, this.links, this.degreeSizing);
+    // Reindexing pays off only for dense graphs; keep the sparse refresh path unchanged.
+    if (connections.length >= newNodes.length * MIN_LINKS_PER_NODE_FOR_INDEX_REUSE && newNodes.length > 0) {
+      for (const node of newNodes) {
+        previousNodes.set(node.id, node);
+      }
+      updateNodeDegreeSizing(this.nodes, this.links, this.degreeSizing, previousNodes);
+      previousNodes.clear();
+    } else {
+      updateNodeDegreeSizing(this.nodes, this.links, this.degreeSizing);
+    }
+    releaseReplacedForces(this.simulation);
     this.simulation.nodes(this.nodes);
     this.applySimulationForces();
     this.simulation.alpha(1).alphaTarget(0).restart();

@@ -21,11 +21,45 @@ export function nodeRadius(node: GraphNode): number {
   return node.renderRadius ?? baseNodeRadius(node.type);
 }
 
+function updateIndexedDegreeSizing(
+  nodes: GraphNode[],
+  links: GraphConnection[],
+  mode: NodeDegreeSizingMode,
+  nodeIndex: ReadonlyMap<NodeId, GraphNode>,
+): void {
+  for (const node of nodes) {
+    node.outDegree = 0;
+    node.inDegree = 0;
+  }
+  for (const link of links) {
+    const source = nodeIndex.get(endpointId(link.source));
+    const target = nodeIndex.get(endpointId(link.target));
+    if (source !== undefined) source.outDegree = (source.outDegree ?? 0) + 1;
+    if (target !== undefined) target.inDegree = (target.inDegree ?? 0) + 1;
+  }
+  for (const node of nodes) {
+    // Copy canonical counts so repeated IDs retain the original counting behavior.
+    const indexed = nodeIndex.get(node.id);
+    node.outDegree = indexed?.outDegree ?? 0;
+    node.inDegree = indexed?.inDegree ?? 0;
+    node.degree = mode === "all" ? node.outDegree + node.inDegree : node.outDegree;
+    const baseRadius = baseNodeRadius(node.type);
+    node.renderRadius = mode === "none"
+      ? baseRadius
+      : baseRadius + Math.min(node.degree, MAX_SIZED_DEGREE) * RADIUS_PER_DEGREE;
+  }
+}
+
 export function updateNodeDegreeSizing(
   nodes: GraphNode[],
   links: GraphConnection[],
   mode: NodeDegreeSizingMode,
+  nodeIndex?: ReadonlyMap<NodeId, GraphNode>,
 ): void {
+  if (nodeIndex !== undefined) {
+    updateIndexedDegreeSizing(nodes, links, mode, nodeIndex);
+    return;
+  }
   const outgoing = new Map<NodeId, number>();
   const incoming = new Map<NodeId, number>();
   for (const link of links) {

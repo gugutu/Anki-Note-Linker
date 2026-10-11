@@ -75,18 +75,13 @@ export class GraphScene {
 
     if (links.length > 0) {
       const lineContext = this.lineContext = new PIXI.GraphicsContext().rect(0, -0.5, 1, 1).fill(0x40404d);
-      const particleContext = this.particleContext = new PIXI.GraphicsContext().circle(0, 0, 1).fill("rgb(102, 102, 112)");
+      this.particleContext = new PIXI.GraphicsContext().circle(0, 0, 1).fill("rgb(102, 102, 112)");
       this.lineContainers = links.map(() => {
         const container = new PIXI.Container();
         container.interactiveChildren = false;
         const line = new PIXI.Graphics(lineContext);
         line.eventMode = "none";
         container.addChild(line);
-        for (let index = 0; index < PARTICLE_COUNT; index += 1) {
-          const particle = new PIXI.Graphics(particleContext);
-          particle.eventMode = "none";
-          container.addChild(particle);
-        }
         return container;
       });
     }
@@ -182,14 +177,22 @@ export class GraphScene {
         text = createNodeText(node);
         this.texts.set(index, text);
       }
-      text.layoutWidth = layoutWidth;
-      text.fontSize = fontSize;
-      text.lineHeight = lineHeight;
-      text.layoutLeft = layoutLeft;
-      text.layoutTop = layoutTop;
-      text.style.cssText = `left:${String(text.layoutLeft)}px;top:${String(text.layoutTop)}px;`
-        + `width:${String(text.layoutWidth)}px;font-size:${String(text.fontSize)}px;`
-        + `line-height:${String(text.lineHeight)}px`;
+      if (
+        text.layoutWidth !== layoutWidth
+        || text.fontSize !== fontSize
+        || text.lineHeight !== lineHeight
+        || text.layoutLeft !== layoutLeft
+        || text.layoutTop !== layoutTop
+      ) {
+        text.layoutWidth = layoutWidth;
+        text.fontSize = fontSize;
+        text.lineHeight = lineHeight;
+        text.layoutLeft = layoutLeft;
+        text.layoutTop = layoutTop;
+        text.style.cssText = `left:${String(layoutLeft)}px;top:${String(layoutTop)}px;`
+          + `width:${String(layoutWidth)}px;font-size:${String(fontSize)}px;`
+          + `line-height:${String(lineHeight)}px`;
+      }
       if (!text.inDocument) {
         this.textContainer.appendChild(text);
         text.inDocument = true;
@@ -206,6 +209,38 @@ export class GraphScene {
     this.texts.delete(index);
   }
 
+  private releaseParticles(container: Container): void {
+    if (container.children.length <= 1) {
+      return;
+    }
+    for (const particle of container.removeChildren(1)) {
+      particle.destroy();
+    }
+  }
+
+  private layoutParticles(container: Container, distance: number, screenWidth: number): void {
+    if (this.app.stage.scale.x < 0.2 || distance === 0) {
+      this.releaseParticles(container);
+      return;
+    }
+    if (container.children.length === 1 && this.particleContext !== null) {
+      for (let index = 0; index < PARTICLE_COUNT; index += 1) {
+        const particle = new PIXI.Graphics(this.particleContext);
+        particle.eventMode = "none";
+        container.addChild(particle);
+      }
+    }
+    for (let index = 1; index < container.children.length; index += 1) {
+      const particle = container.children[index];
+      if (particle === undefined) {
+        continue;
+      }
+      particle.scale.set(screenWidth / distance, screenWidth / container.scale.y);
+      particle.x = (index / PARTICLE_COUNT + this.particleStep) % 1;
+      particle.renderable = true;
+    }
+  }
+
   private layoutLinks(deltaMilliseconds: number): void {
     for (let index = 0; index < this.lineContainers.length; index += 1) {
       const container = this.lineContainers[index];
@@ -215,6 +250,7 @@ export class GraphScene {
       const link = this.links[index];
       if (link === undefined || !isResolvedLink(link)) {
         container.renderable = false;
+        this.releaseParticles(container);
         continue;
       }
       const sourceX = coordinate(link.source.x);
@@ -227,6 +263,7 @@ export class GraphScene {
         for (const child of container.children) {
           child.renderable = false;
         }
+        this.releaseParticles(container);
         continue;
       }
 
@@ -236,21 +273,11 @@ export class GraphScene {
       container.scale.set(distance, this.transform.toCanvasLength(screenWidth));
       container.rotation = Math.atan2(targetY - sourceY, targetX - sourceX);
       container.renderable = true;
-      for (let particleIndex = 0; particleIndex < container.children.length; particleIndex += 1) {
-        const particle = container.children[particleIndex];
-        if (particle === undefined) {
-          continue;
-        }
-        if (particleIndex === 0) {
-          particle.renderable = true;
-        } else if (this.app.stage.scale.x < 0.2 || distance === 0) {
-          particle.renderable = false;
-        } else {
-          particle.scale.set(screenWidth / distance, screenWidth / container.scale.y);
-          particle.x = (particleIndex / PARTICLE_COUNT + this.particleStep) % 1;
-          particle.renderable = true;
-        }
+      const line = container.children[0];
+      if (line !== undefined) {
+        line.renderable = true;
       }
+      this.layoutParticles(container, distance, screenWidth);
     }
     this.particleStep = (this.particleStep + deltaMilliseconds / 1600) % 1;
   }

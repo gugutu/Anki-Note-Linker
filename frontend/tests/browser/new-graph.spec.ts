@@ -3,11 +3,14 @@ import { resolve } from "node:path";
 
 import { expect, test, type Page } from "@playwright/test";
 import type { Application, GraphicsContext } from "pixi.js";
+import type { GraphNode } from "../../src/graph/types";
 
 declare global {
   interface Window {
     graphTestApp?: Application;
     oldGraphContexts?: GraphicsContext[];
+    oldGraphParticles?: import("pixi.js").Graphics[];
+    oldGraphParticleContext?: GraphicsContext;
   }
 }
 
@@ -160,6 +163,48 @@ test("large graphs recreate visible labels after zooming out and back in", async
   await expect(page.locator(".circleText")).toHaveText("Visible");
 });
 
+test("link particles release their objects when hidden and return after repeated zoom changes", async ({ page }) => {
+  const errors: string[] = [];
+  page.on("pageerror", (error) => errors.push(error.message));
+  await initializeNewGraph(page, true);
+  await page.evaluate(async () => {
+    await window.AnkiNoteLinkerNewGraph.reloadPage(
+      [
+        { id: 1, mainField: "First", type: "normal", fx: -100, fy: 0 },
+        { id: 2, mainField: "Second", type: "normal", fx: 100, fy: 0 },
+      ],
+      [{ source: 1, target: 2 }],
+      false,
+    );
+  });
+  for (let index = 0; index < 5; index += 1) {
+    await page.evaluate(() => { window.graphTestApp?.stage.scale.set(1); });
+    await expect.poll(() => page.evaluate(() => window.graphTestApp?.stage.children[0]?.children.length)).toBe(4);
+    await page.evaluate(() => {
+      const container = window.graphTestApp?.stage.children[0];
+      if (container === undefined) throw new Error("Missing link graphics");
+      const particles = container.children.slice(1)
+        .filter((child): child is import("pixi.js").Graphics => child instanceof PIXI.Graphics);
+      const context = particles[0]?.context;
+      if (context === undefined) throw new Error("Missing particle context");
+      window.oldGraphParticles = particles;
+      window.oldGraphParticleContext = context;
+      window.graphTestApp?.stage.scale.set(0.1);
+    });
+    await expect.poll(() => page.evaluate(() => window.graphTestApp?.stage.children[0]?.children.length)).toBe(1);
+    expect(await page.evaluate(() => window.oldGraphParticles?.every((particle) => particle.destroyed))).toBe(true);
+    expect(await page.evaluate(() => window.oldGraphParticleContext?.destroyed)).toBe(false);
+  }
+  await page.evaluate(() => { window.graphTestApp?.stage.scale.set(1); });
+  await expect.poll(() => page.evaluate(() => window.graphTestApp?.stage.children[0]?.children.length)).toBe(4);
+  expect(await page.evaluate(() => {
+    const particle = window.graphTestApp?.stage.children[0]?.children[1];
+    return particle instanceof PIXI.Graphics && particle.context === window.oldGraphParticleContext;
+  })).toBe(true);
+  await expect(page.locator(".circleText")).toHaveCount(2);
+  expect(errors).toEqual([]);
+});
+
 test("shared node listeners keep hover labels attached to the correct node", async ({ page }) => {
   await initializeNewGraph(page, true);
   await page.evaluate(async () => {
@@ -186,6 +231,70 @@ test("shared node listeners keep hover labels attached to the correct node", asy
   await expect(page.locator(".label")).toHaveText("Second node");
   await page.mouse.move(second.x, second.y + 100);
   await expect(page.locator(".label")).toHaveCount(0);
+});
+
+test("stationary labels do not rewrite inline styles on every animation frame", async ({ page }) => {
+  await initializeNewGraph(page);
+  await page.evaluate(async () => {
+    await window.AnkiNoteLinkerNewGraph.reloadPage(
+      [{ id: 1, mainField: "Stationary", type: "normal", fx: 0, fy: 0 }],
+      [],
+      false,
+    );
+  });
+  await expect(page.locator(".circleText")).toHaveText("Stationary");
+  const mutations = await page.evaluate(async () => {
+    const text = document.querySelector(".circleText");
+    if (text === null) throw new Error("Missing graph label");
+    let writes = 0;
+    const observer = new MutationObserver((records) => { writes += records.length; });
+    observer.observe(text, { attributes: true, attributeFilter: ["style"] });
+    for (let frame = 0; frame < 10; frame += 1) {
+      await new Promise<void>((resolve) => window.requestAnimationFrame(() => resolve()));
+    }
+    writes += observer.takeRecords().length;
+    observer.disconnect();
+    return writes;
+  });
+  expect(mutations).toBe(0);
+});
+
+test("dense and sparse refresh paths keep correct degrees and reset old counts", async ({ page }) => {
+  const errors: string[] = [];
+  page.on("pageerror", (error) => errors.push(error.message));
+  await initializeNewGraph(page, true);
+  for (const dense of [true, false, true]) {
+    await page.evaluate(async (dense) => {
+      await window.AnkiNoteLinkerNewGraph.reloadPage(
+        [
+          { id: 1, mainField: "First", type: "normal", fx: -200, fy: 0 },
+          { id: 2, mainField: "Second", type: "normal", fx: 0, fy: 0 },
+          { id: "tag", mainField: "Tag", type: "tag", fx: 200, fy: 0 },
+        ],
+        dense ? [
+          ...Array.from({ length: 16 }, () => ({ source: 1, target: 2 })),
+          ...Array.from({ length: 8 }, () => ({ source: "tag", target: 1 })),
+        ] : [],
+        false, false, null, null, null, null, "all",
+      );
+    }, dense);
+    const degrees = await page.evaluate(() => window.graphTestApp?.stage.children
+      .filter((child) => child instanceof PIXI.Graphics)
+      .map((child) => {
+        const node = Reflect.get(child, "graphNode") as GraphNode;
+        return { id: node.id, outgoing: node.outDegree, incoming: node.inDegree, degree: node.degree, radius: node.renderRadius };
+      }));
+    expect(degrees).toEqual(dense ? [
+      { id: 1, outgoing: 16, incoming: 8, degree: 24, radius: 80 },
+      { id: 2, outgoing: 0, incoming: 16, degree: 16, radius: 80 },
+      { id: "tag", outgoing: 8, incoming: 0, degree: 8, radius: 68 },
+    ] : [
+      { id: 1, outgoing: 0, incoming: 0, degree: 0, radius: 20 },
+      { id: 2, outgoing: 0, incoming: 0, degree: 0, radius: 20 },
+      { id: "tag", outgoing: 0, incoming: 0, degree: 0, radius: 20 },
+    ]);
+  }
+  expect(errors).toEqual([]);
 });
 
 for (const interaction of [

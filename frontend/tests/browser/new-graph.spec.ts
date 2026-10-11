@@ -163,7 +163,7 @@ test("large graphs recreate visible labels after zooming out and back in", async
   await expect(page.locator(".circleText")).toHaveText("Visible");
 });
 
-test("link particles release their objects when hidden and return after repeated zoom changes", async ({ page }) => {
+test("link particles reuse their objects without accumulating listeners across zoom changes", async ({ page }) => {
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
   await initializeNewGraph(page, true);
@@ -191,17 +191,64 @@ test("link particles release their objects when hidden and return after repeated
       window.oldGraphParticleContext = context;
       window.graphTestApp?.stage.scale.set(0.1);
     });
-    await expect.poll(() => page.evaluate(() => window.graphTestApp?.stage.children[0]?.children.length)).toBe(1);
-    expect(await page.evaluate(() => window.oldGraphParticles?.every((particle) => particle.destroyed))).toBe(true);
+    await expect.poll(() => page.evaluate(() => window.oldGraphParticles?.every((particle) => !particle.renderable))).toBe(true);
+    expect(await page.evaluate(() => window.oldGraphParticles?.every((particle) => !particle.destroyed))).toBe(true);
     expect(await page.evaluate(() => window.oldGraphParticleContext?.destroyed)).toBe(false);
+    expect(await page.evaluate(() => window.oldGraphParticleContext?.listenerCount("update"))).toBe(3);
   }
   await page.evaluate(() => { window.graphTestApp?.stage.scale.set(1); });
   await expect.poll(() => page.evaluate(() => window.graphTestApp?.stage.children[0]?.children.length)).toBe(4);
   expect(await page.evaluate(() => {
     const particle = window.graphTestApp?.stage.children[0]?.children[1];
-    return particle instanceof PIXI.Graphics && particle.context === window.oldGraphParticleContext;
+    return particle === window.oldGraphParticles?.[0]
+      && particle instanceof PIXI.Graphics && particle.context === window.oldGraphParticleContext;
   })).toBe(true);
+  expect(await page.evaluate(() => window.oldGraphParticleContext?.listenerCount("update"))).toBe(3);
   await expect(page.locator(".circleText")).toHaveCount(2);
+  expect(errors).toEqual([]);
+});
+
+test("long-hidden particles shrink to a bounded pool and still render after reuse", async ({ page }) => {
+  const errors: string[] = [];
+  page.on("pageerror", (error) => errors.push(error.message));
+  await initializeNewGraph(page, true);
+  await page.evaluate(async () => {
+    await window.AnkiNoteLinkerNewGraph.reloadPage(
+      [
+        { id: 1, mainField: "First", type: "normal", fx: -100, fy: 0 },
+        { id: 2, mainField: "Second", type: "normal", fx: 100, fy: 0 },
+      ],
+      Array.from({ length: 300 }, () => ({ source: 1, target: 2 })),
+      false,
+    );
+    window.graphTestApp?.stage.scale.set(1);
+  });
+  await expect.poll(() => page.evaluate(() => window.graphTestApp?.stage.children
+    .filter((child) => !(child instanceof PIXI.Graphics))
+    .every((container) => container.children.length === 4))).toBe(true);
+  for (let cycle = 0; cycle < 3; cycle += 1) {
+    await page.evaluate(() => {
+      const containers = window.graphTestApp?.stage.children.filter((child) => !(child instanceof PIXI.Graphics));
+      if (containers === undefined) throw new Error("Missing link graphics");
+      window.oldGraphParticles = containers.flatMap((container) => container.children.slice(1))
+        .filter((child): child is import("pixi.js").Graphics => child instanceof PIXI.Graphics);
+      window.oldGraphContexts = [...new Set(window.oldGraphParticles.map((particle) => particle.context))];
+      window.graphTestApp?.stage.scale.set(0.1);
+    });
+    await expect.poll(() => page.evaluate(() => window.graphTestApp?.stage.children
+      .filter((child) => !(child instanceof PIXI.Graphics))
+      .every((container) => container.children.length === 1)), { timeout: 10000 }).toBe(true);
+    expect(await page.evaluate(() => window.oldGraphParticles?.filter((particle) => !particle.destroyed).length)).toBe(384);
+    expect(await page.evaluate(() => window.oldGraphContexts?.reduce((sum, context) => sum + context.listenerCount("update"), 0))).toBe(384);
+    await page.evaluate(() => { window.graphTestApp?.stage.scale.set(1); });
+    await expect.poll(() => page.evaluate(() => window.graphTestApp?.stage.children
+      .filter((child) => !(child instanceof PIXI.Graphics))
+      .every((container) => container.children.length === 4))).toBe(true);
+    await expect(page.locator(".circleText")).toHaveCount(2);
+  }
+  await page.evaluate(async () => { await window.AnkiNoteLinkerNewGraph.reloadPage([], [], false); });
+  expect(await page.evaluate(() => window.oldGraphParticles?.every((particle) => particle.destroyed))).toBe(true);
+  expect(await page.evaluate(() => window.oldGraphContexts?.every((context) => context.destroyed && context.listenerCount("update") === 0))).toBe(true);
   expect(errors).toEqual([]);
 });
 

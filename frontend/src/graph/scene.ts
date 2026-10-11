@@ -3,12 +3,16 @@ import type { Application, Container, FederatedPointerEvent, Graphics, GraphicsC
 import { nodeRadius } from "./degree-sizing";
 import { createNodeText, renderGraphMath, type GraphTextElement } from "./labels";
 import { NodeGraphicsFactory, type NodeColors } from "./node-graphics";
+import { ParticlePool } from "./particle-pool";
 import type { GraphConnection, GraphNode, ResolvedGraphConnection } from "./types";
 import type { PointTransform, ViewportBoundary } from "./viewport";
 
 const FONT_SIZE = 12;
 const LINE_CLAMP = 4;
 const PARTICLE_COUNT = 3;
+const PARTICLE_RETENTION_MS = 1000;
+const MAX_RECLAIMED_LINKS_PER_FRAME = 16;
+const RECLAIM_BUDGET_MS = 1;
 
 export interface NodeInteractionHandlers {
   pointerDown(node: GraphNode, circle: Graphics, event: FederatedPointerEvent): void;
@@ -50,10 +54,14 @@ export class GraphScene {
   private graphicsFactory: NodeGraphicsFactory | null = null;
   private lineContext: GraphicsContext | null = null;
   private lineContainers: Container[] = [];
+  private particlesHiddenAt = new Float64Array();
   private links: GraphConnection[] = [];
   private nodes: GraphNode[] = [];
   private particleStep = 0;
-  private particleContext: GraphicsContext | null = null;
+  private particlePool: ParticlePool | null = null;
+  private elapsedMilliseconds = 0;
+  private reclaimedLinks = 0;
+  private reclaimMilliseconds = 0;
   private readonly texts = new Map<number, GraphTextElement>();
 
   constructor(
@@ -72,10 +80,11 @@ export class GraphScene {
     this.destroy();
     this.nodes = nodes;
     this.links = links;
+    this.particlesHiddenAt = new Float64Array(links.length).fill(-1);
 
     if (links.length > 0) {
       const lineContext = this.lineContext = new PIXI.GraphicsContext().rect(0, -0.5, 1, 1).fill(0x40404d);
-      this.particleContext = new PIXI.GraphicsContext().circle(0, 0, 1).fill("rgb(102, 102, 112)");
+      this.particlePool = new ParticlePool();
       this.lineContainers = links.map(() => {
         const container = new PIXI.Container();
         container.interactiveChildren = false;
@@ -97,6 +106,9 @@ export class GraphScene {
   }
 
   layout(deltaMilliseconds: number): void {
+    this.elapsedMilliseconds += Math.max(0, deltaMilliseconds);
+    this.reclaimedLinks = 0;
+    this.reclaimMilliseconds = 0;
     this.layoutNodes();
     this.layoutLinks(deltaMilliseconds);
   }
@@ -115,13 +127,15 @@ export class GraphScene {
     this.app.stage.removeChildren().forEach((child) => child.destroy({ children: true }));
     this.circles = [];
     this.lineContainers = [];
+    this.particlesHiddenAt = new Float64Array();
     // Shared contexts outlive individual Graphics objects; release them once per scene.
     this.graphicsFactory?.destroy();
     this.graphicsFactory = null;
     this.lineContext?.destroy();
     this.lineContext = null;
-    this.particleContext?.destroy();
-    this.particleContext = null;
+    this.particlePool?.destroy();
+    this.particlePool = null;
+    this.elapsedMilliseconds = 0;
     this.textContainer.replaceChildren();
     this.texts.clear();
   }
@@ -209,24 +223,39 @@ export class GraphScene {
     this.texts.delete(index);
   }
 
-  private releaseParticles(container: Container): void {
-    if (container.children.length <= 1) {
-      return;
+  private hideParticles(container: Container, index: number): void {
+    if (container.children.length <= 1) return;
+    for (let index = 1; index < container.children.length; index += 1) {
+      const particle = container.children[index];
+      if (particle !== undefined) particle.renderable = false;
     }
+    let hiddenAt = this.particlesHiddenAt[index] ?? -1;
+    if (hiddenAt < 0) {
+      hiddenAt = this.particlesHiddenAt[index] = this.elapsedMilliseconds;
+    }
+    if (
+      this.elapsedMilliseconds - hiddenAt < PARTICLE_RETENTION_MS
+      || this.reclaimedLinks >= MAX_RECLAIMED_LINKS_PER_FRAME
+      || this.reclaimMilliseconds >= RECLAIM_BUDGET_MS
+    ) return;
+    const started = performance.now();
     for (const particle of container.removeChildren(1)) {
-      particle.destroy();
+      this.particlePool?.release(particle as Graphics);
     }
+    this.particlesHiddenAt[index] = -1;
+    this.reclaimedLinks += 1;
+    this.reclaimMilliseconds += performance.now() - started;
   }
 
-  private layoutParticles(container: Container, distance: number, screenWidth: number): void {
+  private layoutParticles(container: Container, distance: number, screenWidth: number, index: number): void {
     if (this.app.stage.scale.x < 0.2 || distance === 0) {
-      this.releaseParticles(container);
+      this.hideParticles(container, index);
       return;
     }
-    if (container.children.length === 1 && this.particleContext !== null) {
+    this.particlesHiddenAt[index] = -1;
+    if (container.children.length === 1 && this.particlePool !== null) {
       for (let index = 0; index < PARTICLE_COUNT; index += 1) {
-        const particle = new PIXI.Graphics(this.particleContext);
-        particle.eventMode = "none";
+        const particle = this.particlePool.acquire();
         container.addChild(particle);
       }
     }
@@ -250,7 +279,7 @@ export class GraphScene {
       const link = this.links[index];
       if (link === undefined || !isResolvedLink(link)) {
         container.renderable = false;
-        this.releaseParticles(container);
+        this.hideParticles(container, index);
         continue;
       }
       const sourceX = coordinate(link.source.x);
@@ -263,7 +292,7 @@ export class GraphScene {
         for (const child of container.children) {
           child.renderable = false;
         }
-        this.releaseParticles(container);
+        this.hideParticles(container, index);
         continue;
       }
 
@@ -277,7 +306,7 @@ export class GraphScene {
       if (line !== undefined) {
         line.renderable = true;
       }
-      this.layoutParticles(container, distance, screenWidth);
+      this.layoutParticles(container, distance, screenWidth, index);
     }
     this.particleStep = (this.particleStep + deltaMilliseconds / 1600) % 1;
   }

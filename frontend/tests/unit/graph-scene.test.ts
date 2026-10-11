@@ -46,6 +46,40 @@ function contexts(stage: Container): GraphicsContext[] {
 }
 
 describe("graph scene memory", () => {
+  it("reclaims long-hidden particles in bounded batches and cleans pooled contexts on rebuild", () => {
+    const { scene, stage, handlers } = createScene();
+    const first = node(1);
+    const second = node(2, 100);
+    const links = Array.from({ length: 200 }, () => ({ source: first, target: second }));
+    scene.rebuild([first, second], links, DEFAULT_NODE_COLORS, handlers);
+    scene.layout(16);
+    const oldContexts = contexts(stage);
+    const containers = stage.children.slice(0, links.length);
+    const particles = containers.flatMap((container) => container.children.slice(1)) as Graphics[];
+    expect(particles).toHaveLength(600);
+    stage.scale.set(0.1);
+    scene.layout(16);
+    scene.layout(999);
+    expect(containers.every((container) => container.children.length === 4)).toBe(true);
+    scene.layout(1);
+    const reclaimed = containers.filter((container) => container.children.length === 1).length;
+    expect(reclaimed).toBeGreaterThan(0);
+    expect(reclaimed).toBeLessThanOrEqual(16);
+    for (let frame = 0; frame < 200; frame += 1) scene.layout(16);
+    expect(containers.every((container) => container.children.length === 1)).toBe(true);
+    expect(particles.filter((particle) => !particle.destroyed)).toHaveLength(384);
+    const particleContexts = [...new Set(particles.map((particle) => particle.context).filter(Boolean))];
+    expect(particleContexts.reduce((sum, context) => sum + context.listenerCount("update"), 0)).toBe(384);
+    stage.scale.set(1);
+    scene.layout(16);
+    expect(containers.every((container) => container.children.length === 4)).toBe(true);
+    scene.rebuild([], [], DEFAULT_NODE_COLORS, handlers);
+    expect(oldContexts.every((context) => context.destroyed)).toBe(true);
+    expect(particles.every((particle) => particle.destroyed)).toBe(true);
+    expect(stage.children).toHaveLength(0);
+    scene.destroy();
+  });
+
   it("writes label styles only when layout changes and initializes recreated labels", () => {
     const { scene, stage, textContainer, handlers } = createScene();
     const displayedNode = node(1);
@@ -94,7 +128,7 @@ describe("graph scene memory", () => {
     scene.destroy();
   });
 
-  it("releases hidden particles and restores the original animation phase and shared context", () => {
+  it("reuses hidden particles and restores the original animation phase without accumulating listeners", () => {
     const { scene, stage, handlers } = createScene();
     const first = node(1);
     const second = node(2, 100);
@@ -116,8 +150,8 @@ describe("graph scene memory", () => {
 
     stage.scale.set(0.199);
     scene.layout(160);
-    expect(container.children).toEqual([line]);
-    expect(particles.every((particle) => particle.destroyed)).toBe(true);
+    expect(container.children).toEqual([line, ...particles]);
+    expect(particles.every((particle) => !particle.destroyed && !particle.renderable)).toBe(true);
     expect(particleContext?.destroyed).toBe(false);
     expect(container.renderable).toBe(true);
     expect(line?.renderable).toBe(true);
@@ -126,6 +160,7 @@ describe("graph scene memory", () => {
     expect(container.children).toHaveLength(4);
     for (const [index, child] of container.children.slice(1).entries()) {
       const particle = child as Graphics;
+      expect(particle).toBe(particles[index]);
       expect(particle.context).toBe(particleContext);
       expect(particle.x).toBeCloseTo(((index + 1) / 3 + 0.2) % 1);
       expect(particle.scale.y).toBeCloseTo(0.2);
@@ -134,7 +169,7 @@ describe("graph scene memory", () => {
     first.x = 20000;
     second.x = 20100;
     scene.layout(160);
-    expect(container.children).toEqual([line]);
+    expect(container.children).toEqual([line, ...particles]);
     expect(container.renderable).toBe(false);
     first.x = 0;
     second.x = 100;
@@ -142,11 +177,27 @@ describe("graph scene memory", () => {
     expect(container.children).toHaveLength(4);
     expect(container.renderable).toBe(true);
     expect(container.children[0]).toBe(line);
+    const updateListeners = particleContext?.listenerCount("update");
+    const unloadListeners = particleContext?.listenerCount("unload");
+    expect(updateListeners).toBe(3);
+    expect(unloadListeners).toBe(3);
+    for (let cycle = 0; cycle < 20; cycle += 1) {
+      stage.scale.set(0.1);
+      scene.layout(16);
+      stage.scale.set(1);
+      scene.layout(16);
+      expect(container.children).toEqual([line, ...particles]);
+    }
+    expect(particleContext?.listenerCount("update")).toBe(updateListeners);
+    expect(particleContext?.listenerCount("unload")).toBe(unloadListeners);
     scene.destroy();
+    expect(particles.every((particle) => particle.destroyed)).toBe(true);
     expect(particleContext?.destroyed).toBe(true);
+    expect(particleContext?.listenerCount("update")).toBe(0);
+    expect(particleContext?.listenerCount("unload")).toBe(0);
   });
 
-  it("keeps zero-length and unresolved links free of particles", () => {
+  it("does not allocate particles for zero-length or unresolved links and hides existing ones", () => {
     const { scene, stage, handlers } = createScene();
     const first = node(1);
     const second = node(2);
@@ -164,7 +215,8 @@ describe("graph scene memory", () => {
     expect(stage.children[0]?.children).toHaveLength(4);
     second.x = 0;
     scene.layout(16);
-    expect(stage.children[0]?.children).toHaveLength(1);
+    expect(stage.children[0]?.children).toHaveLength(4);
+    expect(stage.children[0]?.children.slice(1).every((particle) => !particle.renderable && !particle.destroyed)).toBe(true);
     scene.destroy();
   });
 

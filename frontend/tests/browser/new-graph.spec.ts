@@ -17,7 +17,7 @@ declare global {
 const projectRoot = resolve(import.meta.dirname, "../../..");
 const testNodeId = 123;
 
-async function initializeNewGraph(page: Page, inspectRenderer = false): Promise<void> {
+async function initializeNewGraph(page: Page, inspectRenderer = false, smoothZoom = false): Promise<void> {
   const webRoot = resolve(projectRoot, "src/addon/web");
   const html = await readFile(resolve(webRoot, "newGraph.html"), "utf8");
   await page.setContent(html);
@@ -25,7 +25,7 @@ async function initializeNewGraph(page: Page, inspectRenderer = false): Promise<
     content: `
       var ankiContext = "GLOBAL_GRAPH";
       var enableImagePreview = true;
-      var enableSmoothGraphZoom = false;
+      var enableSmoothGraphZoom = ${String(smoothZoom)};
       var graphZoomConfig = {};
       window.commands = [];
       function getTr(message) { return message; }
@@ -376,4 +376,66 @@ for (const interaction of [
 
     expect(await page.evaluate(() => window.commands)).toEqual([]);
   });
+}
+
+for (const smooth of [false, true]) {
+  for (const button of ["left", "right"] as const) {
+    test(`${button} node drag stays anchored through ${smooth ? "smooth" : "normal"} zoom`, async ({ page }) => {
+      await initializeNewGraph(page, true, smooth);
+      const point = await loadSingleNode(page);
+      const nodePosition = () => page.evaluate(() => {
+        const stage = window.graphTestApp?.stage;
+        const circle = stage?.children.find((child) => child instanceof PIXI.Graphics);
+        if (stage === undefined || circle === undefined) throw new Error("Missing node");
+        return { x: stage.x + circle.x * stage.scale.x, y: stage.y + circle.y * stage.scale.y };
+      });
+      await page.mouse.move(point.x + 8, point.y + 5);
+      await page.mouse.down({ button });
+      await page.mouse.move(point.x + 38, point.y + 15);
+      await expect.poll(async () => (await nodePosition()).x).toBeCloseTo(point.x + 30, 0);
+      const before = await nodePosition();
+      const scale = await page.evaluate(() => window.graphTestApp?.stage.scale.x ?? 0);
+      await page.mouse.wheel(0, -120);
+      await expect.poll(() => page.evaluate(() => window.graphTestApp?.stage.scale.x ?? 0)).toBeGreaterThan(scale);
+      // Move while the smooth animation is still running.
+      await page.mouse.move(point.x + 58, point.y + 25);
+      await page.waitForTimeout(500);
+      await expect.poll(async () => (await nodePosition()).x).toBeCloseTo(before.x + 20, 0);
+      await expect.poll(async () => (await nodePosition()).y).toBeCloseTo(before.y + 10, 0);
+      const enlargedScale = await page.evaluate(() => window.graphTestApp?.stage.scale.x ?? 0);
+      await page.mouse.wheel(0, 120);
+      await expect.poll(() => page.evaluate(() => window.graphTestApp?.stage.scale.x ?? 0)).toBeLessThan(enlargedScale);
+      await page.waitForTimeout(500);
+      await expect.poll(async () => (await nodePosition()).x).toBeCloseTo(before.x + 20, 0);
+      await page.mouse.up({ button });
+      expect(await page.evaluate(() => window.commands)).toEqual([]);
+    });
+
+    test(`${button} canvas drag stays continuous through ${smooth ? "smooth" : "normal"} zoom`, async ({ page }) => {
+      await initializeNewGraph(page, true, smooth);
+      await loadSingleNode(page);
+      await page.mouse.move(80, 80);
+      await page.mouse.down({ button });
+      await page.mouse.move(110, 90);
+      const scale = await page.evaluate(() => window.graphTestApp?.stage.scale.x ?? 0);
+      await page.mouse.wheel(0, -120);
+      await expect.poll(() => page.evaluate(() => window.graphTestApp?.stage.scale.x ?? 0)).toBeGreaterThan(scale);
+      await page.mouse.move(130, 100);
+      await page.waitForTimeout(500);
+      const before = await page.evaluate(() => ({ x: window.graphTestApp?.stage.x ?? 0, y: window.graphTestApp?.stage.y ?? 0 }));
+      await page.mouse.move(150, 110);
+      await expect.poll(() => page.evaluate(() => window.graphTestApp?.stage.x ?? 0)).toBeCloseTo(before.x + 20, 0);
+      await expect.poll(() => page.evaluate(() => window.graphTestApp?.stage.y ?? 0)).toBeCloseTo(before.y + 10, 0);
+      const enlargedScale = await page.evaluate(() => window.graphTestApp?.stage.scale.x ?? 0);
+      await page.mouse.wheel(0, 120);
+      await expect.poll(() => page.evaluate(() => window.graphTestApp?.stage.scale.x ?? 0)).toBeLessThan(enlargedScale);
+      await page.waitForTimeout(500);
+      const shrunk = await page.evaluate(() => ({ x: window.graphTestApp?.stage.x ?? 0, y: window.graphTestApp?.stage.y ?? 0 }));
+      await page.mouse.move(170, 120);
+      await expect.poll(() => page.evaluate(() => window.graphTestApp?.stage.x ?? 0)).toBeCloseTo(shrunk.x + 20, 0);
+      await expect.poll(() => page.evaluate(() => window.graphTestApp?.stage.y ?? 0)).toBeCloseTo(shrunk.y + 10, 0);
+      await page.mouse.up({ button });
+      expect(await page.evaluate(() => window.commands)).toEqual([]);
+    });
+  }
 }

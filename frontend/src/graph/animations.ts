@@ -6,7 +6,6 @@ import { clampScale, wheelZoomStep } from "./zoom";
 export interface ZoomTarget {
   apply(scale: number, eventX: number, eventY: number): void;
   currentScale(): number;
-  draggingCanvas(): boolean;
 }
 
 export class ZoomAnimation {
@@ -24,7 +23,7 @@ export class ZoomAnimation {
   ) {}
 
   start(event: FederatedWheelEvent): void {
-    if (event.deltaY === 0 || this.target.draggingCanvas()) {
+    if (event.deltaY === 0) {
       return;
     }
     const step = wheelZoomStep(event.deltaY, this.smooth, this.config);

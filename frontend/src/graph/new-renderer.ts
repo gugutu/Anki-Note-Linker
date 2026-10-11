@@ -81,7 +81,6 @@ class PixiGraphRenderer implements NewGraphBrowserApi {
     {
       apply: (scale, eventX, eventY) => this.applyZoomAt(scale, eventX, eventY),
       currentScale: () => this.app.stage.scale.x,
-      draggingCanvas: () => this.draggingCanvas || this.nodeGesture?.dragging === true,
     },
     this.zoomConfig,
     enableSmoothGraphZoom,
@@ -98,6 +97,8 @@ class PixiGraphRenderer implements NewGraphBrowserApi {
   private nodeColors: NodeColors = { ...DEFAULT_NODE_COLORS };
   private nodeGesture: NodePointerGesture | null = null;
   private nodes: GraphNode[] = [];
+  private pointerX = 0;
+  private pointerY = 0;
   private stageDragGapX = 0;
   private stageDragGapY = 0;
 
@@ -252,6 +253,8 @@ class PixiGraphRenderer implements NewGraphBrowserApi {
       }
       this.stageDragGapX = this.app.stage.x - event.x;
       this.stageDragGapY = this.app.stage.y - event.y;
+      this.pointerX = event.x;
+      this.pointerY = event.y;
       this.draggingCanvas = true;
     });
     this.app.stage.on("pointerup", (event: FederatedPointerEvent) => this.finishPointerInteraction(event, true));
@@ -298,6 +301,8 @@ class PixiGraphRenderer implements NewGraphBrowserApi {
       return;
     }
     this.draggingCanvas = false;
+    this.pointerX = event.x;
+    this.pointerY = event.y;
     node.fx = circle.x;
     node.fy = circle.y;
     this.nodeGesture = {
@@ -373,6 +378,8 @@ class PixiGraphRenderer implements NewGraphBrowserApi {
   }
 
   private movePointer(event: FederatedPointerEvent): void {
+    this.pointerX = event.x;
+    this.pointerY = event.y;
     const gesture = this.nodeGesture;
     if (gesture !== null && gesture.pointerId === event.pointerId) {
       if (!gesture.dragging) {
@@ -405,6 +412,15 @@ class PixiGraphRenderer implements NewGraphBrowserApi {
   }
 
   private applyZoomAt(scale: number, eventX: number, eventY: number): void {
+    const gesture = this.nodeGesture;
+    if (this.draggingCanvas || gesture !== null) {
+      // Smooth zoom follows the current drag pointer, not an earlier wheel position.
+      eventX = this.pointerX;
+      eventY = this.pointerY;
+    }
+    const previousScale = this.app.stage.scale.x;
+    const previousX = this.app.stage.x;
+    const previousY = this.app.stage.y;
     const beforeX = this.transform.toCanvasX(eventX);
     const beforeY = this.transform.toCanvasY(eventY);
     this.app.stage.scale.set(scale);
@@ -412,6 +428,17 @@ class PixiGraphRenderer implements NewGraphBrowserApi {
     const afterY = this.transform.toCanvasY(eventY);
     this.app.stage.x += this.transform.toClientLength(afterX - beforeX);
     this.app.stage.y += this.transform.toClientLength(afterY - beforeY);
+    if (this.draggingCanvas) {
+      this.stageDragGapX += this.app.stage.x - previousX;
+      this.stageDragGapY += this.app.stage.y - previousY;
+    }
+    if (gesture !== null) {
+      // Keep the grab offset constant in screen pixels as the canvas scale changes.
+      gesture.dragGapX *= previousScale / scale;
+      gesture.dragGapY *= previousScale / scale;
+      gesture.node.x = gesture.node.fx = this.transform.toCanvasX(this.pointerX) + gesture.dragGapX;
+      gesture.node.y = gesture.node.fy = this.transform.toCanvasY(this.pointerY) + gesture.dragGapY;
+    }
     this.boundary.update();
   }
 

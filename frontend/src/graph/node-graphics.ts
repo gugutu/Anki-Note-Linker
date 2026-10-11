@@ -20,6 +20,13 @@ export class NodeGraphicsFactory {
 
   constructor(private readonly colors: NodeColors) {}
 
+  destroy(): void {
+    for (const context of this.cache.values()) {
+      context.destroy();
+    }
+    this.cache.clear();
+  }
+
   context(node: GraphNode): GraphicsContext {
     const radius = Math.max(4, Math.round(nodeRadius(node)));
     const cacheKey = `${node.type}:${String(radius)}`;

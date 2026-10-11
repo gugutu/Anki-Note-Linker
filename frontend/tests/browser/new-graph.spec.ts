@@ -2,11 +2,19 @@ import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 
 import { expect, test, type Page } from "@playwright/test";
+import type { Application, GraphicsContext } from "pixi.js";
+
+declare global {
+  interface Window {
+    graphTestApp?: Application;
+    oldGraphContexts?: GraphicsContext[];
+  }
+}
 
 const projectRoot = resolve(import.meta.dirname, "../../..");
 const testNodeId = 123;
 
-async function initializeNewGraph(page: Page): Promise<void> {
+async function initializeNewGraph(page: Page, inspectRenderer = false): Promise<void> {
   const webRoot = resolve(projectRoot, "src/addon/web");
   const html = await readFile(resolve(webRoot, "newGraph.html"), "utf8");
   await page.setContent(html);
@@ -24,6 +32,15 @@ async function initializeNewGraph(page: Page): Promise<void> {
   });
   await page.addScriptTag({ path: resolve(webRoot, "dist/vendor/d3.js") });
   await page.addScriptTag({ path: resolve(webRoot, "dist/vendor/pixi.js") });
+  if (inspectRenderer) {
+    await page.evaluate(() => {
+      const initialize: Application["init"] = Reflect.get(PIXI.Application.prototype, "init");
+      PIXI.Application.prototype.init = async function (this: Application, options) {
+        await initialize.call(this, options);
+        window.graphTestApp = this;
+      };
+    });
+  }
   await page.addScriptTag({ path: resolve(webRoot, "dist/new-graph.js") });
   await expect(page.locator("canvas")).toBeVisible();
 }
@@ -79,7 +96,68 @@ test("new graph initializes with WebGL and renders supplied nodes", async ({ pag
     return changed;
   })).toBeGreaterThan(50);
   expect(await page.evaluate(() => window.commands)).not.toContain("AnkiNoteLinker-switchToOldRenderer");
+  expect(await page.evaluate(() => {
+    const canvas = document.querySelector("canvas");
+    return canvas === null ? 0 : canvas.width / canvas.clientWidth;
+  })).toBe(1.5);
   expect(errors).toEqual([]);
+});
+
+test("graph refreshes release old GPU contexts and keep the replacement graph usable", async ({ page }) => {
+  const errors: string[] = [];
+  page.on("pageerror", (error) => errors.push(error.message));
+  await initializeNewGraph(page, true);
+  for (let index = 0; index < 5; index += 1) {
+    await page.evaluate(async () => {
+      const app = window.graphTestApp;
+      if (app === undefined) throw new Error("Graph application was not captured");
+      window.oldGraphContexts = [...new Set(app.stage.children.flatMap((child) => (
+        child instanceof PIXI.Graphics
+          ? [child.context]
+          : child.children.filter((item): item is import("pixi.js").Graphics => item instanceof PIXI.Graphics)
+            .map((item) => item.context)
+      )))];
+      await window.AnkiNoteLinkerNewGraph.reloadPage(
+        [
+          { id: 1, mainField: "First", type: "normal", fx: 0, fy: 0 },
+          { id: 2, mainField: "Second", type: "normal", fx: 100, fy: 0 },
+        ],
+        [{ source: 1, target: 2 }],
+        false,
+        false,
+      );
+    });
+    expect(await page.evaluate(() => window.oldGraphContexts?.every((context) => context.destroyed))).toBe(true);
+    await expect(page.locator(".circleText")).toHaveCount(2);
+  }
+  const canvas = await page.locator("canvas").boundingBox();
+  if (canvas === null) throw new Error("Graph canvas has no bounding box");
+  await page.mouse.click(canvas.x + canvas.width / 2, canvas.y + canvas.height / 2);
+  await expect.poll(() => page.evaluate(() => window.commands)).toEqual(["AnkiNoteLinker-openNoteInPreviewer1"]);
+  expect(errors).toEqual([]);
+});
+
+test("large graphs recreate visible labels after zooming out and back in", async ({ page }) => {
+  await initializeNewGraph(page, true);
+  await page.evaluate(async () => {
+    await window.AnkiNoteLinkerNewGraph.reloadPage(
+      [
+        { id: 1, mainField: "Visible", type: "normal", fx: 0, fy: 0 },
+        ...Array.from({ length: 1000 }, (_, index) => ({
+          id: index + 2, mainField: "Outside viewport", type: "normal", fx: 10000 + index * 100, fy: 0,
+        })),
+      ],
+      [],
+      false,
+      false,
+    );
+  });
+  await expect(page.locator(".circleText")).toHaveCount(1);
+  await page.evaluate(() => { window.graphTestApp?.stage.scale.set(0.1); });
+  await expect(page.locator(".circleText")).toHaveCount(0);
+  await page.evaluate(() => { window.graphTestApp?.stage.scale.set(1); });
+  await expect(page.locator(".circleText")).toHaveCount(1);
+  await expect(page.locator(".circleText")).toHaveText("Visible");
 });
 
 for (const interaction of [

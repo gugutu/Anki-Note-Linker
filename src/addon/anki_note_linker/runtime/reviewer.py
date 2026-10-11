@@ -52,6 +52,7 @@ class ReviewerMixin:
         mw.reviewer.showLinksPage = checked
         if checked or (hasattr(mw.reviewer, "showGraphPage") and mw.reviewer.showGraphPage):
             self.injectReviewerPanelsToMainWindow()
+        if checked:
             self.ensureReviewerLinksPage()
         self.updateReviewerPanelVisibility()
         if checked:
@@ -61,6 +62,7 @@ class ReviewerMixin:
         mw.reviewer.showGraphPage = checked
         if checked or (hasattr(mw.reviewer, "showLinksPage") and mw.reviewer.showLinksPage):
             self.injectReviewerPanelsToMainWindow()
+        if checked:
             self.ensureReviewerGraphPage()
         self.updateReviewerPanelVisibility()
         if checked:

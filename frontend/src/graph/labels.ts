@@ -59,9 +59,9 @@ export function positionLabel(label: HTMLDivElement, pointerX: number, pointerY:
   label.style.top = `${String(top)}px`;
 }
 
-export function renderGraphMath(): void {
+export function renderGraphMath(element: HTMLElement = document.body): void {
   try {
-    renderMathInElement(document.body, {
+    renderMathInElement(element, {
       delimiters: [
         { display: false, left: "\\(", right: "\\)" },
         { display: true, left: "\\[", right: "\\]" },

@@ -1,4 +1,4 @@
-import type { Application, Container, FederatedPointerEvent, Graphics } from "pixi.js";
+import type { Application, Container, FederatedPointerEvent, Graphics, GraphicsContext } from "pixi.js";
 
 import { nodeRadius } from "./degree-sizing";
 import { createNodeText, renderGraphMath, type GraphTextElement } from "./labels";
@@ -26,11 +26,14 @@ function coordinate(value: number | undefined): number {
 
 export class GraphScene {
   private circles: Graphics[] = [];
+  private graphicsFactory: NodeGraphicsFactory | null = null;
+  private lineContext: GraphicsContext | null = null;
   private lineContainers: Container[] = [];
   private links: GraphConnection[] = [];
   private nodes: GraphNode[] = [];
   private particleStep = 0;
-  private texts: GraphTextElement[] = [];
+  private particleContext: GraphicsContext | null = null;
+  private readonly texts = new Map<number, GraphTextElement>();
 
   constructor(
     private readonly app: Application,
@@ -45,30 +48,30 @@ export class GraphScene {
     colors: NodeColors,
     handlers: NodeInteractionHandlers,
   ): void {
+    this.destroy();
     this.nodes = nodes;
     this.links = links;
-    this.app.stage.removeChildren().forEach((child) => child.destroy({ children: true }));
-    this.textContainer.replaceChildren();
 
-    const lineContext = new PIXI.GraphicsContext().rect(0, -0.5, 1, 1).fill(0x40404d);
-    const particleContext = new PIXI.GraphicsContext().circle(0, 0, 1).fill("rgb(102, 102, 112)");
-    this.lineContainers = links.map(() => {
-      const container = new PIXI.Container();
-      container.interactiveChildren = false;
-      const line = new PIXI.Graphics(lineContext);
-      line.eventMode = "none";
-      container.addChild(line);
-      for (let index = 0; index < PARTICLE_COUNT; index += 1) {
-        const particle = new PIXI.Graphics(particleContext);
-        particle.eventMode = "none";
-        container.addChild(particle);
-      }
-      return container;
-    });
+    if (links.length > 0) {
+      const lineContext = this.lineContext = new PIXI.GraphicsContext().rect(0, -0.5, 1, 1).fill(0x40404d);
+      const particleContext = this.particleContext = new PIXI.GraphicsContext().circle(0, 0, 1).fill("rgb(102, 102, 112)");
+      this.lineContainers = links.map(() => {
+        const container = new PIXI.Container();
+        container.interactiveChildren = false;
+        const line = new PIXI.Graphics(lineContext);
+        line.eventMode = "none";
+        container.addChild(line);
+        for (let index = 0; index < PARTICLE_COUNT; index += 1) {
+          const particle = new PIXI.Graphics(particleContext);
+          particle.eventMode = "none";
+          container.addChild(particle);
+        }
+        return container;
+      });
+    }
 
-    const graphicsFactory = new NodeGraphicsFactory(colors);
+    const graphicsFactory = this.graphicsFactory = new NodeGraphicsFactory(colors);
     this.circles = nodes.map((node) => this.createNodeGraphics(node, graphicsFactory, handlers));
-    this.texts = nodes.map((node) => createNodeText(node));
     if (this.lineContainers.length > 0) {
       this.app.stage.addChild(...this.lineContainers);
     }
@@ -80,6 +83,27 @@ export class GraphScene {
   layout(deltaMilliseconds: number): void {
     this.layoutNodes();
     this.layoutLinks(deltaMilliseconds);
+  }
+
+  destroy(): void {
+    this.clearDisplayObjects();
+    this.nodes = [];
+    this.links = [];
+  }
+
+  private clearDisplayObjects(): void {
+    this.app.stage.removeChildren().forEach((child) => child.destroy({ children: true }));
+    this.circles = [];
+    this.lineContainers = [];
+    // Shared contexts outlive individual Graphics objects; release them once per scene.
+    this.graphicsFactory?.destroy();
+    this.graphicsFactory = null;
+    this.lineContext?.destroy();
+    this.lineContext = null;
+    this.particleContext?.destroy();
+    this.particleContext = null;
+    this.textContainer.replaceChildren();
+    this.texts.clear();
   }
 
   private createNodeGraphics(
@@ -96,11 +120,9 @@ export class GraphScene {
   }
 
   private layoutNodes(): void {
-    let addedText = false;
     for (const [index, circle] of this.circles.entries()) {
       const node = this.nodes[index];
-      const text = this.texts[index];
-      if (node === undefined || text === undefined) {
+      if (node === undefined) {
         continue;
       }
       const x = coordinate(node.x);
@@ -109,23 +131,33 @@ export class GraphScene {
       circle.renderable = this.boundary.contains(x, y, nodeRadius(node));
 
       if (this.app.stage.scale.x < 0.5) {
-        this.detachText(text);
+        this.detachText(index);
         continue;
       }
       const textWidth = Math.max(100, nodeRadius(node) * 5);
-      text.layoutWidth = this.transform.toClientLength(textWidth);
-      text.fontSize = this.transform.toClientLength(FONT_SIZE);
-      text.lineHeight = text.fontSize * 1.1;
-      text.layoutLeft = this.transform.toClientX(x - textWidth / 2);
-      text.layoutTop = this.transform.toClientY(y + nodeRadius(node) + 2);
-      const visible = text.layoutLeft + text.layoutWidth > 0
-        && text.layoutTop + text.lineHeight * LINE_CLAMP > 0
-        && text.layoutLeft < window.innerWidth
-        && text.layoutTop < window.innerHeight;
+      const layoutWidth = this.transform.toClientLength(textWidth);
+      const fontSize = this.transform.toClientLength(FONT_SIZE);
+      const lineHeight = fontSize * 1.1;
+      const layoutLeft = this.transform.toClientX(x - textWidth / 2);
+      const layoutTop = this.transform.toClientY(y + nodeRadius(node) + 2);
+      const visible = layoutLeft + layoutWidth > 0
+        && layoutTop + lineHeight * LINE_CLAMP > 0
+        && layoutLeft < window.innerWidth
+        && layoutTop < window.innerHeight;
       if (!visible) {
-        this.detachText(text);
+        this.detachText(index);
         continue;
       }
+      let text = this.texts.get(index);
+      if (text === undefined) {
+        text = createNodeText(node);
+        this.texts.set(index, text);
+      }
+      text.layoutWidth = layoutWidth;
+      text.fontSize = fontSize;
+      text.lineHeight = lineHeight;
+      text.layoutLeft = layoutLeft;
+      text.layoutTop = layoutTop;
       text.style.cssText = [
         `left:${String(text.layoutLeft)}px`,
         `top:${String(text.layoutTop)}px`,
@@ -138,20 +170,15 @@ export class GraphScene {
         text.inDocument = true;
         if (!text.addedBefore) {
           text.addedBefore = true;
-          addedText = true;
+          renderGraphMath(text);
         }
       }
     }
-    if (addedText) {
-      renderGraphMath();
-    }
   }
 
-  private detachText(text: GraphTextElement): void {
-    if (text.inDocument) {
-      text.remove();
-      text.inDocument = false;
-    }
+  private detachText(index: number): void {
+    this.texts.get(index)?.remove();
+    this.texts.delete(index);
   }
 
   private layoutLinks(deltaMilliseconds: number): void {

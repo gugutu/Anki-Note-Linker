@@ -154,8 +154,18 @@ class GlobalGraph(QWidget):
         else:
             node = self.noteCache[noteId] = NoteNode(noteId, childIds, set(), mainField)
 
+        # Replace this note's tag memberships so incremental updates cannot accumulate edges.
+        for parent_id in tuple(node.parentIds):
+            parent_node = self.noteCache.get(parent_id)
+            if parent_node is not None and parent_node.isTag:
+                parent_node.childIds = [child_id for child_id in parent_node.childIds if child_id != noteId]
+                node.parentIds.discard(parent_id)
+                if not parent_node.childIds:
+                    del self.noteCache[parent_id]
+
         if showTags:
-            for tag in keepTagNote.tags if keepTagNote is not None and keepTagNote.id == note.id else note.tags:
+            tags = keepTagNote.tags if keepTagNote is not None and keepTagNote.id == note.id else note.tags
+            for tag in dict.fromkeys(tags):
                 if tag == "":
                     continue
 

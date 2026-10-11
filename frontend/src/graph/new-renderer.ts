@@ -310,7 +310,7 @@ class PixiGraphRenderer implements NewGraphBrowserApi {
     this.removeLabel();
     this.label = createNodeLabel(node);
     document.body.appendChild(this.label);
-    renderGraphMath();
+    renderGraphMath(this.label);
   }
 
   private hideNodeLabel(): void {

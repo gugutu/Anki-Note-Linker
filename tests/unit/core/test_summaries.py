@@ -8,8 +8,8 @@ def test_replaces_nested_cloze_markup_until_stable() -> None:
     assert replace_cloze_markup(text, collapse=True) == "[...]"
 
 
-def test_preserves_cloze_hint_as_part_of_visible_text() -> None:
-    assert replace_cloze_markup("{{c1::answer::hint}}", collapse=False) == "answer::hint"
+def test_excludes_cloze_hint_from_visible_answer_like_anki() -> None:
+    assert replace_cloze_markup("{{c1::answer::hint}}", collapse=False) == "answer"
 
 
 def test_cleans_links_before_collapsing_cloze_markup() -> None:
@@ -17,6 +17,12 @@ def test_cleans_links_before_collapsing_cloze_markup() -> None:
 
     assert clean_summary(text, collapse_cloze=False) == "Linked"
     assert clean_summary(text, collapse_cloze=True) == "[...]"
+
+
+def test_cleans_links_in_multi_card_nested_clozes() -> None:
+    text = "before {{c1,2::outer {{c3::[Linked|nid1234567890123]::hint}}::outer hint}} after"
+    assert clean_summary(text, collapse_cloze=False) == "before outer Linked after"
+    assert clean_summary(text, collapse_cloze=True) == "before [...] after"
 
 
 def test_selects_image_and_configured_fields_in_historical_order() -> None:

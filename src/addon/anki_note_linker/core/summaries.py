@@ -2,22 +2,15 @@
 
 from __future__ import annotations
 
-import re
 from typing import List, Mapping, Sequence
 
+from .cloze import render_cloze_summary
 from .links import replace_note_links_with_titles
-
-CLOZE_PATTERN = re.compile(r"\{\{c\d+?::((?:(?!\{\{c\d+?::).|\n)*?)\}\}")
 
 
 def replace_cloze_markup(text: str, collapse: bool) -> str:
-    """Replace nested cloze markup using the add-on's existing display semantics."""
-    replacement = "[...]" if collapse else r"\1"
-    previous = None
-    while text != previous and CLOZE_PATTERN.search(text):
-        previous = text
-        text = CLOZE_PATTERN.sub(replacement, text)
-    return text
+    """Render cloze summaries using Anki's tokenizer and nested-parser algorithm."""
+    return render_cloze_summary(text, collapse)
 
 
 def clean_summary(text: str, collapse_cloze: bool) -> str:

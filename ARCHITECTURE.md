@@ -35,6 +35,7 @@ Frontend dependencies come from `frontend/package-lock.json`. Builds are readabl
 - Editor integration selects legacy or new behavior by available APIs, not Anki version numbers. Legacy note/paste handling remains intact; the new editor uses its note ID and the TypeScript selection/menu adapter. Add-on-created edit/add windows still use the legacy editor.
 - Configuration migrations preserve existing user values while converting legacy shapes and adding missing defaults.
 - The `[title|nid1234567890123]` link format remains stable.
+- Cloze summaries use a Python port of Anki's Rust tokenizer and nested parser, with the upstream source revision recorded in `core/cloze.py`. Only summary rendering differs: all clozes are expanded or folded to `[...]`, independent of card ordinal.
 
 ## Verification
 

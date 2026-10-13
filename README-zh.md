@@ -2,7 +2,7 @@
 
 # Anki 笔记链接器
 
-[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/gugutu/Anki-Note-Linker)
+[<img src="https://devin.ai/assets/askdeepwiki.png" alt="Ask DeepWiki" height="20"/>](https://deepwiki.com/gugutu/Anki-Note-Linker)
 
 [在 AnkiWeb 中查看](https://ankiweb.net/shared/info/1077002392)
 

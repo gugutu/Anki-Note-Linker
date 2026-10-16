@@ -112,6 +112,8 @@ If there is no response when using the shortcut key, it may be due to a shortcut
 
 This add-on automatically renders note links as corresponding content on the desktop version of Anki. Without the add-on, the links will not be rendered properly, affecting use on mobile devices. However, you can still regain some functionality.
 
+> **AnkiDroid:** The new study screen does not yet support opening linked notes with this script. For now, disable "New study screen" in AnkiDroid's settings and use the old study screen. Support is being added in [AnkiDroid PR #22022](https://github.com/ankidroid/Anki-Android/pull/22022); once completed and released, the script should work in a future version.
+
 If you have already generated note links and need to use them without the add-on, you can follow the steps below to get links working:
 
 1. In the card template, add a `class` attribute `"linkRender"` to each note field on the front and back sides. You can also customize the attribute's name.
